@@ -1,0 +1,5 @@
+.idea
+.next
+coverage
+node_modules
+npm-debug*

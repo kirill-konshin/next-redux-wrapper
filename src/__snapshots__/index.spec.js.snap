@@ -1,0 +1,21 @@
+exports[`test async store integration 1`] = `
+<div>
+  <div
+    className="redux">
+    foo
+  </div>
+  <div
+    className="custom" />
+</div>
+`;
+
+exports[`test simple store integration 1`] = `
+<div>
+  <div
+    className="redux">
+    foo
+  </div>
+  <div
+    className="custom" />
+</div>
+`;
