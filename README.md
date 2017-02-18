@@ -16,7 +16,7 @@ Here is the minimal setup (`makeStore` and `reducer` usually are located in othe
 ```js
 import React, {Component} from "react";
 import {createStore} from "redux";
-import wrapper from "next-redux-wrapper";
+import withRedux from "next-redux-wrapper";
 
 const reducer = (state = {foo: ''}, action) => {
     switch (action.type) {
@@ -33,8 +33,8 @@ const makeStore = (initialState) => {
 
 class Page extends Component {
     getInitialProps({store, isServer, pathname, query}) {
-        store.dispatch({type: 'FOO', payload: 'foo'});
-        return {custom: 'custom'}; 
+        store.dispatch({type: 'FOO', payload: 'foo'}); // component will be able to read from store's state when rendered
+        return {custom: 'custom'}; // you can pass some custom props to component from here
     }
     render() {
         return (
@@ -46,10 +46,22 @@ class Page extends Component {
     }
 }
 
-Page = wrapper(makeStore, (state) => ({foo: state.foo}))(Page);
+Page = withRedux(makeStore, (state) => ({foo: state.foo}))(Page);
 
 export default Page;
 ```
+
+## How it works
+
+No magic is involved, it auto-creates Redux store when `getInitialProps` is called by Next.js and then passes this store
+down to React Redux's `Provider`, which is used to wrap the original component, also automatically. On the client side
+it also takes care of using same store every time, whereas on server new store is created for each request.
+
+The `withRedux` function accepts `makeStore` as first argument, all other arguments are internally passed to React
+Redux's `connect()` function for simplicity. The `makeStore` function will receive initial state as one argument and
+should return a new instance of redux store each time when called, no memoization needed here, it is automatically done
+inside the wrapper.
+
 
 ## Async actions in `getInitialProps`
 
