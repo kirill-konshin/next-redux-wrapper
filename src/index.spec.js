@@ -62,7 +62,7 @@ async function verifyComponent(WrappedPage) {
     expect(props.initialState.reduxStatus).toBe('foo');
 
     // this is called by Next.js
-    const component = renderer.create(<WrappedPage/>);
+    const component = renderer.create(<WrappedPage {...props}/>);
 
     let tree = component.toJSON();
     expect(tree).toMatchSnapshot();

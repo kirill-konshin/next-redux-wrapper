@@ -5,7 +5,9 @@ exports[`test async store integration 1`] = `
     foo
   </div>
   <div
-    className="custom" />
+    className="custom">
+    custom
+  </div>
 </div>
 `;
 
@@ -16,6 +18,8 @@ exports[`test simple store integration 1`] = `
     foo
   </div>
   <div
-    className="custom" />
+    className="custom">
+    custom
+  </div>
 </div>
 `;
