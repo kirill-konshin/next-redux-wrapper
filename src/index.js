@@ -6,12 +6,17 @@ var Provider = ReactRedux.Provider;
 
 var memoizedStore;
 var _Promise;
+var _debug = false;
+var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
 
-function initStore(makeStore, isServer, initialState) {
+function initStore(makeStore, req, initialState) {
 
     // Always make a new store if server
-    if (isServer && typeof window === 'undefined') {
-        return makeStore(initialState);
+    if (!!req && typeof window === 'undefined') {
+        if (!req._store) {
+            req._store = makeStore(initialState);
+        }
+        return req._store;
     }
 
     // Memoize store if client
@@ -36,50 +41,55 @@ module.exports = function(createStore) {
 
             props = props || {};
 
-            var store = props.store;
-            var isServer = props.isServer;
             var initialState = props.initialState;
             var initialProps = props.initialProps;
+            var hasStore = props.store && props.store.dispatch && props.store.getState;
+            var store = hasStore
+                ? props.store
+                : initStore(createStore, {}, initialState); // client case, no store but has initialState
 
-            //console.log('4. WrappedCmp.render created new store with', initialState, 'or picked up existing one', store);
-            if (!store || !store.dispatch) {
-                store = initStore(createStore, isServer, initialState);
-            }
+            if (_debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
-            return React.createElement(
+            // Fix for _document
+            var mergedProps = {};
+            Object.keys(props).forEach(function(p) { if (!~skipMerge.indexOf(p)) mergedProps[p] = props[p]; });
+            Object.keys(initialProps).forEach(function(p) { mergedProps[p] = initialProps[p]; });
+
+            return React.createElement( //FIXME This will create double Provider for _document case
                 Provider,
                 {store: store},
-                React.createElement(ConnectedCmp, initialProps)
+                React.createElement(ConnectedCmp, mergedProps)
             );
 
         }
 
-        WrappedCmp.getInitialProps = function(dialog) {
+        WrappedCmp.getInitialProps = function(ctx) {
 
             return new _Promise(function(res) {
 
-                dialog = dialog || {};
+                ctx = ctx || {};
 
-                // console.log('1. WrappedCmp.getInitialProps wrapper creates the store');
+                if (_debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
 
-                dialog.isServer = !!dialog.req;
-                dialog.store = initStore(createStore, dialog.isServer);
+                ctx.isServer = !!ctx.req;
+                ctx.store = initStore(createStore, ctx.req);
 
                 res(_Promise.all([
-                    dialog.isServer,
-                    dialog.store,
-                    Cmp.getInitialProps ? Cmp.getInitialProps.call(Cmp, dialog) : {}
+                    ctx.isServer,
+                    ctx.store,
+                    ctx.req,
+                    Cmp.getInitialProps ? Cmp.getInitialProps.call(Cmp, ctx) : {}
                 ]));
 
             }).then(function(arr) {
 
-                // console.log('3. WrappedCmp.getInitialProps has store state', store.getState());
+                if (_debug) console.log(Cmp.name, '- 3. WrappedCmp.getInitialProps has store state', arr[1].getState());
 
                 return {
-                    store: arr[1],
                     isServer: arr[0],
+                    store: arr[1],
                     initialState: arr[1].getState(),
-                    initialProps: arr[2]
+                    initialProps: arr[3]
                 };
 
             });
@@ -94,6 +104,10 @@ module.exports = function(createStore) {
 
 module.exports.setPromise = function(Promise) {
     _Promise = Promise;
+};
+
+module.exports.setDebug = function(debug) {
+    _debug = debug;
 };
 
 module.exports.setPromise(Promise);

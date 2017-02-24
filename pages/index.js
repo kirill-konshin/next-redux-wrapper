@@ -7,7 +7,7 @@ class Page extends React.Component {
 
     static getInitialProps({store, isServer, pathname, query}) {
 
-        // console.log('2. Page.getInitialProps uses the store to dispatch things, pathname', pathname, 'query', query);
+        console.log(Page.name, '- 2. Cmp.getInitialProps uses the store to dispatch things, pathname', pathname, 'query', query);
 
         // If it's a server, then all async actions must be done before return or return a promise
         if (isServer) {
@@ -32,7 +32,8 @@ class Page extends React.Component {
         // console.log('5. Page.render');
         return (
             <div>
-                <div>Redux status: {this.props.reduxStatus}</div>
+                <div>Redux tick: {this.props.tick} (this page)</div>
+                <div>Redux tack: {this.props.tack} (_document)</div>
                 <div>Custom: {this.props.custom}</div>
                 <Link href="/other"><a>Navigate</a></Link>
             </div>
@@ -41,6 +42,8 @@ class Page extends React.Component {
     }
 
 }
+
+wrapper.setDebug(true);
 
 Page = wrapper(makeStore, state => state)(Page);
 

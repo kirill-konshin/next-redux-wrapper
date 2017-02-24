@@ -1,9 +1,11 @@
 import {createStore} from "redux";
 
-export const reducer = (state = {reduxStatus: 'init'}, action) => {
+export const reducer = (state = {tick: 'init', tack: 'init'}, action) => {
     switch (action.type) {
         case 'TICK':
-            return {reduxStatus: action.payload};
+            return {...state, tick: action.payload};
+        case 'TACK':
+            return {...state, tack: action.payload};
         default:
             return state
     }
