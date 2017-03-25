@@ -32,7 +32,7 @@ const makeStore = (initialState) => {
 };
 
 class Page extends Component {
-    getInitialProps({store, isServer, pathname, query}) {
+    static getInitialProps({store, isServer, pathname, query}) {
         store.dispatch({type: 'FOO', payload: 'foo'}); // component will be able to read from store's state when rendered
         return {custom: 'custom'}; // you can pass some custom props to component from here
     }
