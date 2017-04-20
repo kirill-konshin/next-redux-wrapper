@@ -11,6 +11,12 @@ exports[`test async store integration 1`] = `
 </div>
 `;
 
+exports[`test simple props 1`] = `
+<div>
+  foo
+</div>
+`;
+
 exports[`test simple store integration 1`] = `
 <div>
   <div

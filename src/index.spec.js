@@ -78,3 +78,13 @@ test('async store integration', async() => {
     const WrappedPage = wrapper(makeStore, state => state)(AsyncPage);
     await verifyComponent(WrappedPage);
 });
+
+test('simple props', () => {
+
+    const App = ({foo}) => (<div>{foo}</div>);
+    const WrappedApp = wrapper(makeStore, state => state)(App);
+
+    const component = renderer.create(<WrappedApp foo="foo"/>);
+    expect(component.toJSON()).toMatchSnapshot();
+
+});
