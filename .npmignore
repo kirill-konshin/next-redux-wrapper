@@ -1,2 +1,8 @@
+.idea
+.next
+.travis.yml
+coverage
 components
 pages
+typings
+typings.json
