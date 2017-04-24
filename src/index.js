@@ -41,8 +41,8 @@ module.exports = function(createStore) {
 
             props = props || {};
 
-            var initialState = props.initialState;
-            var initialProps = props.initialProps;
+            var initialState = props.initialState || {};
+            var initialProps = props.initialProps || {};
             var hasStore = props.store && props.store.dispatch && props.store.getState;
             var store = hasStore
                 ? props.store
