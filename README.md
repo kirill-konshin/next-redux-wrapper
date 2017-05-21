@@ -54,8 +54,8 @@ export default Page;
 ## How it works
 
 No magic is involved, it auto-creates Redux store when `getInitialProps` is called by Next.js and then passes this store
-down to React Redux's `Provider`, which is used to wrap the original component, also automatically. On the client side
-it also takes care of using same store every time, whereas on server new store is created for each request.
+down to React Redux's `Provider`, which is used to wrap the original component, also automatically.
+The same store is used on server on client when rendering child components.
 
 The `withRedux` function accepts `makeStore` as first argument, all other arguments are internally passed to React
 Redux's `connect()` function for simplicity. The `makeStore` function will receive initial state as one argument and

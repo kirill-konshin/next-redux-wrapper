@@ -10,22 +10,20 @@ var _debug = false;
 var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
 
 function initStore(makeStore, req, initialState) {
+  if (!memoizedStore) {
+      memoizedStore = makeStore(initialState);
+  }
 
-    // Always make a new store if server
-    if (!!req && typeof window === 'undefined') {
-        if (!req._store) {
-            req._store = makeStore(initialState);
-        }
-        return req._store;
-    }
+  if (!!req && typeof window === 'undefined') {
+      // Make sure the memoized store is attached to the request.
+      if (!req._store) {
+          req._store = memoizedStore;
+      }
 
-    // Memoize store if client
-    if (!memoizedStore) {
-        memoizedStore = makeStore(initialState);
-    }
+      return req._store;
+  }
 
-    return memoizedStore;
-
+  return memoizedStore;
 }
 
 module.exports = function(createStore) {
