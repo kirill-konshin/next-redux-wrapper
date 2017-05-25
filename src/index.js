@@ -14,7 +14,7 @@ function initStore(makeStore, req, initialState) {
     // Always make a new store if server
     if (!!req && typeof window === 'undefined') {
         if (!req._store) {
-            req._store = makeStore(initialState);
+            req._store = makeStore(initialState, req);
         }
         return req._store;
     }
