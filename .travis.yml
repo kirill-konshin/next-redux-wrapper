@@ -4,8 +4,7 @@ node_js:
 deploy:
   provider: npm
   email: kirill.konshin@gmail.com
-  api_key:
-    secure: ZkmJvO4w15Yq5ISo5N6QPaNxa95zK9XcEX8/X2+U/d6YMu24KyM615Bki721R7X30rzvxnnwZtAlZO4hH6F2F3mVLJb2a+xEtrHa9QP6mJYGryGnc7MaPN4Z8Fdc4JTyVOhMKt1andCBiW5qpj5X1V43abjhtjkksPjyfjhYntUJGe27oOq7lecIrLNEC6YFoKnge7O/XQkd/McKQHD85g4hilkEkDaZ9SJqcqZT6TR506WXiP9a/hKN3kctbrug9N3TQ6ILDII+frfSm3j9Pz3SlzXySe1jyR1EMzTUhB99Azhfw0YkA0DTJ9uOK4ze0DN4get93ITlNLfcmUs2dPUwg3vSm2+hShCLLTsPZx9Z2koADI1ZAYJimLupeuax5SX937S+SFM1za9lcOvEveXB6HhSVidVTcjO9GViqQkFAdngGaIMZw5LvzFd7WpF8kvyCu9Q2KeDzrjHDiXF2mdWUXYqs7aEsjqOuHOiAn6rOcE8AuuUJISnFVwoEVl5DKRayHT3yVe73RhG7duRqOMAzxItzn/YOp4Iw3Opeen7qVjAHMnnrNdsZXViD8xbYK+hrQPx+QVyLTIpFNiyj/sJHN3773VLZhROyAWow50yRSqLTOE4v2f5QpSMt75YHwg9z87YDrV9Qar1W88xM2ruJ+vXn1Kcighcd7rwqFw=
+  api_key: $NPM_TOKEN
   skip_cleanup: true
   on:
     tags: true
