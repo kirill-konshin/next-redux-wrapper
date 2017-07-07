@@ -88,3 +88,13 @@ test('simple props', () => {
     expect(component.toJSON()).toMatchSnapshot();
 
 });
+
+test('advanced props', () => {
+
+    const App = ({foo}) => (<div>{foo}</div>);
+    const WrappedApp = wrapper({ createStore: makeStore, mapStateToProps: (state) => state })(App);
+
+    const component = renderer.create(<WrappedApp foo="foo"/>);
+    expect(component.toJSON()).toMatchSnapshot();
+
+});
