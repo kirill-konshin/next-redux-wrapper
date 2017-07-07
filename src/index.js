@@ -10,18 +10,20 @@ var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
 var storeKey = '__NEXT_REDUX_STORE__';
 
 function initStore(makeStore, req, initialState) {
+    var isServer = !!req && typeof window === 'undefined';
 
+    var options = { isServer: isServer };
     // Always make a new store if server
-    if (!!req && typeof window === 'undefined') {
+    if (isServer) {
         if (!req._store) {
-            req._store = makeStore(initialState);
+            req._store = makeStore(initialState, options);
         }
         return req._store;
     }
 
     // Memoize store if client
     if (!window[storeKey]) {
-        window[storeKey] = makeStore(initialState);
+        window[storeKey] = makeStore(initialState, options);
     }
 
     return window[storeKey];
