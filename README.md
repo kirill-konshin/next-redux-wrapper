@@ -90,6 +90,22 @@ function getInitialProps({store, isServer, pathname, query}) {
 }
 ```
 
+## Usage with Immutable.JS
+
+If you want to use Immutable.JS then you have to modify your `makeStore` function, it should detect if object is an instance of Immutable.JS, and if not - convert it using `Immutable.fromJS`:
+
+```js
+export default function makeStore(initialState = {}) {
+    // Nasty duck typing, you should find a better way to detect
+    if (!!initialState.toJS) initialState = Immutable.fromJS(initialState);
+    return createStore(reducer, initialState, applyMiddleware(thunk));
+}
+```
+
+The reason is that `initialState` is transferred over the network from server to client as a plain object (it is automatically serialized on server) so it should be converted back to Immutable.JS on client side.
+
+Here you can find better ways to detect if an object is Immutable.JS: https://stackoverflow.com/a/31919454/5125659.
+
 ## Resources
 
 * [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
