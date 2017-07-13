@@ -44,7 +44,8 @@ module.exports = function(createStore) {
             throw new Error('Missing createStore function');
         }
         createStore = wrappedConfig.createStore;
-
+        
+        // Set all config keys if they exist.
         if(({}).hasOwnProperty.call(wrappedConfig, 'debug')){
             config.debug = wrappedConfig.debug;
         }
@@ -52,22 +53,14 @@ module.exports = function(createStore) {
         if(({}).hasOwnProperty.call(wrappedConfig, 'storeKey')){
           config.storeKey = wrappedConfig.storeKey;
         }
-
+        
+        // Map the connect arguments from the passed in config object.
         connectArgs = [
-            ()=>({}), /** mapStateToProps **/
-            {}, /**mapDispatchToProps **/
-            null, /** mergeProps **/
-            {}, /** connectOptions **/
+            wrappedConfig.mapStateToProps || undefined,
+            wrappedConfig.mapDispatchToProps || undefined,
+            wrappedConfig.mergeProps || undefined,
+            wrappedConfig.connectOptions || undefined,
         ];
-        var keys = Object.keys(wrappedConfig);
-        for(var i = 0; i < keys.length; i += 1){
-            var key = keys[i];
-
-            var argIdx = connectArgs.indexOf(key);
-            if(argIdx){
-                connectArgs[argIdx] = wrappedConfig[key];
-            }
-        }
     } else{
         connectArgs = [].slice.call(arguments).slice(1);
     }
