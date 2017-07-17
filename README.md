@@ -27,7 +27,14 @@ const reducer = (state = {foo: ''}, action) => {
     }
 };
 
-const makeStore = (initialState) => {
+/**
+* @param {object} initialState
+* @param {boolean} options.isServer indicates whether it is a server side or client side
+* @param {Request} options.req NodeJS Request object (if any)
+* @param {boolean} options.debug User-defined debug mode param
+* @param {string} options.storeKey This key will be used to preserve store in global namespace for safe HMR 
+*/
+const makeStore = (initialState, options) => {
     return createStore(reducer, initialState);
 };
 
@@ -62,6 +69,11 @@ Redux's `connect()` function for simplicity. The `makeStore` function will recei
 should return a new instance of redux store each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
+## Recommendations
+
+Although it is possible to create server or client specific logic in both `createStore` function and `getInitialProps`
+method I highly don't recommend to have different behavior. This may cause errors and checksum mismatches which in turn
+will ruin the whole purpose of server rendering.
 
 ## Async actions in `getInitialProps`
 

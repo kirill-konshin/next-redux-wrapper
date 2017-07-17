@@ -11,10 +11,15 @@ var connectArgs = ['mapStateToProps', 'mapDispatchToProps', 'mergedProps', 'conn
 var DEFAULT_KEY = '__NEXT_REDUX_STORE__';
 
 function initStore(makeStore, req, initialState, config) {
+
     var isServer = !!req && typeof window === 'undefined';
     var storeKey = config.storeKey;
 
-    var options = { isServer: isServer };
+    var options = Object.assign({}, config, {
+        isServer: isServer,
+        req: req
+    });
+
     // Always make a new store if server
     if (isServer) {
         if (!req._store) {
@@ -33,27 +38,29 @@ function initStore(makeStore, req, initialState, config) {
 }
 
 module.exports = function(createStore) {
-    var config = { storeKey: DEFAULT_KEY, debug: false };
+
+    var config = {storeKey: DEFAULT_KEY, debug: false};
     var connectArgs;
 
     // Ensure backwards compatibility, the config object should come last after connect arguments.
-    if(typeof createStore === 'object'){
+    if (typeof createStore === 'object') {
+
         var wrappedConfig = createStore;
 
-        if(!({}).hasOwnProperty.call(wrappedConfig, 'createStore')){
+        if (!({}).hasOwnProperty.call(wrappedConfig, 'createStore')) {
             throw new Error('Missing createStore function');
         }
         createStore = wrappedConfig.createStore;
-        
+
         // Set all config keys if they exist.
-        if(({}).hasOwnProperty.call(wrappedConfig, 'debug')){
+        if (({}).hasOwnProperty.call(wrappedConfig, 'debug')) {
             config.debug = wrappedConfig.debug;
         }
 
-        if(({}).hasOwnProperty.call(wrappedConfig, 'storeKey')){
-          config.storeKey = wrappedConfig.storeKey;
+        if (({}).hasOwnProperty.call(wrappedConfig, 'storeKey')) {
+            config.storeKey = wrappedConfig.storeKey;
         }
-        
+
         // Map the connect arguments from the passed in config object.
         connectArgs = [
             wrappedConfig.mapStateToProps || undefined,
@@ -61,11 +68,13 @@ module.exports = function(createStore) {
             wrappedConfig.mergeProps || undefined,
             wrappedConfig.connectOptions || undefined,
         ];
-    } else{
+
+    } else {
         connectArgs = [].slice.call(arguments).slice(1);
     }
 
     var debug = _debug || config.debug;
+
     return function(Cmp) {
 
         // Since provide should always be after connect we connect here
