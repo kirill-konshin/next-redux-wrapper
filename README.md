@@ -69,11 +69,17 @@ Redux's `connect()` function for simplicity. The `makeStore` function will recei
 should return a new instance of redux store each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
-## Recommendations
+**Use `withRedux` to wrap only top level pages! All other components should keep using regular `connect` function of
+React Redux.**
 
 Although it is possible to create server or client specific logic in both `createStore` function and `getInitialProps`
 method I highly don't recommend to have different behavior. This may cause errors and checksum mismatches which in turn
 will ruin the whole purpose of server rendering.
+
+I don't recommend to use `withRedux` in both top level pages and `_document.js` files, Next.JS
+[does not have provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
+components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
+and wrap top level pages with another HOC that will use `withRedux`. 
 
 ## Async actions in `getInitialProps`
 
