@@ -41,6 +41,7 @@ module.exports = function(createStore) {
 
     var config = {storeKey: DEFAULT_KEY, debug: false};
     var connectArgs;
+    var mapInitialProps;
 
     // Ensure backwards compatibility, the config object should come last after connect arguments.
     if (typeof createStore === 'object') {
@@ -59,6 +60,10 @@ module.exports = function(createStore) {
 
         if (({}).hasOwnProperty.call(wrappedConfig, 'storeKey')) {
             config.storeKey = wrappedConfig.storeKey;
+        }
+
+        if (({}).hasOwnProperty.call(wrappedConfig, 'mapInitialProps')) {
+          mapInitialProps = wrappedConfig.mapInitialProps;
         }
 
         // Map the connect arguments from the passed in config object.
@@ -86,6 +91,7 @@ module.exports = function(createStore) {
 
             var initialState = props.initialState || {};
             var initialProps = props.initialProps || {};
+            var mappedInitialProps = mapInitialProps ? mapInitialProps(initialProps) : initialProps;
             var hasStore = props.store && props.store.dispatch && props.store.getState;
             var store = hasStore
                 ? props.store
@@ -96,7 +102,7 @@ module.exports = function(createStore) {
             // Fix for _document
             var mergedProps = {};
             Object.keys(props).forEach(function(p) { if (!~skipMerge.indexOf(p)) mergedProps[p] = props[p]; });
-            Object.keys(initialProps || {}).forEach(function(p) { mergedProps[p] = initialProps[p]; });
+            Object.keys(mappedInitialProps || {}).forEach(function(p) { mergedProps[p] = mappedInitialProps[p]; });
 
             return React.createElement( //FIXME This will create double Provider for _document case
                 Provider,
