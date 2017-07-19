@@ -10,14 +10,15 @@ var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
 var connectArgs = ['mapStateToProps', 'mapDispatchToProps', 'mergedProps', 'connectOptions'];
 var DEFAULT_KEY = '__NEXT_REDUX_STORE__';
 
-function initStore(makeStore, req, initialState, config) {
-
+function initStore(makeStore, initialState, context, config) {
+    var req = context.req;
     var isServer = !!req && typeof window === 'undefined';
     var storeKey = config.storeKey;
 
     var options = Object.assign({}, config, {
         isServer: isServer,
-        req: req
+        req: req,
+        query: context.query
     });
 
     // Always make a new store if server
@@ -89,7 +90,7 @@ module.exports = function(createStore) {
             var hasStore = props.store && props.store.dispatch && props.store.getState;
             var store = hasStore
                 ? props.store
-                : initStore(createStore, {}, initialState, config); // client case, no store but has initialState
+                : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
 
             if (debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
@@ -115,7 +116,7 @@ module.exports = function(createStore) {
                 if (debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
 
                 ctx.isServer = !!ctx.req;
-                ctx.store = initStore(createStore, ctx.req, undefined /** initialState **/, config);
+                ctx.store = initStore(createStore, undefined /** initialState **/, {req: ctx.req, query: ctx.query}, config);
 
                 res(_Promise.all([
                     ctx.isServer,
