@@ -98,18 +98,3 @@ test('advanced props', () => {
     expect(component.toJSON()).toMatchSnapshot();
 
 });
-
-test('map initial props', () => {
-    const App = ({foo}) => (<div>{foo}</div>);
-    const WrappedApp = wrapper({
-        createStore: makeStore,
-        mapStateToProps: (state) => state,
-        mapInitialProps: (props) => {
-            props.foo = 'bar';
-            return props;
-        }
-    })(App);
-
-    const component = renderer.create(<WrappedApp foo="foo"/>);
-    expect(component.toJSON()).toMatchSnapshot();
-});

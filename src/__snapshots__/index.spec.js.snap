@@ -17,12 +17,6 @@ exports[`test async store integration 1`] = `
 </div>
 `;
 
-exports[`test map initial props 1`] = `
-<div>
-  bar
-</div>
-`;
-
 exports[`test simple props 1`] = `
 <div>
   foo
