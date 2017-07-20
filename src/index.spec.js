@@ -79,22 +79,90 @@ test('async store integration', async() => {
     await verifyComponent(WrappedPage);
 });
 
-test('simple props', () => {
+const spyLog = jest.spyOn(global.console, 'log');
 
-    const App = ({foo}) => (<div>{foo}</div>);
-    const WrappedApp = wrapper(makeStore, state => state)(App);
+describe('createStore', () => {
+    beforeEach(() => {
+        spyLog.mockReset();
+    });
 
-    const component = renderer.create(<WrappedApp foo="foo"/>);
-    expect(component.toJSON()).toMatchSnapshot();
+    afterEach(() => {
+        delete window.__NEXT_REDUX_STORE__;
+    });
 
-});
+    test('simple props', () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const WrappedApp = wrapper(makeStore, state => state)(App);
+        const component = renderer.create(<WrappedApp foo="foo"/>);
+        expect(component.toJSON()).toMatchSnapshot();
+    });
 
-test('advanced props', () => {
+    test('advanced props', () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const WrappedApp = wrapper({ createStore: makeStore, mapStateToProps: (state) => state })(App);
+        const component = renderer.create(<WrappedApp foo="foo"/>);
+        expect(component.toJSON()).toMatchSnapshot();
+    });
 
-    const App = ({foo}) => (<div>{foo}</div>);
-    const WrappedApp = wrapper({ createStore: makeStore, mapStateToProps: (state) => state })(App);
+    test('debug mode from options', async () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const WrappedApp = wrapper({
+            createStore: (initialState, options) => {
+                expect(options.debug).toBe(true);
+                return createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
+            },
+            debug: true
+        })(App);
+        const component = renderer.create(<WrappedApp/>);
+        await WrappedApp.getInitialProps();
+        expect(spyLog).toHaveBeenCalledTimes(3);
+        expect(component.toJSON()).toMatchSnapshot();
+    });
 
-    const component = renderer.create(<WrappedApp foo="foo"/>);
-    expect(component.toJSON()).toMatchSnapshot();
+    test('debug mode with setDebug method', async () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        wrapper.setDebug(true);
+        const WrappedApp = wrapper((initialState, options) => {
+            expect(options.debug).toBe(true);
+            return createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
+        })(App);
+        const component = renderer.create(<WrappedApp/>);
+        await WrappedApp.getInitialProps();
+        expect(spyLog).toHaveBeenCalledTimes(3);
+        expect(component.toJSON()).toMatchSnapshot();
+    });
 
+    test('should throw if no createStore method', async () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        expect(() => wrapper({
+            debug: true
+        })(App)).toThrow();
+
+    });
+
+    test('should be able to configure store key on window', async () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const WrappedApp = wrapper({
+            createStore: makeStore,
+            storeKey: 'TESTKEY'
+        })(App);
+        const component = renderer.create(<WrappedApp/>);
+        await WrappedApp.getInitialProps();
+        expect(window.__NEXT_REDUX_STORE__).not.toBeDefined();
+        expect(window.TESTKEY).toBeDefined();
+        expect(component.toJSON()).toMatchSnapshot();
+        delete window.TESTKEY;
+    });
+
+    test('should memoize store on client in window', async() => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const App1 = wrapper(makeStore, state => state)(App);
+        renderer.create(<App1/>);
+        expect(window.__NEXT_REDUX_STORE__).toBeDefined();
+        const App2 = wrapper((initialState, options) => {
+            throw new Error('New store should not be created!');
+        }, state => state)(App);
+        renderer.create(<App2 foo="foo"/>);
+        expect(window.__NEXT_REDUX_STORE__).toBeDefined();
+    });
 });

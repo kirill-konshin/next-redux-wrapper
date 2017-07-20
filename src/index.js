@@ -40,7 +40,7 @@ function initStore(makeStore, initialState, context, config) {
 
 module.exports = function(createStore) {
 
-    var config = {storeKey: DEFAULT_KEY, debug: false};
+    var config = {storeKey: DEFAULT_KEY, debug: _debug};
     var connectArgs;
 
     // Ensure backwards compatibility, the config object should come last after connect arguments.
@@ -74,8 +74,6 @@ module.exports = function(createStore) {
         connectArgs = [].slice.call(arguments).slice(1);
     }
 
-    var debug = _debug || config.debug;
-
     return function(Cmp) {
 
         // Since provide should always be after connect we connect here
@@ -92,7 +90,7 @@ module.exports = function(createStore) {
                 ? props.store
                 : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
 
-            if (debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
+            if (config.debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
             // Fix for _document
             var mergedProps = {};
@@ -113,7 +111,7 @@ module.exports = function(createStore) {
 
                 ctx = ctx || {};
 
-                if (debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
+                if (config.debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
 
                 ctx.isServer = !!ctx.req;
                 ctx.store = initStore(createStore, undefined /** initialState **/, {req: ctx.req, query: ctx.query}, config);
@@ -127,7 +125,7 @@ module.exports = function(createStore) {
 
             }).then(function(arr) {
 
-                if (debug) console.log(Cmp.name, '- 3. WrappedCmp.getInitialProps has store state', arr[1].getState());
+                if (config.debug) console.log(Cmp.name, '- 3. WrappedCmp.getInitialProps has store state', arr[1].getState());
 
                 return {
                     isServer: arr[0],
