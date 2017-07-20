@@ -1,6 +1,6 @@
 Redux wrapper for Next.js
 =========================
-[Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
+![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 
 ## Usage
 
