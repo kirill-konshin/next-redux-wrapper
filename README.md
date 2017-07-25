@@ -1,5 +1,6 @@
 Redux wrapper for Next.js
 =========================
+![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 
 ## Usage
 
@@ -69,6 +70,24 @@ Redux's `connect()` function for simplicity. The `makeStore` function will recei
 should return a new instance of redux store each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
+`withRedux` also optionally accepts an object. In this case only 1 parameter is passed which can contain the following
+configuration properties:
+
+- `createStore` (required, function) : the `makerStore` function as described above
+- `storeKey` (optional, string) : the key used on `window` to persist the store on the client
+- `debug` (optional, boolean) : enable debug logging
+- `mapStateToProps`, `mapDispatchToProps`, `mergeProps` (optional, functions) : functions to pass to `react-redux` `connect` method
+- `connectOptions` (optional, object) : configuration to pass to `react-redux` `connect` method
+
+
+When `makeStore` is invoked it is also provided a configuration object as the second parameter, which includes:
+
+- `isServer` (boolean): `true` if called while on the server rather than the client
+- `req` (Request): The `next.js` `getInitialProps` context `req` parameter
+- `query` (object): The `next.js` `getInitialProps` context `query` parameter
+
+The object also includes all configuration as passed to `withRedux` if called with an object of configuration properties.
+
 **Use `withRedux` to wrap only top level pages! All other components should keep using regular `connect` function of
 React Redux.**
 
@@ -129,3 +148,4 @@ Here you can find better ways to detect if an object is Immutable.JS: https://st
 * [next-redux-saga](https://github.com/bmealhouse/next-redux-saga)
 * [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
 * Redux Saga Example: https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e.
+* [Typescript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/next-redux-wrapper) > `npm install @types/next-redux-wrapper`

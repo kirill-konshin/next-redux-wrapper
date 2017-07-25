@@ -11,7 +11,7 @@
   "devDependencies": {
     "babel-jest": "^18.0.0",
     "babel-preset-react-app": "^2.1.0",
-    "jest": "^18.1.0",
+    "jest": "^20.0.4",
     "next": "^2.0.0-beta.24",
     "react": "^15.4.2",
     "react-redux": "^5.0.2",
@@ -37,7 +37,8 @@
   "license": "MIT",
   "jest": {
     "testRegex": "(/src/.*\\.spec.js)$",
-    "collectCoverage": true
+    "collectCoverage": true,
+    "testEnvironment": "jsdom"
   },
   "babel": {
     "presets": [

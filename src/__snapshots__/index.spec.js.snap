@@ -1,36 +1,48 @@
-exports[`test advanced props 1`] = `
-<div>
-  foo
-</div>
-`;
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`test async store integration 1`] = `
+exports[`async store integration 1`] = `
 <div>
   <div
-    className="redux">
+    className="redux"
+  >
     foo
   </div>
   <div
-    className="custom">
+    className="custom"
+  >
     custom
   </div>
 </div>
 `;
 
-exports[`test simple props 1`] = `
+exports[`createStore advanced props 1`] = `
 <div>
   foo
 </div>
 `;
 
-exports[`test simple store integration 1`] = `
+exports[`createStore debug mode from options 1`] = `<div />`;
+
+exports[`createStore debug mode with setDebug method 1`] = `<div />`;
+
+exports[`createStore should be able to configure store key on window 1`] = `<div />`;
+
+exports[`createStore simple props 1`] = `
+<div>
+  foo
+</div>
+`;
+
+exports[`simple store integration 1`] = `
 <div>
   <div
-    className="redux">
+    className="redux"
+  >
     foo
   </div>
   <div
-    className="custom">
+    className="custom"
+  >
     custom
   </div>
 </div>
