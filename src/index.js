@@ -7,12 +7,12 @@ var Provider = ReactRedux.Provider;
 var _Promise;
 var _debug = false;
 var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
-var connectArgs = ['mapStateToProps', 'mapDispatchToProps', 'mergedProps', 'connectOptions'];
 var DEFAULT_KEY = '__NEXT_REDUX_STORE__';
 
 function initStore(makeStore, initialState, context, config) {
     var req = context.req;
-    var isServer = !!req && typeof window === 'undefined';
+    var isBrowser = typeof window !== 'undefined';
+    var isServer = !!req && !isBrowser;
     var storeKey = config.storeKey;
 
     var options = Object.assign({}, config, {
@@ -27,6 +27,10 @@ function initStore(makeStore, initialState, context, config) {
             req._store = makeStore(initialState, options);
         }
         return req._store;
+    }
+
+    if (!isBrowser) {
+        throw new Error("WithRedux has to be used only for top level pages, all other components has to be wrapped in connect");
     }
 
     // Memoize store if client

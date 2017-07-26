@@ -33,7 +33,6 @@ class Page extends React.Component {
         return (
             <div>
                 <div>Redux tick: {this.props.tick} (this page)</div>
-                <div>Redux tack: {this.props.tack} (_document)</div>
                 <div>Custom: {this.props.custom}</div>
                 <Link href="/other"><a>Navigate</a></Link>
             </div>
