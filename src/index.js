@@ -8,10 +8,10 @@ var _Promise;
 var _debug = false;
 var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
 var DEFAULT_KEY = '__NEXT_REDUX_STORE__';
+var isBrowser = typeof window !== 'undefined';
 
 function initStore(makeStore, initialState, context, config) {
     var req = context.req;
-    var isBrowser = typeof window !== 'undefined';
     var isServer = !!req && !isBrowser;
     var storeKey = config.storeKey;
 
@@ -29,9 +29,7 @@ function initStore(makeStore, initialState, context, config) {
         return req._store;
     }
 
-    if (!isBrowser) {
-        throw new Error("WithRedux has to be used only for top level pages, all other components has to be wrapped in connect");
-    }
+    if (!isBrowser) return null;
 
     // Memoize store if client
     if (!window[storeKey]) {
@@ -93,6 +91,12 @@ module.exports = function(createStore) {
             var store = hasStore
                 ? props.store
                 : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
+
+            if (!store) {
+                console.error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect!');
+                console.error('Automatic fallback to connect has been performed, please check your code.');
+                return React.createElement(ConnectedCmp, props);
+            }
 
             if (config.debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
