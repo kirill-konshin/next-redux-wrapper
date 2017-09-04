@@ -18,6 +18,7 @@ function initStore(makeStore, initialState, context, config) {
     var options = Object.assign({}, config, {
         isServer: isServer,
         req: req,
+        res: context.res,
         query: context.query
     });
 
@@ -119,11 +120,9 @@ module.exports = function(createStore) {
             return new _Promise(function(res) {
 
                 ctx = ctx || {};
-
                 if (config.debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
-
                 ctx.isServer = !!ctx.req;
-                ctx.store = initStore(createStore, undefined /** initialState **/, {req: ctx.req, query: ctx.query}, config);
+                ctx.store = initStore(createStore, undefined /** initialState **/, {req: ctx.req, query: ctx.query, res: ctx.res}, config);
 
                 res(_Promise.all([
                     ctx.isServer,
