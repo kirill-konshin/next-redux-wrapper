@@ -95,7 +95,7 @@ module.exports = function(createStore) {
 
             if (!store) {
                 console.error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect!');
-                console.error(`Check ${Cmp.name} component.`);
+                console.error('Check ' + Cmp.name + ' component.');
                 console.error('Automatic fallback to connect has been performed, please check your code.');
                 return React.createElement(ConnectedCmp, props);
             }
