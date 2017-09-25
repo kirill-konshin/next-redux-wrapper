@@ -134,7 +134,7 @@ If you want to use Immutable.JS then you have to modify your `makeStore` functio
 ```js
 export default function makeStore(initialState = {}) {
     // Nasty duck typing, you should find a better way to detect
-    if (!!initialState.toJS) initialState = Immutable.fromJS(initialState);
+    if (!initialState.toJS) initialState = Immutable.fromJS(initialState);
     return createStore(reducer, initialState, applyMiddleware(thunk));
 }
 ```
