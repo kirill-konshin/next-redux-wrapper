@@ -73,7 +73,7 @@ inside the wrapper.
 `withRedux` also optionally accepts an object. In this case only 1 parameter is passed which can contain the following
 configuration properties:
 
-- `createStore` (required, function) : the `makerStore` function as described above
+- `createStore` (required, function) : the `makeStore` function as described above
 - `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
 - `mapStateToProps`, `mapDispatchToProps`, `mergeProps` (optional, functions) : functions to pass to `react-redux` `connect` method
