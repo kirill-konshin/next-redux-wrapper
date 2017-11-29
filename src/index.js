@@ -1,5 +1,6 @@
 var React = require('react');
 var ReactRedux = require('react-redux');
+var assign = require('object.assign');
 
 var connect = ReactRedux.connect;
 var Provider = ReactRedux.Provider;
@@ -15,7 +16,7 @@ function initStore(makeStore, initialState, context, config) {
     var isServer = !!req && !isBrowser;
     var storeKey = config.storeKey;
 
-    var options = Object.assign({}, config, {
+    var options = assign({}, config, {
         isServer: isServer,
         req: req,
         res: context.res,
