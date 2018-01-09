@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import {makeStore} from "../components/store";
+import {makeStore} from "./components/store";
 import wrapper from "../src";
 
 const Foo = wrapper(makeStore)(() => (<div>Foo</div>));

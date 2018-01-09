@@ -1,7 +1,0 @@
-{
-  "name": "next-redux-wrapper",
-  "dependencies": {},
-  "globalDependencies": {
-    "jest": "registry:dt/jest#18.1.0+20170131225342"
-  }
-}

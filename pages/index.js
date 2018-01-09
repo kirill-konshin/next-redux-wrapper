@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import wrapper from "../src";
-import {makeStore} from "../components/store";
+import {makeStore} from "./components/store";
 
 class Page extends React.Component {
 

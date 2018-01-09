@@ -79,7 +79,6 @@ configuration properties:
 - `mapStateToProps`, `mapDispatchToProps`, `mergeProps` (optional, functions) : functions to pass to `react-redux` `connect` method
 - `connectOptions` (optional, object) : configuration to pass to `react-redux` `connect` method
 
-
 When `makeStore` is invoked it is also provided a configuration object as the second parameter, which includes:
 
 - `isServer` (boolean): `true` if called while on the server rather than the client
