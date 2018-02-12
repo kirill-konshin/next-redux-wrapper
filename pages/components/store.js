@@ -1,17 +1,18 @@
 import {createStore} from "redux";
-
-export const reducer = (state = {tick: 'init', tack: 'init'}, action) => {
-    switch (action.type) {
-        case 'TICK':
-            return {...state, tick: action.payload};
-        case 'TACK':
-            return {...state, tack: action.payload};
-        default:
-            return state
-    }
-};
+import reducer from "./reducer";
 
 export const makeStore = (initialState) => {
-    return createStore(reducer, initialState);
+
+    const store = createStore(reducer, initialState);
+
+    if (module.hot) {
+        module.hot.accept('./reducer', () => {
+            console.log('Replacing reducer');
+            store.replaceReducer(require('./reducer').default);
+        });
+    }
+
+    return store;
+
 };
 

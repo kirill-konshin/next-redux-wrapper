@@ -99,6 +99,30 @@ I don't recommend to use `withRedux` in both top level pages and `_document.js` 
 components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
 and wrap top level pages with another HOC that will use `withRedux`. 
 
+## Hot Reload
+
+Hot reloading of React components is still a very challenging thing.
+
+Sometimes it works out of the box but in some cases it does not. For such cases currently the recommendation is to keep
+pages and actual components separate and manually set up hot reloading:
+
+```js
+import withRedux from 'next-redux-wrapper';
+import {makeStore} from './components/store'
+
+import Page from '../lib/component';
+
+if (module.hot) {
+  module.hot.accept('../lib/component', () => {
+    require('../lib/component');
+  });
+}
+
+export default withRedux(makeStore)(Page);
+```
+
+For hot reloading of reducers please see the demo.
+
 ## Async actions in `getInitialProps`
 
 ```js
