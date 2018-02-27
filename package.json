@@ -14,11 +14,11 @@
     "object.assign": "4.1.0"
   },
   "devDependencies": {
-    "jest": "22.0.5",
-    "next": "4.2.2",
+    "jest": "22.4.2",
+    "next": "5.0.0",
     "react": "16.2.0",
     "react-dom": "16.2.0",
-    "react-redux": "5.0.6",
+    "react-redux": "5.0.7",
     "react-test-renderer": "16.2.0",
     "redux": "3.7.2",
     "redux-promise-middleware": "5.0.0"
