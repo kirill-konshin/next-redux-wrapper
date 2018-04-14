@@ -1,6 +1,15 @@
 Redux wrapper for Next.js
 =========================
+
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
+
+- [Usage](#usage)
+- [How it works](#how-it-works)
+- [Hot Reload](#hot-reload)
+- [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
+- [Usage with Immutable.JS](#usage-with-immutablejs)
+- [Usage with Redux Persist](#usage-with-redux-persist)
+- [Resources](#resources)
 
 ## Usage
 
@@ -165,6 +174,126 @@ export default function makeStore(initialState = {}) {
 The reason is that `initialState` is transferred over the network from server to client as a plain object (it is automatically serialized on server) so it should be converted back to Immutable.JS on client side.
 
 Here you can find better ways to detect if an object is Immutable.JS: https://stackoverflow.com/a/31919454/5125659.
+
+## Usage with Redux Persist
+
+Honestly, I think that putting a persistence gate is not necessary because server can already send *some* HTML with *some* state, so it's better to show it right away and then wait for `REHYDRATE` action to happen to show additional delta coming from persistence storage. That's why we use Server Side Rendering in a first place.
+
+But, for those who actually want to block the UI while rehydration is happening, here is the solution (still hacky though).
+
+```js
+// lib/redux.js
+import React from 'react';
+import PropTypes from 'prop-types';
+import logger from 'redux-logger';
+import {applyMiddleware, createStore} from 'redux';
+import {PersistGate} from 'redux-persist/integration/react';
+
+const SET_CLIENT_STATE = 'SET_CLIENT_STATE';
+
+export const reducer = (state, {type, payload}) => {
+    if (type == SET_CLIENT_STATE) {
+        return {
+            ...state,
+            fromClient: payload
+        };
+    }
+    return state;
+};
+
+const makeConfiguredStore = (reducer, initialState) =>
+    createStore(reducer, initialState, applyMiddleware(logger));
+
+export const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
+
+    if (isServer) {
+
+        initialState = initialState || {fromServer: 'foo'};
+
+        return makeConfiguredStore(reducer, initialState);
+
+    } else {
+
+        // we need it only on client side
+        const {persistStore, persistReducer} = require('redux-persist');
+        const storage = require('redux-persist/lib/storage').default;
+
+        const persistConfig = {
+            key: 'nextjs',
+            whitelist: ['fromClient'], // make sure it does not clash with server keys
+            storage
+        };
+
+        const persistedReducer = persistReducer(persistConfig, reducer);
+        const store = makeConfiguredStore(persistedReducer, initialState);
+
+        store.__persistor = persistStore(store); // Nasty hack
+
+        return store;
+    }
+};
+
+export const withPersistGate = (gateProps = {}) => (WrappedComponent) => (
+
+    class WithPersistGate extends React.Component {
+
+        static displayName = `withPersistGate(${WrappedComponent.displayName
+                                                || WrappedComponent.name
+                                                || 'Component'})`;
+
+        static contextTypes = {
+            store: PropTypes.object.isRequired
+        };
+
+        constructor(props, context) {
+            super(props, context);
+            this.store = context.store;
+        }
+
+        render() {
+            return (
+                <PersistGate {...gateProps} persistor={this.store.__persistor}>
+                    <WrappedComponent {...this.props} />
+                </PersistGate>
+            );
+        }
+
+    }
+
+);
+
+export const setClientState = (clientState) => ({
+    type: SET_CLIENT_STATE,
+    payload: clientState
+});
+```
+
+And then in NextJS page:
+
+```js
+// pages/index.js
+import React from "react";
+import withRedux from "next-redux-wrapper";
+import {setClientState, makeStore, withPersistGate} from "../lib/redux";
+
+export const Index = ({fromServer, fromClient, setClientState}) => (
+    <div>
+        <div>fromServer: {fromServer}</div>
+        <div>fromClient: {fromClient}</div>
+        <div><button onClick={e => setClientState('bar')}>Set Client State</button></div>
+    </div>
+);
+
+export default withRedux(
+    makeStore,
+    (state) => state,
+    {setClientState}
+)(withPersistGate({
+    loading: (<div>Loading</div>)
+})(Index));
+```
+
+Note the order of HOCs, `withRedux` must be on top, before `withPersistGate`.
 
 ## Resources
 
