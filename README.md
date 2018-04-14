@@ -183,11 +183,8 @@ But, for those who actually want to block the UI while rehydration is happening,
 
 ```js
 // lib/redux.js
-import React from 'react';
-import PropTypes from 'prop-types';
 import logger from 'redux-logger';
 import {applyMiddleware, createStore} from 'redux';
-import {PersistGate} from 'redux-persist/integration/react';
 
 const SET_CLIENT_STATE = 'SET_CLIENT_STATE';
 
@@ -233,14 +230,27 @@ export const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
     }
 };
 
-export const withPersistGate = (gateProps = {}) => (WrappedComponent) => (
+export const setClientState = (clientState) => ({
+    type: SET_CLIENT_STATE,
+    payload: clientState
+});
+```
+
+Next, a HOC to for `PersistGate`:
+
+```js
+// lib/withPersistGate.js
+import React from 'react';
+import PropTypes from 'prop-types';
+import {PersistGate} from 'redux-persist/integration/react';
+
+export default (gateProps = {}) => (WrappedComponent) => (
 
     class WithPersistGate extends React.Component {
 
         static displayName = `withPersistGate(${WrappedComponent.displayName
                                                 || WrappedComponent.name
                                                 || 'Component'})`;
-
         static contextTypes = {
             store: PropTypes.object.isRequired
         };
@@ -261,11 +271,6 @@ export const withPersistGate = (gateProps = {}) => (WrappedComponent) => (
     }
 
 );
-
-export const setClientState = (clientState) => ({
-    type: SET_CLIENT_STATE,
-    payload: clientState
-});
 ```
 
 And then in NextJS page:
@@ -274,7 +279,8 @@ And then in NextJS page:
 // pages/index.js
 import React from "react";
 import withRedux from "next-redux-wrapper";
-import {setClientState, makeStore, withPersistGate} from "../lib/redux";
+import {setClientState, makeStore} from "../lib/redux";
+import withPersistGate from "../lib/withPersistGate";
 
 export const Index = ({fromServer, fromClient, setClientState}) => (
     <div>
