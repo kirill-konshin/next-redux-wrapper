@@ -3,28 +3,31 @@ Redux wrapper for Next.js
 
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 
+:warning: This will work only with NextJS 6.x :warning:
+
+If you're looking for a version for NextJS 5.x (the one for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x).
+
 - [Usage](#usage)
 - [How it works](#how-it-works)
-- [Hot Reload](#hot-reload)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
 - [Usage with Immutable.JS](#usage-with-immutablejs)
 - [Usage with Redux Persist](#usage-with-redux-persist)
 - [Resources](#resources)
 
-## Usage
+## Installation
 
 ```bash
-npm install next-redux-wrapper --save
+npm install next-redux-wrapper@canary --save
 ```
 
-Wrapper has to be attached your page components (located in `/pages`). For safety it is recommended
-to wrap all pages, no matter if they use Redux or not, so that you should not care about it anymore in
-all child components.
+Wrapper has to be attached your `_app` component (located in `/pages`). All other pages may use regular `connect`
+function of `react-redux`.
 
 Here is the minimal setup (`makeStore` and `reducer` usually are located in other files):
 
 ```js
-import React, {Component} from "react";
+// pages/_app.js
+import React from "react";
 import {createStore} from "redux";
 import withRedux from "next-redux-wrapper";
 
@@ -47,6 +50,37 @@ const reducer = (state = {foo: ''}, action) => {
 const makeStore = (initialState, options) => {
     return createStore(reducer, initialState);
 };
+
+class MyApp extends React.Component {
+
+    static async getInitialProps({Component, ctx}) {
+
+        // we can dispatch from here too
+        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
+
+        const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
+
+        return {pageProps};
+
+    }
+
+    render() {
+        const {Component, pageProps} = this.props;
+        return (
+            <Component {...pageProps} />
+        );
+    }
+
+}
+
+export default withReduxApp(makeStore)(MyApp);
+```
+
+And then actual page components can be simply connected:
+
+```js
+import React, {Component} from "react";
+import {connect} from "react-redux";
 
 class Page extends Component {
     static getInitialProps({store, isServer, pathname, query}) {
@@ -74,63 +108,30 @@ No magic is involved, it auto-creates Redux store when `getInitialProps` is call
 down to React Redux's `Provider`, which is used to wrap the original component, also automatically. On the client side
 it also takes care of using same store every time, whereas on server new store is created for each request.
 
-The `withRedux` function accepts `makeStore` as first argument, all other arguments are internally passed to React
-Redux's `connect()` function for simplicity. The `makeStore` function will receive initial state as one argument and
-should return a new instance of redux store each time when called, no memoization needed here, it is automatically done
+The `withRedux` function accepts `makeStore` as first argument. The `makeStore` function will receive initial state as one argument and
+should return a new instance of Redux `store` each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
-`withRedux` also optionally accepts an object. In this case only 1 parameter is passed which can contain the following
-configuration properties:
-
-- `createStore` (required, function) : the `makeStore` function as described above
-- `storeKey` (optional, string) : the key used on `window` to persist the store on the client
-- `debug` (optional, boolean) : enable debug logging
-- `mapStateToProps`, `mapDispatchToProps`, `mergeProps` (optional, functions) : functions to pass to `react-redux` `connect` method
-- `connectOptions` (optional, object) : configuration to pass to `react-redux` `connect` method
-
-When `makeStore` is invoked it is also provided a configuration object as the second parameter, which includes:
+When `makeStore` is invoked it is also provided with a configuration object as the second parameter, which includes:
 
 - `isServer` (boolean): `true` if called while on the server rather than the client
 - `req` (Request): The `next.js` `getInitialProps` context `req` parameter
+- `res` (Request): The `next.js` `getInitialProps` context `req` parameter
 - `query` (object): The `next.js` `getInitialProps` context `query` parameter
 
-The object also includes all configuration as passed to `withRedux` if called with an object of configuration properties.
-
-**Use `withRedux` to wrap only top level pages! All other components should keep using regular `connect` function of
-React Redux.**
+The object also includes all configuration as passed to `withRedux`.
 
 Although it is possible to create server or client specific logic in both `createStore` function and `getInitialProps`
 method I highly don't recommend to have different behavior. This may cause errors and checksum mismatches which in turn
 will ruin the whole purpose of server rendering.
 
+Keep in mind that whatever you do in `_app` is also affecting the NextJS error page, so if you `dispatch`,
+set something on `req` and checki it to prevent double `dispatch`. 
+
 I don't recommend to use `withRedux` in both top level pages and `_document.js` files, Next.JS
 [does not have provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
 components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
 and wrap top level pages with another HOC that will use `withRedux`. 
-
-## Hot Reload
-
-Hot reloading of React components is still a very challenging thing.
-
-Sometimes it works out of the box but in some cases it does not. For such cases currently the recommendation is to keep
-pages and actual components separate and manually set up hot reloading:
-
-```js
-import withRedux from 'next-redux-wrapper';
-import {makeStore} from './components/store'
-
-import Page from '../lib/component';
-
-if (module.hot) {
-  module.hot.accept('../lib/component', () => {
-    require('../lib/component');
-  });
-}
-
-export default withRedux(makeStore)(Page);
-```
-
-For hot reloading of reducers please see the demo.
 
 ## Async actions in `getInitialProps`
 
@@ -189,7 +190,7 @@ import {applyMiddleware, createStore} from 'redux';
 const SET_CLIENT_STATE = 'SET_CLIENT_STATE';
 
 export const reducer = (state, {type, payload}) => {
-    if (type == SET_CLIENT_STATE) {
+    if (type === SET_CLIENT_STATE) {
         return {
             ...state,
             fromClient: payload
@@ -236,41 +237,28 @@ export const setClientState = (clientState) => ({
 });
 ```
 
-Next, a HOC to for `PersistGate`:
+And then in NextJS `_app` page:
 
 ```js
-// lib/withPersistGate.js
-import React from 'react';
-import PropTypes from 'prop-types';
+// pages/_app.js
+import React from "react";
+import withRedux from "next-redux-wrapper";
+import {makeStore} from "./lib/redux";
 import {PersistGate} from 'redux-persist/integration/react';
 
-export default (gateProps = {}) => (WrappedComponent) => (
+export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
 
-    class WithPersistGate extends React.Component {
-
-        static displayName = `withPersistGate(${WrappedComponent.displayName
-                                                || WrappedComponent.name
-                                                || 'Component'})`;
-        static contextTypes = {
-            store: PropTypes.object.isRequired
-        };
-
-        constructor(props, context) {
-            super(props, context);
-            this.store = context.store;
-        }
-
-        render() {
-            return (
-                <PersistGate {...gateProps} persistor={this.store.__persistor}>
-                    <WrappedComponent {...this.props} />
-                </PersistGate>
-            );
-        }
-
+    render() {
+        const {Component, pageProps, store} = this.props;
+        return (
+            <PersistGate persistor={store.__persistor} loading: {<div>Loading</div>}>
+                <Component {...pageProps} />
+            </PersistGate>
+        );
     }
 
-);
+});
+
 ```
 
 And then in NextJS page:
@@ -278,28 +266,19 @@ And then in NextJS page:
 ```js
 // pages/index.js
 import React from "react";
-import withRedux from "next-redux-wrapper";
-import {setClientState, makeStore} from "../lib/redux";
-import withPersistGate from "../lib/withPersistGate";
+import {connect} from "react-redux";
 
-export const Index = ({fromServer, fromClient, setClientState}) => (
+export default connect(
+    (state) => state,
+    {setClientState}
+)(({fromServer, fromClient, setClientState}) => (
     <div>
         <div>fromServer: {fromServer}</div>
         <div>fromClient: {fromClient}</div>
         <div><button onClick={e => setClientState('bar')}>Set Client State</button></div>
     </div>
-);
-
-export default withRedux(
-    makeStore,
-    (state) => state,
-    {setClientState}
-)(withPersistGate({
-    loading: (<div>Loading</div>)
-})(Index));
+));
 ```
-
-Note the order of HOCs, `withRedux` must be on top, before `withPersistGate`.
 
 ## Resources
 

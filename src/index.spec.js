@@ -2,7 +2,9 @@ import React from "react";
 import {applyMiddleware, createStore} from "redux";
 import promiseMiddleware from "redux-promise-middleware";
 import renderer from "react-test-renderer";
-import wrapper from "./index";
+import withRedux from "./index";
+
+global.window = {}; //FIXME Move to test env https://github.com/smooth-code/jest-puppeteer#extend-puppeteerenvironment
 
 const reducer = (state = {reduxStatus: 'init'}, action) => {
     switch (action.type) {
@@ -14,42 +16,36 @@ const reducer = (state = {reduxStatus: 'init'}, action) => {
     }
 };
 
-const makeStore = (initialState) => {
-    return createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
-};
+const makeStore = (initialState) => createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
 
 class SyncPage extends React.Component {
 
-    static getInitialProps({store}) {
-        store.dispatch({type: 'FOO', payload: 'foo'});
+    static getInitialProps({ctx}) {
+        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
         return {custom: 'custom'};
     }
 
     render() {
+        const {store, ...props} = this.props;
         return (
             <div>
-                <div className="redux">{this.props.reduxStatus}</div>
-                <div className="custom">{this.props.custom}</div>
+                {JSON.stringify(props)}
+                {JSON.stringify(store.getState())}
             </div>
         )
     }
 
 }
 
-function someAsyncAction() {
-    return {
-        type: 'FOO',
-        payload: new Promise((res) => { res('foo'); })
-    }
-}
+const someAsyncAction = ({
+    type: 'FOO',
+    payload: new Promise(res => res('foo'))
+});
 
 class AsyncPage extends SyncPage {
-    static getInitialProps({store}) {
-        const action = someAsyncAction();
-        store.dispatch(action);
-        return action.payload.then((payload) => {
-            return {custom: 'custom'};
-        });
+    static async getInitialProps({ctx}) {
+        await ctx.store.dispatch(someAsyncAction);
+        return {custom: 'custom'};
     }
 }
 
@@ -69,100 +65,12 @@ async function verifyComponent(WrappedPage) {
 
 }
 
-test('simple store integration', async() => {
-    const WrappedPage = wrapper(makeStore, state => state)(SyncPage);
+test('simple store integration', async () => {
+    const WrappedPage = withRedux(makeStore)(SyncPage);
     await verifyComponent(WrappedPage);
 });
 
-test('async store integration', async() => {
-    const WrappedPage = wrapper(makeStore, state => state)(AsyncPage);
+test('async store integration', async () => {
+    const WrappedPage = withRedux(makeStore)(AsyncPage);
     await verifyComponent(WrappedPage);
-});
-
-const spyLog = jest.spyOn(global.console, 'log');
-
-describe('createStore', () => {
-    beforeEach(() => {
-        spyLog.mockReset();
-    });
-
-    afterEach(() => {
-        delete window.__NEXT_REDUX_STORE__;
-    });
-
-    test('simple props', () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        const WrappedApp = wrapper(makeStore, state => state)(App);
-        const component = renderer.create(<WrappedApp foo="foo"/>);
-        expect(component.toJSON()).toMatchSnapshot();
-    });
-
-    test('advanced props', () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        const WrappedApp = wrapper({ createStore: makeStore, mapStateToProps: (state) => state })(App);
-        const component = renderer.create(<WrappedApp foo="foo"/>);
-        expect(component.toJSON()).toMatchSnapshot();
-    });
-
-    test('debug mode from options', async () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        const WrappedApp = wrapper({
-            createStore: (initialState, options) => {
-                expect(options.debug).toBe(true);
-                return createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
-            },
-            debug: true
-        })(App);
-        const component = renderer.create(<WrappedApp/>);
-        await WrappedApp.getInitialProps();
-        expect(spyLog).toHaveBeenCalledTimes(3);
-        expect(component.toJSON()).toMatchSnapshot();
-    });
-
-    test('debug mode with setDebug method', async () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        wrapper.setDebug(true);
-        const WrappedApp = wrapper((initialState, options) => {
-            expect(options.debug).toBe(true);
-            return createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
-        })(App);
-        const component = renderer.create(<WrappedApp/>);
-        await WrappedApp.getInitialProps();
-        expect(spyLog).toHaveBeenCalledTimes(3);
-        expect(component.toJSON()).toMatchSnapshot();
-    });
-
-    test('should throw if no createStore method', async () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        expect(() => wrapper({
-            debug: true
-        })(App)).toThrow();
-
-    });
-
-    test('should be able to configure store key on window', async () => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        const WrappedApp = wrapper({
-            createStore: makeStore,
-            storeKey: 'TESTKEY'
-        })(App);
-        const component = renderer.create(<WrappedApp/>);
-        await WrappedApp.getInitialProps();
-        expect(window.__NEXT_REDUX_STORE__).not.toBeDefined();
-        expect(window.TESTKEY).toBeDefined();
-        expect(component.toJSON()).toMatchSnapshot();
-        delete window.TESTKEY;
-    });
-
-    test('should memoize store on client in window', async() => {
-        const App = ({foo}) => (<div>{foo}</div>);
-        const App1 = wrapper(makeStore, state => state)(App);
-        renderer.create(<App1/>);
-        expect(window.__NEXT_REDUX_STORE__).toBeDefined();
-        const App2 = wrapper((initialState, options) => {
-            throw new Error('New store should not be created!');
-        }, state => state)(App);
-        renderer.create(<App2 foo="foo"/>);
-        expect(window.__NEXT_REDUX_STORE__).toBeDefined();
-    });
 });
