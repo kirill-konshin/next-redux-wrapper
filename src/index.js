@@ -95,10 +95,7 @@ module.exports = function(createStore) {
                 : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
 
             if (!store) {
-                console.error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect!');
-                console.error('Check ' + Cmp.name + ' component.');
-                console.error('Automatic fallback to connect has been performed, please check your code.');
-                return React.createElement(ConnectedCmp, props);
+                throw new Error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect! Check ' + Cmp.name + ' component.');
             }
 
             if (config.debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
