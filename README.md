@@ -87,6 +87,7 @@ configuration properties:
 - `debug` (optional, boolean) : enable debug logging
 - `mapStateToProps`, `mapDispatchToProps`, `mergeProps` (optional, functions) : functions to pass to `react-redux` `connect` method
 - `connectOptions` (optional, object) : configuration to pass to `react-redux` `connect` method
+- `serializeState` and `deserializeState` : Custom functions for serializing and deserializing the redux state, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
 
 When `makeStore` is invoked it is also provided a configuration object as the second parameter, which includes:
 
@@ -159,21 +160,21 @@ function getInitialProps({store, isServer, pathname, query}) {
 }
 ```
 
-## Usage with Immutable.JS
+## Custom serialization and deserialization
 
-If you want to use Immutable.JS then you have to modify your `makeStore` function, it should detect if object is an instance of Immutable.JS, and if not - convert it using `Immutable.fromJS`:
+If you are storing complex types such as Immutable.JS or EJSON objecs in your state, a custom serialize and deserialize handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so, provide `serializeState` and `deserializeState` as config options to `withRedux`.
+The reason why this is necessary is that `initialState` is transferred over the network from server to client as a plain object.
+
+Example of a custom serialization of an Immutable.JS state using `json-immutable`:
 
 ```js
-export default function makeStore(initialState = {}) {
-    // Nasty duck typing, you should find a better way to detect
-    if (!initialState.toJS) initialState = Immutable.fromJS(initialState);
-    return createStore(reducer, initialState, applyMiddleware(thunk));
-}
+const { serialize, deserialize } = require('json-immutable');
+withRedux({
+   createStore: function makeStore(initialState = {}) {...},
+   serializeState: state => serialize(state),
+   deserializeState: state => deserialize(state)
+});
 ```
-
-The reason is that `initialState` is transferred over the network from server to client as a plain object (it is automatically serialized on server) so it should be converted back to Immutable.JS on client side.
-
-Here you can find better ways to detect if an object is Immutable.JS: https://stackoverflow.com/a/31919454/5125659.
 
 ## Usage with Redux Persist
 
