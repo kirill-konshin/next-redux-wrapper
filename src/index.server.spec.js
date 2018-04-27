@@ -46,5 +46,30 @@ describe('createStore', () => {
             });
             expect(component.toJSON()).toMatchSnapshot();
         });
+        
+        test('usage of custom state serialization', async () => {
+            const initialAppProps = ({ testProps: 'foo' });
+            const initialAppState = ({ testState: 'baz' });
+            const App = ({foo}) => (<div>{foo}</div>);
+            App.getInitialProps = ({ store }) => {
+                store.dispatch({ type: 'TEST_ACTION' })
+                return initialAppProps;
+            };
+            const WrappedApp = wrapper({
+                createStore: (initialState, options) => {
+                    return createStore((s => initialAppState), initialState, applyMiddleware(promiseMiddleware()));
+                },
+                serializeState: function(state) { return {...state, serialized: true}; }
+            })(App);
+            
+            const result = await WrappedApp.getInitialProps({
+                req: {},
+                query: {}
+            });
+            
+            expect(result.initialProps).toEqual(initialAppProps);
+            expect(result.initialState).toHaveProperty('testState', 'baz');
+            expect(result.initialState).toHaveProperty('serialized', true);
+        });
     });
 });
