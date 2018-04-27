@@ -97,9 +97,7 @@ class Page extends Component {
     }
 }
 
-Page = withRedux(makeStore, (state) => ({foo: state.foo}))(Page);
-
-export default Page;
+export default connect()(Page);
 ```
 
 ## How it works
