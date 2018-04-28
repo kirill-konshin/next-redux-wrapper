@@ -110,6 +110,12 @@ The `withRedux` function accepts `makeStore` as first argument. The `makeStore` 
 should return a new instance of Redux `store` each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
+`withRedux` also optionally accepts a config object as second paramter:
+
+- `storeKey` (optional, string) : the key used on `window` to persist the store on the client
+- `debug` (optional, boolean) : enable debug logging
+- `serializeState` and `deserializeState` : Custom functions for serializing and deserializing the redux state, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
+
 When `makeStore` is invoked it is also provided with a configuration object as the second parameter, which includes:
 
 - `isServer` (boolean): `true` if called while on the server rather than the client
@@ -124,10 +130,10 @@ method I highly don't recommend to have different behavior. This may cause error
 will ruin the whole purpose of server rendering.
 
 Keep in mind that whatever you do in `_app` is also affecting the NextJS error page, so if you `dispatch`,
-set something on `req` and checki it to prevent double `dispatch`. 
+set something on `req` and check it to prevent double `dispatch`. 
 
 I don't recommend to use `withRedux` in both top level pages and `_document.js` files, Next.JS
-[does not have provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
+[does not provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
 components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
 and wrap top level pages with another HOC that will use `withRedux`. 
 
@@ -158,21 +164,23 @@ function getInitialProps({store, isServer, pathname, query}) {
 }
 ```
 
-## Usage with Immutable.JS
+## Custom serialization and deserialization
 
-If you want to use Immutable.JS then you have to modify your `makeStore` function, it should detect if object is an instance of Immutable.JS, and if not - convert it using `Immutable.fromJS`:
+If you are storing complex types such as Immutable.JS or EJSON objecs in your state, a custom serialize and deserialize handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so, provide `serializeState` and `deserializeState` as config options to `withRedux`.
+The reason why this is necessary is that `initialState` is transferred over the network from server to client as a plain object.
+
+Example of a custom serialization of an Immutable.JS state using `json-immutable`:
 
 ```js
-export default function makeStore(initialState = {}) {
-    // Nasty duck typing, you should find a better way to detect
-    if (!initialState.toJS) initialState = Immutable.fromJS(initialState);
-    return createStore(reducer, initialState, applyMiddleware(thunk));
-}
+const { serialize, deserialize } = require('json-immutable');
+withRedux(
+    (initialState, options) => {...}, // makeStore
+    {
+        serializeState: state => serialize(state),
+        deserializeState: state => deserialize(state)
+    }
+);
 ```
-
-The reason is that `initialState` is transferred over the network from server to client as a plain object (it is automatically serialized on server) so it should be converted back to Immutable.JS on client side.
-
-Here you can find better ways to detect if an object is Immutable.JS: https://stackoverflow.com/a/31919454/5125659.
 
 ## Usage with Redux Persist
 
