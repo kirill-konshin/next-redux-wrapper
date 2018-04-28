@@ -165,4 +165,15 @@ describe('createStore', () => {
         renderer.create(<App2 foo="foo"/>);
         expect(window.__NEXT_REDUX_STORE__).toBeDefined();
     });
+    
+    test('usage of custom state deserialization on client', async () => {
+        const App = ({foo}) => (<div>{foo}</div>);
+        const App1 = wrapper({
+            createStore: makeStore,
+            deserializeState: () => ({ deserialized: true })
+        }, state => state)(App);
+        renderer.create(<App1/>);
+        expect(window.__NEXT_REDUX_STORE__.getState).toBeDefined();
+        expect(window.__NEXT_REDUX_STORE__.getState()).toHaveProperty('deserialized', true);
+    });
 });

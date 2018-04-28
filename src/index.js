@@ -44,7 +44,12 @@ function initStore(makeStore, initialState, context, config) {
 
 module.exports = function(createStore) {
 
-    var config = {storeKey: DEFAULT_KEY, debug: _debug};
+    var config = {
+        storeKey: DEFAULT_KEY,
+        debug: _debug,
+        serializeState: function(state) { return state; },
+        deserializeState: function(state) { return state; }
+    };
     var connectArgs;
 
     // Ensure backwards compatibility, the config object should come last after connect arguments.
@@ -64,6 +69,14 @@ module.exports = function(createStore) {
 
         if (({}).hasOwnProperty.call(wrappedConfig, 'storeKey')) {
             config.storeKey = wrappedConfig.storeKey;
+        }
+        
+        if (({}).hasOwnProperty.call(wrappedConfig, 'serializeState')) {
+            config.serializeState = wrappedConfig.serializeState;
+        }
+        
+        if (({}).hasOwnProperty.call(wrappedConfig, 'deserializeState')) {
+            config.deserializeState = wrappedConfig.deserializeState;
         }
 
         // Map the connect arguments from the passed in config object.
@@ -92,7 +105,7 @@ module.exports = function(createStore) {
             var hasStore = props.store && props.store.dispatch && props.store.getState;
             var store = hasStore
                 ? props.store
-                : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
+                : initStore(createStore, config.deserializeState(initialState), {}, config); // client case, no store but has initialState
 
             if (!store) {
                 console.error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect!');
@@ -139,7 +152,7 @@ module.exports = function(createStore) {
                 return {
                     isServer: arr[0],
                     store: arr[1],
-                    initialState: arr[1].getState(),
+                    initialState: config.serializeState(arr[1].getState()),
                     initialProps: arr[3]
                 };
 
