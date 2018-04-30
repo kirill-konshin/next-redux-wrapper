@@ -49,7 +49,13 @@ const initStore = (makeStore, initialState, ctx, config) => {
  */
 export default (createStore, config = {}) => {
 
-    config = {storeKey: DEFAULT_KEY, debug: _debug, ...config};
+    config = {
+        storeKey: DEFAULT_KEY,
+        debug: _debug,
+        serializeState: state => state,
+        deserializeState: state => state,
+        ...config
+    };
 
     return (App) => (class WrappedApp extends BaseApp {
 
@@ -84,7 +90,7 @@ export default (createStore, config = {}) => {
             return {
                 isServer,
                 store,
-                initialState: store.getState(),
+                initialState: config.serializeState(store.getState()),
                 initialProps: initialProps
             };
         };
@@ -95,7 +101,12 @@ export default (createStore, config = {}) => {
 
             const hasStore = store && ('dispatch' in store) && ('getState' in store);
 
-            store = hasStore ? store : initStore(createStore, initialState, {}, config); // client case, no store but has initialState
+            store = hasStore ? store : initStore(
+                createStore,
+                config.deserializeState(initialState),
+                {},
+                config
+            ); // client case, no store but has initialState
 
             if (config.debug) console.log('4. WrappedApp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 

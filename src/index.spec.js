@@ -74,3 +74,28 @@ test('async store integration', async () => {
     const WrappedPage = withRedux(makeStore)(AsyncPage);
     await verifyComponent(WrappedPage);
 });
+
+describe('custom serialization', () => {
+    beforeEach(() => {
+        delete window.__NEXT_REDUX_STORE__;
+    });
+    
+    test('custom state serialization on the server', async () => {
+        const WrappedPage = withRedux(makeStore, {
+            serializeState: state => ({ ...state, serialized: true })
+        })(AsyncPage);
+        
+        const props = await WrappedPage.getInitialProps();
+        expect(props.initialState.serialized).toBeTruthy();
+    });
+    
+    test('custom state deserialization on the client', async () => {
+        const WrappedPage = withRedux(makeStore, {
+            deserializeState: state => ({ ...state, deserialized: true })
+        })(AsyncPage);
+        
+        renderer.create(<WrappedPage />);
+        expect(window.__NEXT_REDUX_STORE__.getState().deserialized).toBeTruthy();
+        
+    });
+});
