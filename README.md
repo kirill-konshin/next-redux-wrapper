@@ -3,9 +3,9 @@ Redux wrapper for Next.js
 
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 
-:warning: This will work only with NextJS 6.x :warning:
+:warning: This will work only with NextJS 6+ :warning:
 
-If you're looking for a version for NextJS 5.x (the one for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x).
+If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x).
 
 - [Usage](#usage)
 - [How it works](#how-it-works)
