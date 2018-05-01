@@ -1,13 +1,17 @@
 {
+  "passPerPreset": true,
   "presets": [
     "next/babel",
-    "env"
+    "@babel/env"
+  ],
+  "plugins": [
+    "@babel/plugin-transform-runtime"
   ],
   "env": {
     "test": {
       "presets": [
         [
-          "env",
+          "@babel/env",
           {
             "modules": "commonjs"
           }

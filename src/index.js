@@ -1,37 +1,37 @@
-var React = require('react');
-var ReactRedux = require('react-redux');
-var assign = require('object.assign');
+import React from "react";
+import {Provider} from "react-redux";
+import BaseApp, {Container} from "next/app";
 
-var connect = ReactRedux.connect;
-var Provider = ReactRedux.Provider;
+let _Promise = Promise;
+let _debug = false;
+const DEFAULT_KEY = '__NEXT_REDUX_STORE__';
 
-var _Promise;
-var _debug = false;
-var skipMerge = ['initialState', 'initialProps', 'isServer', 'store'];
-var DEFAULT_KEY = '__NEXT_REDUX_STORE__';
-var isBrowser = typeof window !== 'undefined';
+export const setPromise = Promise => _Promise = Promise;
 
-function initStore(makeStore, initialState, context, config) {
-    var req = context.req;
-    var isServer = !!req && !isBrowser;
-    var storeKey = config.storeKey;
+/**
+ * @param makeStore
+ * @param initialState
+ * @param ctx
+ * @param config
+ * @return {{getState: function, dispatch: function}}
+ */
+const initStore = (makeStore, initialState, ctx, config) => {
 
-    var options = assign({}, config, {
-        isServer: isServer,
-        req: req,
-        res: context.res,
-        query: context.query
-    });
+    const {req} = ctx;
+    const isServer = !!req;
+    const {storeKey} = config;
+
+    const options = {
+        ...ctx,
+        ...config,
+        isServer
+    };
 
     // Always make a new store if server
     if (isServer) {
-        if (!req._store) {
-            req._store = makeStore(initialState, options);
-        }
+        if (!req._store) req._store = makeStore(initialState, options); // page and error should share one store
         return req._store;
     }
-
-    if (!isBrowser) return null;
 
     // Memoize store if client
     if (!window[storeKey]) {
@@ -40,138 +40,88 @@ function initStore(makeStore, initialState, context, config) {
 
     return window[storeKey];
 
-}
+};
 
-module.exports = function(createStore) {
+/**
+ * @param createStore
+ * @param config
+ * @return {function(App): {getInitialProps, new(): WrappedApp, prototype: WrappedApp}}
+ */
+export default (createStore, config = {}) => {
 
-    var config = {
+    config = {
         storeKey: DEFAULT_KEY,
         debug: _debug,
-        serializeState: function(state) { return state; },
-        deserializeState: function(state) { return state; }
+        serializeState: state => state,
+        deserializeState: state => state,
+        ...config
     };
-    var connectArgs;
 
-    // Ensure backwards compatibility, the config object should come last after connect arguments.
-    if (typeof createStore === 'object') {
+    return (App) => (class WrappedApp extends BaseApp {
 
-        var wrappedConfig = createStore;
+        static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
-        if (!({}).hasOwnProperty.call(wrappedConfig, 'createStore')) {
-            throw new Error('Missing createStore function');
-        }
-        createStore = wrappedConfig.createStore;
+        static getInitialProps = async (appCtx = {}) => {
 
-        // Set all config keys if they exist.
-        if (({}).hasOwnProperty.call(wrappedConfig, 'debug')) {
-            config.debug = wrappedConfig.debug;
-        }
+            const {ctx: {req} = {}, ctx = {}} = appCtx;
 
-        if (({}).hasOwnProperty.call(wrappedConfig, 'storeKey')) {
-            config.storeKey = wrappedConfig.storeKey;
-        }
-        
-        if (({}).hasOwnProperty.call(wrappedConfig, 'serializeState')) {
-            config.serializeState = wrappedConfig.serializeState;
-        }
-        
-        if (({}).hasOwnProperty.call(wrappedConfig, 'deserializeState')) {
-            config.deserializeState = wrappedConfig.deserializeState;
-        }
+            const isServer = !!req;
 
-        // Map the connect arguments from the passed in config object.
-        connectArgs = [
-            wrappedConfig.mapStateToProps || undefined,
-            wrappedConfig.mapDispatchToProps || undefined,
-            wrappedConfig.mergeProps || undefined,
-            wrappedConfig.connectOptions || undefined,
-        ];
+            const store = initStore(
+                createStore,
+                undefined /** initialState **/,
+                ctx,
+                config
+            );
 
-    } else {
-        connectArgs = [].slice.call(arguments).slice(1);
-    }
+            if (config.debug) console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
 
-    return function(Cmp) {
+            const initialProps = (App.getInitialProps ? await App.getInitialProps.call(App, {
+                ...appCtx,
+                ctx: {
+                    ...ctx,
+                    store,
+                    isServer
+                }
+            }) : {});
 
-        // Since provide should always be after connect we connect here
-        var ConnectedCmp = (connect.apply(null, connectArgs))(Cmp);
+            if (config.debug) console.log('3. WrappedApp.getInitialProps has store state', store.getState());
 
-        function WrappedCmp(props) {
+            return {
+                isServer,
+                store,
+                initialState: config.serializeState(store.getState()),
+                initialProps: initialProps
+            };
+        };
 
-            props = props || {};
+        render() {
 
-            var initialState = props.initialState || {};
-            var initialProps = props.initialProps || {};
-            var hasStore = props.store && props.store.dispatch && props.store.getState;
-            var store = hasStore
-                ? props.store
-                : initStore(createStore, config.deserializeState(initialState), {}, config); // client case, no store but has initialState
+            let {initialState, initialProps, store, isServer, ...props} = this.props;
 
-            if (!store) {
-                console.error('Attention, withRedux has to be used only for top level pages, all other components must be wrapped with React Redux connect!');
-                console.error('Check ' + Cmp.name + ' component.');
-                console.error('Automatic fallback to connect has been performed, please check your code.');
-                return React.createElement(ConnectedCmp, props);
-            }
+            const hasStore = store && ('dispatch' in store) && ('getState' in store);
 
-            if (config.debug) console.log(Cmp.name, '- 4. WrappedCmp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
+            store = hasStore ? store : initStore(
+                createStore,
+                config.deserializeState(initialState),
+                {},
+                config
+            ); // client case, no store but has initialState
 
-            // Fix for _document
-            var mergedProps = {};
-            Object.keys(props).forEach(function(p) { if (!~skipMerge.indexOf(p)) mergedProps[p] = props[p]; });
-            Object.keys(initialProps || {}).forEach(function(p) { mergedProps[p] = initialProps[p]; });
+            if (config.debug) console.log('4. WrappedApp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
-            return React.createElement( //FIXME This will create double Provider for _document case
-                Provider,
-                {store: store},
-                React.createElement(ConnectedCmp, mergedProps)
+            // <Container> must be on top of hierarchy for HMR to work
+            // Cmp render must return something like <Component/>
+            return (
+                <Container>
+                    <Provider store={store}>
+                        <App {...initialProps} {...props} store={store} isServer={isServer}/>
+                    </Provider>
+                </Container>
             );
 
         }
 
-        WrappedCmp.getInitialProps = function(ctx) {
-
-            return new _Promise(function(res) {
-
-                ctx = ctx || {};
-                if (config.debug) console.log(Cmp.name, '- 1. WrappedCmp.getInitialProps wrapper', (ctx.req && ctx.req._store ? 'takes the req store' : 'creates the store'));
-                ctx.isServer = !!ctx.req;
-                ctx.store = initStore(createStore, undefined /** initialState **/, {req: ctx.req, query: ctx.query, res: ctx.res}, config);
-
-                res(_Promise.all([
-                    ctx.isServer,
-                    ctx.store,
-                    ctx.req,
-                    Cmp.getInitialProps ? Cmp.getInitialProps.call(Cmp, ctx) : {}
-                ]));
-
-            }).then(function(arr) {
-
-                if (config.debug) console.log(Cmp.name, '- 3. WrappedCmp.getInitialProps has store state', arr[1].getState());
-
-                return {
-                    isServer: arr[0],
-                    store: arr[1],
-                    initialState: config.serializeState(arr[1].getState()),
-                    initialProps: arr[3]
-                };
-
-            });
-
-        };
-
-        return WrappedCmp;
-
-    };
+    });
 
 };
-
-module.exports.setPromise = function(Promise) {
-    _Promise = Promise;
-};
-
-module.exports.setDebug = function(debug) {
-    _debug = debug;
-};
-
-module.exports.setPromise(Promise);

@@ -1,5 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`createStore On the server setup store on server and use next.js page context params 1`] = `<div />`;
-
-exports[`createStore On the server should create new store for server each time 1`] = `<div />`;

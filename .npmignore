@@ -1,6 +1,8 @@
+.babelrc
 .idea
 .next
 .travis.yml
 coverage
-components
 pages
+jest.config.js
+jest-puppeteer.config.js
