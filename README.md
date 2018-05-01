@@ -3,6 +3,10 @@ Redux wrapper for Next.js
 
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 
+:warning: You are now looking at 1.x version of wrapper, it is intended to be used with NextJS 5. :warning:
+
+For NextJS 6+ which has new `_app` feature please use [latest version](https://github.com/kirill-konshin/next-redux-wrapper/tree/master).
+
 - [Usage](#usage)
 - [How it works](#how-it-works)
 - [Hot Reload](#hot-reload)
