@@ -18,7 +18,7 @@ export const setPromise = Promise => _Promise = Promise;
 const initStore = (makeStore, initialState, ctx, config) => {
 
     const {req} = ctx;
-    const isServer = !!req;
+    const isServer = !!req || typeof window === 'undefined';
     const {storeKey} = config;
 
     const options = {

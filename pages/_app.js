@@ -1,6 +1,6 @@
 import React from 'react'
 import withRedux from "../lib";
-import {makeStore} from "./components/store";
+import {makeStore} from "../components/store";
 
 export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
 
