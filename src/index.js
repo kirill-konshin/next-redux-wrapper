@@ -17,7 +17,7 @@ export const setPromise = Promise => _Promise = Promise;
  */
 const initStore = (makeStore, initialState, ctx, config) => {
 
-    const {req} = ctx;
+    let {req} = ctx;
     const isServer = !!req || typeof window === 'undefined';
     const {storeKey} = config;
 
@@ -29,6 +29,7 @@ const initStore = (makeStore, initialState, ctx, config) => {
 
     // Always make a new store if server
     if (isServer) {
+        req = req || {}; // TODO Make an issue for this case, req should always be present
         if (!req._store) req._store = makeStore(initialState, options); // page and error should share one store
         return req._store;
     }
