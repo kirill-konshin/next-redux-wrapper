@@ -5,10 +5,12 @@ Redux wrapper for Next.js
 
 :warning: This will work only with NextJS 6+ :warning:
 
-If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x).
+If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) 
+or you can follow these simple [upgrade instructions](#upgrade).
 
 - [Usage](#usage)
 - [How it works](#how-it-works)
+- [Upgrade](#upgrade)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
 - [Usage with Immutable.JS](#usage-with-immutablejs)
 - [Usage with Redux Persist](#usage-with-redux-persist)
@@ -136,6 +138,62 @@ I don't recommend to use `withRedux` in both top level pages and `_document.js` 
 [does not provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
 components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
 and wrap top level pages with another HOC that will use `withRedux`. 
+
+## Upgrade
+
+If your project was using NextJS 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
+version.
+
+1. Upgrade NextJS and Wrapper
+    ```bash
+    $ npm install next@6 --save-dev
+    $ npm install next-redux-wrapper@2 --save
+   ```
+   
+2. Replace all usages of `import withRedux from "next-redux-wrapper";` and `withRedux(...)(WrappedComponent)` in all
+    your pages with plain React Redux `connect` HOC:
+    
+    ```js
+    import {connect} from "react-redux";
+    
+    export default connect(...)(WrappedComponent);
+    ```
+    
+    You also may have to reformat your wrapper object-based config to simple React Redux config.
+    
+3. Create the `pages/_app.js` file with the following minimal code:
+
+    ```js
+    // pages/_app.js
+    import React from 'react'
+    import withRedux from "next-redux-wrapper";
+    import {makeStore} from "../components/store";
+    
+    export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+    
+        static async getInitialProps({Component, ctx}) {
+            return {
+                pageProps: {
+                    // Call page-level getInitialProps
+                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                }
+            };
+        }
+    
+        render() {
+            const {Component, pageProps} = this.props;
+            return (
+                <Component {...pageProps} />
+            );
+        }
+    
+    });
+    ```
+
+4. Follow [NextJS 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
+    (`props.router` instead of `props.url` and so on)
+    
+That's it, your project should now work same as before. 
 
 ## Async actions in `getInitialProps`
 
