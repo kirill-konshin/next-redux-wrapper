@@ -11,6 +11,7 @@ or you can follow these simple [upgrade instructions](#upgrade).
 - [Usage](#usage)
 - [How it works](#how-it-works)
 - [Upgrade](#upgrade)
+- [Use with layout](#use-with-layout)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
 - [Usage with Immutable.JS](#usage-with-immutablejs)
 - [Usage with Redux Persist](#usage-with-redux-persist)
@@ -194,6 +195,45 @@ version.
     (`props.router` instead of `props.url` and so on)
     
 That's it, your project should now work same as before. 
+
+## Use with layout
+
+`MyApp` is not connected to Redux by design in order to keep the interface as minimal as possible, you can return
+whatever you want from `MyApp`'s `getInitialProps`, or if you need a shared layout just create it and `connect` it as
+usual, then include it either in the page itself or render in `MyApp` like so:
+
+```js
+import React from 'react'
+import withRedux from "next-redux-wrapper";
+import {makeStore} from "../components/store";
+import ConnectedLayout from "../components/Layout";
+
+export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+
+    static async getInitialProps({Component, ctx}) {
+
+        return {
+            pageProps: {
+                // Call page-level getInitialProps
+                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {})
+            }
+        };
+
+    }
+
+    render() {
+        const {Component, pageProps} = this.props;
+        return (
+            <ConnectedLayout>
+                <Component {...pageProps} />
+            </ConnectedLayout>
+        );
+    }
+
+});
+```
+
+It is possible because `MyApp` is already wrapped with `<Provider>` by HOC. Separation of concerns rocks :)
 
 ## Async actions in `getInitialProps`
 

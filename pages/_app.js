@@ -1,6 +1,7 @@
 import React from 'react'
 import withRedux from "../lib";
 import {makeStore} from "../components/store";
+import Layout from "../components/layout";
 
 export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
 
@@ -28,7 +29,9 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends React.Com
     render() {
         const {Component, pageProps} = this.props;
         return (
-            <Component {...pageProps} />
+            <Layout>
+                <Component {...pageProps} />
+            </Layout>
         );
     }
 
