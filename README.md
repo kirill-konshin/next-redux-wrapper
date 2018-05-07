@@ -32,6 +32,8 @@ Here is the minimal setup (`makeStore` and `reducer` usually are located in othe
 // pages/_app.js
 import React from "react";
 import {createStore} from "redux";
+import {Provider} from "react-redux";
+import App, {Container} from "next/app";
 import withRedux from "next-redux-wrapper";
 
 const reducer = (state = {foo: ''}, action) => {
@@ -54,7 +56,7 @@ const makeStore = (initialState, options) => {
     return createStore(reducer, initialState);
 };
 
-class MyApp extends React.Component {
+class MyApp extends App {
 
     static async getInitialProps({Component, ctx}) {
 
@@ -68,9 +70,13 @@ class MyApp extends React.Component {
     }
 
     render() {
-        const {Component, pageProps} = this.props;
+        const {Component, pageProps, store} = this.props;
         return (
-            <Component {...pageProps} />
+            <Container>
+                <Provider store={store}>
+                    <Component {...pageProps} />
+                </Provider>
+            </Container>
         );
     }
 
@@ -167,10 +173,12 @@ version.
     ```js
     // pages/_app.js
     import React from 'react'
+    import {Provider} from "react-redux";
+    import App, {Container} from "next/app";
     import withRedux from "next-redux-wrapper";
     import {makeStore} from "../components/store";
     
-    export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+    export default withRedux(makeStore, {debug: true})(class MyApp extends App {
     
         static async getInitialProps({Component, ctx}) {
             return {
@@ -182,9 +190,13 @@ version.
         }
     
         render() {
-            const {Component, pageProps} = this.props;
+            const {Component, pageProps, store} = this.props;
             return (
-                <Component {...pageProps} />
+                <Container>
+                    <Provider store={store}>
+                        <Component {...pageProps} />
+                    </Provider>
+                </Container>
             );
         }
     
@@ -204,11 +216,13 @@ usual, then include it either in the page itself or render in `MyApp` like so:
 
 ```js
 import React from 'react'
+import {Provider} from "react-redux";
+import App, {Container} from "next/app";
 import withRedux from "next-redux-wrapper";
 import {makeStore} from "../components/store";
 import ConnectedLayout from "../components/Layout";
 
-export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+export default withRedux(makeStore, {debug: true})(class MyApp extends App {
 
     static async getInitialProps({Component, ctx}) {
 
@@ -224,16 +238,18 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends React.Com
     render() {
         const {Component, pageProps} = this.props;
         return (
-            <ConnectedLayout>
-                <Component {...pageProps} />
-            </ConnectedLayout>
+            <Container>
+                <Provider store={store}>
+                    <ConnectedLayout>
+                        <Component {...pageProps} />
+                    </ConnectedLayout>
+                </Provider>
+            </Container>
         );
     }
 
 });
 ```
-
-It is possible because `MyApp` is already wrapped with `<Provider>` by HOC. Separation of concerns rocks :)
 
 ## Async actions in `getInitialProps`
 
@@ -346,18 +362,25 @@ And then in NextJS `_app` page:
 ```js
 // pages/_app.js
 import React from "react";
+import {Provider} from "react-redux";
+import App, {Container} from "next/app";
 import withRedux from "next-redux-wrapper";
 import {makeStore} from "./lib/redux";
 import {PersistGate} from 'redux-persist/integration/react';
 
-export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+export default withRedux(makeStore, {debug: true})(class MyApp extends App {
 
     render() {
         const {Component, pageProps, store} = this.props;
         return (
-            <PersistGate persistor={store.__persistor} loading: {<div>Loading</div>}>
-                <Component {...pageProps} />
-            </PersistGate>
+            <Container>
+                <Provider store={store}>
+                    <PersistGate persistor={store.__persistor} loading: {<div>Loading</div>}>
+                        <Component {...pageProps} />
+                    </PersistGate>
+                </Provider>
+            </Container>
+
         );
     }
 

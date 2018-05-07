@@ -1,9 +1,11 @@
 import React from 'react'
+import {Provider} from "react-redux";
+import App, {Container} from "next/app";
 import withRedux from "../lib";
 import {makeStore} from "../components/store";
 import Layout from "../components/layout";
 
-export default withRedux(makeStore, {debug: true})(class MyApp extends React.Component {
+export default withRedux(makeStore, {debug: true})(class MyApp extends App {
 
     static async getInitialProps({Component, ctx}) {
 
@@ -27,11 +29,15 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends React.Com
     }
 
     render() {
-        const {Component, pageProps} = this.props;
+        const {Component, pageProps, store} = this.props;
         return (
-            <Layout>
-                <Component {...pageProps} />
-            </Layout>
+            <Container>
+                <Provider store={store}>
+                    <Layout>
+                        <Component {...pageProps} />
+                    </Layout>
+                </Provider>
+            </Container>
         );
     }
 

@@ -1,6 +1,4 @@
-import React from "react";
-import {Provider} from "react-redux";
-import BaseApp, {Container} from "next/app";
+import React, {Component} from "react";
 
 let _Promise = Promise;
 let _debug = false;
@@ -58,7 +56,7 @@ export default (createStore, config = {}) => {
         ...config
     };
 
-    return (App) => (class WrappedApp extends BaseApp {
+    return (App) => (class WrappedApp extends Component {
 
         static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
@@ -111,14 +109,9 @@ export default (createStore, config = {}) => {
 
             if (config.debug) console.log('4. WrappedApp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
 
-            // <Container> must be on top of hierarchy for HMR to work
-            // Cmp render must return something like <Component/>
+            // Cmp render must return something like <Provider><Component/></Provider>
             return (
-                <Container>
-                    <Provider store={store}>
-                        <App {...initialProps} {...props} store={store} isServer={isServer}/>
-                    </Provider>
-                </Container>
+                <App {...props} {...initialProps} store={store} isServer={isServer}/>
             );
 
         }
