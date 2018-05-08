@@ -10,6 +10,8 @@ or you can follow these simple [upgrade instructions](#upgrade).
 
 - [Usage](#usage)
 - [How it works](#how-it-works)
+- [Document](#document)
+- [Error Pages](#error-pages)
 - [Upgrade](#upgrade)
 - [Use with layout](#use-with-layout)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
@@ -48,7 +50,8 @@ const reducer = (state = {foo: ''}, action) => {
 /**
 * @param {object} initialState
 * @param {boolean} options.isServer indicates whether it is a server side or client side
-* @param {Request} options.req NodeJS Request object (if any)
+* @param {Request} options.req NodeJS Request object (not set when client applies initialState from server)
+* @param {Request} options.res NodeJS Request object (not set when client applies initialState from server)
 * @param {boolean} options.debug User-defined debug mode param
 * @param {string} options.storeKey This key will be used to preserve store in global namespace for safe HMR 
 */
@@ -82,7 +85,7 @@ class MyApp extends App {
 
 }
 
-export default withReduxApp(makeStore)(MyApp);
+export default withRedux(makeStore)(MyApp);
 ```
 
 And then actual page components can be simply connected:
@@ -115,7 +118,7 @@ No magic is involved, it auto-creates Redux store when `getInitialProps` is call
 down to React Redux's `Provider`, which is used to wrap the original component, also automatically. On the client side
 it also takes care of using same store every time, whereas on server new store is created for each request.
 
-The `withRedux` function accepts `makeStore` as first argument. The `makeStore` function will receive initial state as one argument and
+The `withRedux` function accepts `makeStore` as first argument. The `makeStore` function will receive initial state and
 should return a new instance of Redux `store` each time when called, no memoization needed here, it is automatically done
 inside the wrapper.
 
@@ -123,28 +126,34 @@ inside the wrapper.
 
 - `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
-- `serializeState` and `deserializeState` : Custom functions for serializing and deserializing the redux state, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
+- `serializeState` and `deserializeState`: custom functions for serializing and deserializing the redux state, see
+    [Custom serialization and deserialization](#custom-serialization-and-deserialization).
 
-When `makeStore` is invoked it is also provided with a configuration object as the second parameter, which includes:
+When `makeStore` is invoked it is provided with a configuration object along with NextJS page context which includes:
 
 - `isServer` (boolean): `true` if called while on the server rather than the client
 - `req` (Request): The `next.js` `getInitialProps` context `req` parameter
 - `res` (Request): The `next.js` `getInitialProps` context `req` parameter
-- `query` (object): The `next.js` `getInitialProps` context `query` parameter
 
-The object also includes all configuration as passed to `withRedux`.
+Additional config properties `req` and `res` are not set when client applies `initialState` from server.
 
-Although it is possible to create server or client specific logic in both `createStore` function and `getInitialProps`
+Although it is possible to create server or client specific logic in both `makeStore` function and `getInitialProps`
 method I highly don't recommend to have different behavior. This may cause errors and checksum mismatches which in turn
 will ruin the whole purpose of server rendering.
 
-Keep in mind that whatever you do in `_app` is also affecting the NextJS error page, so if you `dispatch`,
-set something on `req` and check it to prevent double `dispatch`. 
+## Document
 
-I don't recommend to use `withRedux` in both top level pages and `_document.js` files, Next.JS
-[does not provide](https://github.com/zeit/next.js/issues/1267) a reliable way to determine the sequence when
-components will be rendered. So per Next.JS recommendation it is better to have just data-agnostic things in `_document`
-and wrap top level pages with another HOC that will use `withRedux`. 
+I don't recommend to use `withRedux` in `pages_document.js`, Next.JS [does not provide](https://github.com/zeit/next.js/issues/1267)
+a reliable way to determine the sequence when components will be rendered. So per Next.JS recommendation it is better
+to have just data-agnostic things in `pages/_document`. 
+
+## Error Pages
+
+Error pages also can be wrapped the same way as any other pages.
+
+Transition to an error page (`pages/_error.js` template) will cause `pages/_app.js` to be applied but it is always a
+full page transition (not HTML5 pushstate), so client will have store created from scratch using state from the server,
+so unless you persist the store on client somehow the resulting previous client state will be ignored. 
 
 ## Upgrade
 
@@ -280,13 +289,17 @@ function getInitialProps({store, isServer, pathname, query}) {
 
 ## Custom serialization and deserialization
 
-If you are storing complex types such as Immutable.JS or EJSON objecs in your state, a custom serialize and deserialize handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so, provide `serializeState` and `deserializeState` as config options to `withRedux`.
-The reason why this is necessary is that `initialState` is transferred over the network from server to client as a plain object.
+If you are storing complex types such as Immutable.JS or EJSON objecs in your state, a custom serialize and deserialize
+handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so,
+provide `serializeState` and `deserializeState` as config options to `withRedux`.
+
+The reason is that `initialState` is transferred over the network from server to client as a plain object.
 
 Example of a custom serialization of an Immutable.JS state using `json-immutable`:
 
 ```js
-const { serialize, deserialize } = require('json-immutable');
+const {serialize, deserialize} = require('json-immutable');
+
 withRedux(
     (initialState, options) => {...}, // makeStore
     {
@@ -298,7 +311,9 @@ withRedux(
 
 ## Usage with Redux Persist
 
-Honestly, I think that putting a persistence gate is not necessary because server can already send *some* HTML with *some* state, so it's better to show it right away and then wait for `REHYDRATE` action to happen to show additional delta coming from persistence storage. That's why we use Server Side Rendering in a first place.
+Honestly, I think that putting a persistence gate is not necessary because server can already send *some* HTML with
+*some* state, so it's better to show it right away and then wait for `REHYDRATE` action to happen to show additional
+delta coming from persistence storage. That's why we use Server Side Rendering in a first place.
 
 But, for those who actually want to block the UI while rehydration is happening, here is the solution (still hacky though).
 

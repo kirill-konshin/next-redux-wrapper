@@ -4,7 +4,7 @@ import promiseMiddleware from "redux-promise-middleware";
 import renderer from "react-test-renderer";
 import withRedux from "./index";
 
-global.window = {}; //FIXME Move to test env https://github.com/smooth-code/jest-puppeteer#extend-puppeteerenvironment
+const appCtx = {ctx: {}};
 
 const reducer = (state = {reduxStatus: 'init'}, action) => {
     switch (action.type) {
@@ -52,7 +52,7 @@ class AsyncPage extends SyncPage {
 async function verifyComponent(WrappedPage) {
 
     // this is called by Next.js
-    const props = await WrappedPage.getInitialProps();
+    const props = await WrappedPage.getInitialProps(appCtx);
 
     expect(props.initialProps.custom).toBe('custom');
     expect(props.initialState.reduxStatus).toBe('foo');
@@ -76,26 +76,33 @@ test('async store integration', async () => {
 });
 
 describe('custom serialization', () => {
-    beforeEach(() => {
-        delete window.__NEXT_REDUX_STORE__;
-    });
-    
-    test('custom state serialization on the server', async () => {
+    test('custom state serialization on the server and deserialization on the client', async () => {
+
+        class MyApp extends React.Component {
+            render(){
+                const {store} = this.props;
+                return (
+                    <div>{JSON.stringify(store.getState())}</div>
+                )
+            }
+        }
+
         const WrappedPage = withRedux(makeStore, {
-            serializeState: state => ({ ...state, serialized: true })
-        })(AsyncPage);
-        
-        const props = await WrappedPage.getInitialProps();
-        expect(props.initialState.serialized).toBeTruthy();
-    });
-    
-    test('custom state deserialization on the client', async () => {
-        const WrappedPage = withRedux(makeStore, {
+            serializeState: state => ({ ...state, serialized: true }),
             deserializeState: state => ({ ...state, deserialized: true })
-        })(AsyncPage);
-        
-        renderer.create(<WrappedPage />);
-        expect(window.__NEXT_REDUX_STORE__.getState().deserialized).toBeTruthy();
-        
+        })(MyApp);
+
+        const props = await WrappedPage.getInitialProps(appCtx);
+        expect(props.initialState.serialized).toBeTruthy();
+
+        // emulate client case
+        delete props.store;
+
+        // this is called by Next.js
+        const component = renderer.create(<WrappedPage {...props}/>);
+
+        let tree = component.toJSON();
+        expect(tree).toMatchSnapshot();
+
     });
 });

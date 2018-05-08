@@ -1,6 +1,6 @@
 {
   "name": "next-redux-wrapper",
-  "version": "2.0.0-beta.5",
+  "version": "2.0.0-beta.6",
   "description": "Redux wrapper for Next.js",
   "main": "lib/index.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "next": "next",
     "next:export": "next export",
     "next:build": "next build",
+    "next:start": "next start",
     "watch": "npm run babel -- --watch",
     "start": "npm-run-all -p watch next",
     "prepublishOnly": "npm run build && npm test"

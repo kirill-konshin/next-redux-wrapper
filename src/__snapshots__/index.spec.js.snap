@@ -2,14 +2,20 @@
 
 exports[`async store integration 1`] = `
 <div>
-  {"custom":"custom","isServer":false}
+  {"isServer":true,"custom":"custom"}
   {"reduxStatus":"foo"}
+</div>
+`;
+
+exports[`custom serialization custom state serialization on the server and deserialization on the client 1`] = `
+<div>
+  {"deserialized":true,"serialized":true}
 </div>
 `;
 
 exports[`simple store integration 1`] = `
 <div>
-  {"custom":"custom","isServer":false}
+  {"isServer":true,"custom":"custom"}
   {"reduxStatus":"foo"}
 </div>
 `;

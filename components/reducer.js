@@ -1,6 +1,5 @@
 const reducer = (state = {tick: 'init', tack: 'init', toe: 'init'}, action) => {
     switch (action.type) {
-        case 'TICKK':
         case 'TICK':
             return {...state, tick: action.payload};
         case 'TACK':
