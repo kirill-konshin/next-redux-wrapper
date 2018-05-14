@@ -15,7 +15,7 @@ or you can follow these simple [upgrade instructions](#upgrade).
 - [Upgrade](#upgrade)
 - [Use with layout](#use-with-layout)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
-- [Usage with Immutable.JS](#usage-with-immutablejs)
+- [Custom serialization and deserialization, usage with Immutable.JS](#custom-serialization-and-deserialization)
 - [Usage with Redux Persist](#usage-with-redux-persist)
 - [Resources](#resources)
 
