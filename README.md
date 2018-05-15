@@ -245,7 +245,7 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends App {
     }
 
     render() {
-        const {Component, pageProps} = this.props;
+        const {Component, pageProps, store} = this.props;
         return (
             <Container>
                 <Provider store={store}>
