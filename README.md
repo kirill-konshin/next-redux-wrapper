@@ -22,7 +22,7 @@ or you can follow these simple [upgrade instructions](#upgrade).
 ## Installation
 
 ```bash
-npm install next-redux-wrapper@canary --save
+npm install next-redux-wrapper --save
 ```
 
 Wrapper has to be attached your `_app` component (located in `/pages`). All other pages may use regular `connect`
@@ -163,7 +163,7 @@ version.
 1. Upgrade NextJS and Wrapper
     ```bash
     $ npm install next@6 --save-dev
-    $ npm install next-redux-wrapper@2 --save
+    $ npm install next-redux-wrapper@latest --save
    ```
    
 2. Replace all usages of `import withRedux from "next-redux-wrapper";` and `withRedux(...)(WrappedComponent)` in all
