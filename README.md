@@ -309,6 +309,20 @@ withRedux(
 );
 ```
 
+Same thing using Immutable.JS:
+
+```
+const {fromJS} = require('immutable');
+
+withRedux(
+    (initialState, options) => {...}, // makeStore,
+    {
+        serializeState: state => state.toJS(),
+        deserializeState: state => fromJS(state),
+    }
+);
+```
+
 ## Usage with Redux Persist
 
 Honestly, I think that putting a persistence gate is not necessary because server can already send *some* HTML with
