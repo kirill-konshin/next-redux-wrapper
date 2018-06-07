@@ -143,7 +143,7 @@ will ruin the whole purpose of server rendering.
 
 ## Document
 
-I don't recommend to use `withRedux` in `pages_document.js`, Next.JS [does not provide](https://github.com/zeit/next.js/issues/1267)
+I don't recommend to use `withRedux` in `pages/_document.js`, Next.JS [does not provide](https://github.com/zeit/next.js/issues/1267)
 a reliable way to determine the sequence when components will be rendered. So per Next.JS recommendation it is better
 to have just data-agnostic things in `pages/_document`. 
 
