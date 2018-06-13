@@ -1,11 +1,12 @@
 import React from 'react'
 import {Provider} from "react-redux";
 import App, {Container} from "next/app";
+
 import withRedux from "../lib";
-import {makeStore} from "../components/store";
+import {makeStore} from "../store";
 import Layout from "../components/layout";
 
-export default withRedux(makeStore, {debug: true})(class MyApp extends App {
+class MyApp extends App {
 
     static async getInitialProps({Component, ctx}) {
 
@@ -40,5 +41,7 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends App {
             </Container>
         );
     }
+}
 
-});
+// Wrap the App in a call to withRedux
+export default withRedux(makeStore, {debug: true})(MyApp);

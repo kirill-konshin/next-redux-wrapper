@@ -13,6 +13,5 @@ export const makeStore = (initialState) => {
     }
 
     return store;
-
 };
 
