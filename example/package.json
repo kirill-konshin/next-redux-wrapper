@@ -1,5 +1,5 @@
 {
-  "name": "with-redux",
+  "name": "next-redux-wrapper-example",
   "version": "1.0.0",
   "scripts": {
     "dev": "next",
@@ -13,5 +13,5 @@
     "react-redux": "5.0.7",
     "redux": "4.0.0"
   },
-  "license": "ISC"
+  "license": "MIT"
 }
