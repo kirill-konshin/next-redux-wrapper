@@ -404,7 +404,7 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends App {
         return (
             <Container>
                 <Provider store={store}>
-                    <PersistGate persistor={store.__persistor} loading: {<div>Loading</div>}>
+                    <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
                         <Component {...pageProps} />
                     </PersistGate>
                 </Provider>
