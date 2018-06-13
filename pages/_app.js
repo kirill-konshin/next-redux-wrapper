@@ -1,7 +1,8 @@
 import React from 'react'
 import {Provider} from "react-redux";
 import App, {Container} from "next/app";
-import withRedux from "../../src";
+
+import withRedux from "../src";
 import {makeStore} from "../store";
 import Layout from "../components/layout";
 
