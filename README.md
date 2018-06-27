@@ -133,7 +133,7 @@ When `makeStore` is invoked it is provided with a configuration object along wit
 
 - `isServer` (boolean): `true` if called while on the server rather than the client
 - `req` (Request): The `next.js` `getInitialProps` context `req` parameter
-- `res` (Request): The `next.js` `getInitialProps` context `req` parameter
+- `res` (Response): The `next.js` `getInitialProps` context `res` parameter
 
 Additional config properties `req` and `res` are not set when client applies `initialState` from server.
 
