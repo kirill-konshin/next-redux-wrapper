@@ -4,9 +4,6 @@
     "next/babel",
     "@babel/env"
   ],
-  "plugins": [
-    "@babel/plugin-transform-runtime"
-  ],
   "env": {
     "test": {
       "presets": [
