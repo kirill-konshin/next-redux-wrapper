@@ -311,7 +311,7 @@ withRedux(
 
 Same thing using Immutable.JS:
 
-```
+```js
 const {fromJS} = require('immutable');
 
 withRedux(
