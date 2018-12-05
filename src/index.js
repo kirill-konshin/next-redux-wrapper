@@ -1,11 +1,8 @@
 import React, {Component} from "react";
 
-let _Promise = Promise;
 let _debug = false;
 const DEFAULT_KEY = '__NEXT_REDUX_STORE__';
 const isServer = typeof window === 'undefined';
-
-export const setPromise = Promise => _Promise = Promise;
 
 /**
  * @param makeStore
@@ -82,7 +79,6 @@ export default (makeStore, config = {}) => {
             if (config.debug) console.log('3. WrappedApp.getInitialProps has store state', store.getState());
 
             return {
-                store,
                 isServer,
                 initialState: config.serializeState(store.getState()),
                 initialProps: initialProps
@@ -94,26 +90,21 @@ export default (makeStore, config = {}) => {
 
             super(props, context);
 
-            let {initialState, store} = props;
+            const {initialState} = props;
 
-            const hasStore = store && ('dispatch' in store) && ('getState' in store);
+            if (config.debug) console.log('4. WrappedApp.render created new store with initialState', initialState);
 
-            //TODO Always recreate the store even if it could be reused? @see https://github.com/zeit/next.js/pull/4295#pullrequestreview-118516366
-            store = hasStore ? store : initStore({
+            this.store = initStore({
                 makeStore,
                 initialState,
                 config
             });
 
-            if (config.debug) console.log('4. WrappedApp.render', (hasStore ? 'picked up existing one,' : 'created new store with'), 'initialState', initialState);
-
-            this.store = store;
-
         }
 
         render() {
 
-            let {initialProps, initialState, store, ...props} = this.props;
+            let {initialProps, initialState, ...props} = this.props;
 
             // Cmp render must return something like <Provider><Component/></Provider>
             return (

@@ -1,14 +1,13 @@
 {
-  "passPerPreset": true,
   "presets": [
-    "next/babel",
-    "@babel/env"
+    "@babel/preset-env",
+    "next/babel"
   ],
   "env": {
     "test": {
       "presets": [
         [
-          "@babel/env",
+          "@babel/preset-env",
           {
             "modules": "commonjs"
           }
