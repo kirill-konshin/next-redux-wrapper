@@ -1,0 +1,91 @@
+{
+  "extends": [
+    "typescript",
+    "airbnb",
+    "prettier",
+    "prettier/react",
+    "prettier/standard"
+  ],
+  "plugins": [
+    "prettier",
+    "react"
+  ],
+  "rules": {
+    "camelcase": 0,
+    "class-methods-use-this": 0,
+    "dot-notation": 0,
+    // foo['bar'] for private
+    "global-require": 0,
+    "indent": 0,
+    "import/extensions": [
+      ".js",
+      ".jsx",
+      ".json",
+      ".ts",
+      ".tsx"
+    ],
+    "import/no-extraneous-dependencies": 0,
+    "import/no-named-as-default": 0,
+    "import/prefer-default-export": 0,
+    "jsx-a11y/anchor-is-valid": 0,
+    "jsx-a11y/click-events-have-key-events": 0,
+    "jsx-a11y/label-has-for": 0,
+    "jsx-a11y/no-static-element-interactions": 0,
+    "max-len": 0,
+    "no-alert": 0,
+    "no-bitwise": 0,
+    "no-console": 0,
+    "no-class-assign": 0,
+    "no-mixed-operators": 0,
+    "no-nested-ternary": 0,
+    "no-param-reassign": 0,
+    "no-plusplus": 0,
+    "no-return-assign": 0,
+    "no-shadow": 0,
+    "no-underscore-dangle": 0,
+    "no-unused-vars": 0,
+    "no-unused-expressions": 0,
+    // tests
+    "no-undef": 0,
+    //FIXME @see https://github.com/eslint/typescript-eslint-parser/issues/75
+    "react/forbid-prop-types": 0,
+    "react/jsx-filename-extension": 0,
+    "react/no-array-index-key": 0,
+    "react/no-multi-comp": 0,
+    "react/no-unescaped-entities": 0,
+    "react/no-unused-prop-types": 0,
+    "react/no-unused-state": 0,
+    "react/prop-types": 0,
+    "react/require-default-props": 0,
+    "spaced-comment": 0,
+    "prettier/prettier": "error",
+    "typescript/explicit-function-return-type": 0,
+    "typescript/explicit-member-accessibility": 0,
+    "typescript/member-ordering": 0,
+    "typescript/no-var-requires": 0
+    // conditional require in Externals
+  },
+  "env": {
+    "browser": true,
+    "mocha": true,
+    "node": true
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".ts",
+          ".tsx"
+        ]
+      }
+    }
+  },
+  "globals": { // jest-puppeteer
+    "page": true,
+    "browser": true,
+    "context": true,
+    "jestPuppeteer": true
+  }
+}

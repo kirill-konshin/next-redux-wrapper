@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.es6.json",
+  "compilerOptions": {
+    "declarationDir": "types",
+    "outDir": "es6"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
+}

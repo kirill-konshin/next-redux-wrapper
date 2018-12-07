@@ -1,8 +1,7 @@
-import {createStore} from "redux";
-import reducer from "./reducer";
+import {createStore} from 'redux';
+import reducer from './reducer';
 
-export const makeStore = (initialState) => {
-
+export const makeStore = initialState => {
     const store = createStore(reducer, initialState);
 
     if (module.hot) {
@@ -13,6 +12,4 @@ export const makeStore = (initialState) => {
     }
 
     return store;
-
 };
-

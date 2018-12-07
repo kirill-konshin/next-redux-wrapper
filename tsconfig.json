@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationDir": "types",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "lib": [
+      "dom",
+      "es2015"
+    ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "outDir": "lib",
+    "preserveConstEnums": true,
+    "pretty": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "target": "es5"
+  },
+  "exclude": [
+    "*/node_modules",
+    "*/lib"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
+}

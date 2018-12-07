@@ -1,0 +1,53 @@
+{
+  "name": "next-redux-wrapper",
+  "version": "2.1.0",
+  "description": "Redux wrapper for Next.js",
+  "main": "lib/index.js",
+  "module": "es6/index.js",
+  "types": "types/index.d.ts",
+  "source": "lib/index.ts",
+  "scripts": {
+    "test": "jest",
+    "clean": "rimraf lib es6 types",
+    "build": "npm run clean && npm run build:tsc:es5 && npm run build:tsc:es6",
+    "build:tsc:es5": "tsc",
+    "build:tsc:es6": "tsc --project tsconfig.es6.json",
+    "start": "npm-run-all -p watch:tsc:es5 watch:tsc:es6",
+    "watch:tsc:es5": "npm run build:tsc:es5 -- --watch --preserveWatchOutput",
+    "watch:tsc:es6": "npm run build:tsc:es6 -- --watch --preserveWatchOutput",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/jest": "23.3.10",
+    "@types/next": "7.0.5",
+    "@types/react": "16.7.13",
+    "@types/react-redux": "6.0.10",
+    "@types/redux-promise-middleware": "0.0.11",
+    "@zeit/next-typescript": "1.1.1",
+    "jest": "23.6.0",
+    "npm-run-all": "4.1.5",
+    "react": "16.6.3",
+    "react-dom": "16.6.3",
+    "react-redux": "6.0.0",
+    "react-test-renderer": "16.6.3",
+    "redux": "4.0.1",
+    "redux-promise-middleware": "5.1.1",
+    "rimraf": "2.6.2",
+    "ts-jest": "23.10.5",
+    "typescript": "3.2.1"
+  },
+  "peerDependencies": {
+    "next": ">=6.0.0",
+    "react": "*"
+  },
+  "author": "Kirill Konshin",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kirill-konshin/next-redux-wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
+  },
+  "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
+  "license": "MIT"
+}

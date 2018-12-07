@@ -1,0 +1,45 @@
+{
+  "name": "next-redux-wrapper-demo",
+  "private": true,
+  "version": "2.1.0",
+  "description": "Demo of redux wrapper for Next.js",
+  "scripts": {
+    "clean": "rimraf .next",
+    "test": "jest",
+    "start": "next",
+    "next": "next",
+    "next:export": "next export",
+    "next:build": "next build",
+    "next:start": "next start"
+  },
+  "devDependencies": {
+    "@types/jest": "23.3.10",
+    "@types/jest-environment-puppeteer": "2.2.1",
+    "@types/next": "7.0.5",
+    "@types/puppeteer": "1.11.1",
+    "@types/react": "16.7.13",
+    "@types/react-redux": "6.0.10",
+    "@zeit/next-typescript": "1.1.1",
+    "jest-puppeteer": "3.5.2",
+    "next": "7.0.2",
+    "next-redux-wrapper": "2.1.0",
+    "puppeteer": "1.11.0",
+    "react": "16.6.3",
+    "react-dom": "16.6.3",
+    "react-redux": "6.0.0",
+    "redux": "4.0.1",
+    "rimraf": "2.6.2",
+    "ts-jest": "23.10.5",
+    "typescript": "3.2.1"
+  },
+  "author": "Kirill Konshin",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kirill-konshin/next-redux-wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
+  },
+  "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
+  "license": "MIT"
+}

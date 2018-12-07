@@ -1,0 +1,4 @@
+tests
+jest.config.js
+tsconfig.json
+tsconfig.es6.json

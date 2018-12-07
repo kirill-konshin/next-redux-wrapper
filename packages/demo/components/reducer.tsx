@@ -7,7 +7,7 @@ const reducer = (state = {tick: 'init', tack: 'init', toe: 'init'}, action) => {
         case 'TOE':
             return {...state, toe: action.payload};
         default:
-            return state
+            return state;
     }
 };
 

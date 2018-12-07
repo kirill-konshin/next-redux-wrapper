@@ -1,10 +1,15 @@
-import React from "react";
-import {applyMiddleware, createStore} from "redux";
-import promiseMiddleware from "redux-promise-middleware";
-import renderer from "react-test-renderer";
-import withRedux from "./index";
+import React, {Component} from 'react';
+import {applyMiddleware, createStore} from 'redux';
+import promiseMiddleware from 'redux-promise-middleware';
+import renderer from 'react-test-renderer';
+import {NextAppContext} from 'next/app';
+import withRedux from '../src/index';
 
-const appCtx = {ctx: {}};
+interface NextAppContextTest extends NextAppContext {
+    ctx: any;
+}
+
+const appCtx: NextAppContextTest = {ctx: {}, Component: null, router: null};
 
 const reducer = (state = {reduxStatus: 'init'}, action) => {
     switch (action.type) {
@@ -12,18 +17,14 @@ const reducer = (state = {reduxStatus: 'init'}, action) => {
         case 'FOO_FULFILLED': // async
             return {reduxStatus: action.payload};
         default:
-            return state
+            return state;
     }
 };
 
-const makeStore = (initialState) => createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
+const makeStore = initialState => createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
 
-class SyncPage extends React.Component {
-
-    static getInitialProps({ctx}) {
-        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
-        return {custom: 'custom'};
-    }
+class SyncPageBase extends Component {
+    props; //FIXME TS Crap
 
     render() {
         const {store, ...props} = this.props;
@@ -32,17 +33,22 @@ class SyncPage extends React.Component {
                 {JSON.stringify(props)}
                 {JSON.stringify(store.getState())}
             </div>
-        )
+        );
     }
-
+}
+class SyncPage extends SyncPageBase {
+    static getInitialProps({ctx}) {
+        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
+        return {custom: 'custom'};
+    }
 }
 
-const someAsyncAction = ({
+const someAsyncAction = {
     type: 'FOO',
     payload: new Promise(res => res('foo'))
-});
+};
 
-class AsyncPage extends SyncPage {
+class AsyncPage extends SyncPageBase {
     static async getInitialProps({ctx}) {
         await ctx.store.dispatch(someAsyncAction);
         return {custom: 'custom'};
@@ -50,7 +56,6 @@ class AsyncPage extends SyncPage {
 }
 
 async function verifyComponent(WrappedPage) {
-
     // this is called by Next.js
     const props = await WrappedPage.getInitialProps(appCtx);
 
@@ -58,11 +63,10 @@ async function verifyComponent(WrappedPage) {
     expect(props.initialState.reduxStatus).toBe('foo');
 
     // this is called by Next.js
-    const component = renderer.create(<WrappedPage {...props}/>);
+    const component = renderer.create(<WrappedPage {...props} />);
 
-    let tree = component.toJSON();
+    const tree = component.toJSON();
     expect(tree).toMatchSnapshot();
-
 }
 
 test('simple store integration', async () => {
@@ -77,32 +81,26 @@ test('async store integration', async () => {
 
 describe('custom serialization', () => {
     test('custom state serialization on the server and deserialization on the client', async () => {
+        class MyApp extends Component {
+            props;
 
-        class MyApp extends React.Component {
-            render(){
+            render() {
                 const {store} = this.props;
-                return (
-                    <div>{JSON.stringify(store.getState())}</div>
-                )
+                return <div>{JSON.stringify(store.getState())}</div>;
             }
         }
 
         const WrappedPage = withRedux(makeStore, {
-            serializeState: state => ({ ...state, serialized: true }),
-            deserializeState: state => ({ ...state, deserialized: true })
+            serializeState: state => ({...state, serialized: true}),
+            deserializeState: state => ({...state, deserialized: true})
         })(MyApp);
 
         const props = await WrappedPage.getInitialProps(appCtx);
         expect(props.initialState.serialized).toBeTruthy();
 
-        // emulate client case
-        delete props.store;
+        const component = renderer.create(<WrappedPage {...props} />);
 
-        // this is called by Next.js
-        const component = renderer.create(<WrappedPage {...props}/>);
-
-        let tree = component.toJSON();
+        const tree = component.toJSON();
         expect(tree).toMatchSnapshot();
-
     });
 });

@@ -1,10 +1,20 @@
 language: node_js
+
 node_js:
 - stable
+
+before_install:
+- echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > .npmrc
+
 deploy:
-  provider: npm
-  email: kirill.konshin@gmail.com
-  api_key: $NPM_TOKEN
+#- provider: script
+#  script: bash npm run publish:canary -- --yes
+#  skip_cleanup: true
+#  on:
+#    branch: master
+#    repo: kirill-konshin/next-redux-wrapper
+- provider: script
+  script: bash npm run publish:fromgit -- --yes
   skip_cleanup: true
   on:
     tags: true

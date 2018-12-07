@@ -1,5 +1,5 @@
-import React from "react";
-import {connect} from "react-redux";
+import React from 'react';
+import {connect} from 'react-redux';
 
 const Layout = ({tick, toe, children}) => (
     <div className="layout">

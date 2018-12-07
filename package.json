@@ -1,47 +1,44 @@
 {
-  "name": "next-redux-wrapper",
+  "name": "next-redux-wrapper-mono",
+  "private": true,
   "version": "2.1.0",
   "description": "Redux wrapper for Next.js",
   "main": "lib/index.js",
+  "module": "es6/index.js",
+  "types": "types/index.d.ts",
   "scripts": {
-    "test": "NODE_ENV=test jest",
-    "clean": "rimraf lib",
-    "babel": "babel src --out-dir lib --source-maps",
-    "build": "npm run clean && npm run babel",
-    "next": "next",
-    "next:export": "next export",
-    "next:build": "next build",
-    "next:start": "next start",
-    "watch": "npm run babel -- --watch",
-    "start": "npm-run-all -p watch next",
-    "prepublishOnly": "npm run build"
+    "postinstall": "lerna bootstrap --hoist",
+    "clean": "lerna run clean && lerna clean && rimraf node_modules",
+    "start": "lerna run start --parallel",
+    "build": "npm run lint:all && lerna run build",
+    "test": "lerna run build && lerna run test",
+    "publish:canary": "lerna publish --canary --force-publish=\"*\"",
+    "publish:fromgit": "lerna publish from-git",
+    "prepare:release": "lerna version --tag-version-prefix=\"\" --force-publish=\"*\"",
+    "prepare:prerelease": "npm run prepare:release -- prerelease --preid alpha",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint --fix --quiet",
+    "lint:all": "npm run lint -- ./packages/*/**/*.ts?",
+    "lint:staged": "lint-staged"
+  },
+  "devDependencies": {
+    "eslint": "5.9.0",
+    "eslint-config-airbnb": "17.1.0",
+    "eslint-config-prettier": "3.3.0",
+    "eslint-config-typescript": "1.1.0",
+    "eslint-plugin-import": "2.14.0",
+    "eslint-plugin-jsx-a11y": "6.1.2",
+    "eslint-plugin-prettier": "3.0.0",
+    "eslint-plugin-react": "7.11.1",
+    "eslint-plugin-typescript": "0.14.0",
+    "husky": "1.2.0",
+    "lerna": "3.5.1",
+    "lint-staged": "8.1.0",
+    "prettier": "1.15.3",
+    "rimraf": "2.6.2",
+    "typescript": "3.2.1",
+    "typescript-eslint-parser": "21.0.2"
   },
   "author": "Kirill Konshin",
-  "devDependencies": {
-    "@babel/cli": "7.2.0",
-    "@babel/core": "7.2.0",
-    "@types/jest": "23.3.10",
-    "@types/jest-environment-puppeteer": "2.2.1",
-    "@types/puppeteer": "1.5.0",
-    "babel-core": "bridge",
-    "babel-jest": "23.6.0",
-    "jest": "23.4.2",
-    "jest-puppeteer": "3.2.1",
-    "next": "7.0.2",
-    "npm-run-all": "4.1.3",
-    "puppeteer": "1.6.0",
-    "react": "16.6.3",
-    "react-dom": "16.6.3",
-    "react-redux": "6.0.0",
-    "react-test-renderer": "16.6.3",
-    "redux": "4.0.1",
-    "redux-promise-middleware": "5.1.1",
-    "rimraf": "2.6.2"
-  },
-  "peerDependencies": {
-    "react": "*",
-    "next": ">=6.0.0"
-  },
   "repository": {
     "type": "git",
     "url": "git://github.com/kirill-konshin/next-redux-wrapper.git"
@@ -50,8 +47,5 @@
     "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
   },
   "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
-  "engines": {
-    "node": ">=0.10.36"
-  },
   "license": "MIT"
 }
