@@ -6,11 +6,11 @@ module.exports = {
     coveragePathIgnorePatterns: [
         './node_modules',
     ],
-    'transform': {
+    transform: {
         '^.+\\.tsx?$': 'ts-jest'
     },
-    'testRegex': '/tests/.*\\.(test|spec)\\.tsx?$',
-    'moduleFileExtensions': [
+    testRegex: '/tests/.*\\.(test|spec)\\.tsx?$',
+    moduleFileExtensions: [
         'ts',
         'tsx',
         'js',

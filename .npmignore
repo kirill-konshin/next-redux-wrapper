@@ -1,8 +1,0 @@
-.babelrc
-.idea
-.next
-.travis.yml
-coverage
-pages
-jest.config.js
-jest-puppeteer.config.js

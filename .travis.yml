@@ -4,7 +4,7 @@ node_js:
 - stable
 
 before_install:
-- echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > .npmrc
+- npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 
 deploy:
 #- provider: script

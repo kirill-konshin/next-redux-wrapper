@@ -23,6 +23,7 @@
     "jest-puppeteer": "3.5.2",
     "next": "7.0.2",
     "next-redux-wrapper": "2.1.0",
+    "next-redux-wrapper-configs": "2.1.0",
     "puppeteer": "1.11.0",
     "react": "16.6.3",
     "react-dom": "16.6.3",

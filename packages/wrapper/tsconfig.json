@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "next-redux-wrapper-configs/tsconfig.json",
   "compilerOptions": {
     "declarationDir": "types",
     "outDir": "lib"
