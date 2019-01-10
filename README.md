@@ -16,6 +16,7 @@ or you can follow these simple [upgrade instructions](#upgrade).
 - [Use with layout](#use-with-layout)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
 - [Custom serialization and deserialization, usage with Immutable.JS](#custom-serialization-and-deserialization)
+- [Usage with Redux Saga](#usage-with-redux-saga)
 - [Usage with Redux Persist](#usage-with-redux-persist)
 - [Resources](#resources)
 
@@ -321,6 +322,31 @@ withRedux(
         deserializeState: state => fromJS(state),
     }
 );
+```
+
+## Usage with Redux Saga
+
+[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, redux-saga needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
+
+```js
+// Before this, import what you need and create a root saga as usual
+
+const makeStore = (initialState, options) => {
+    // 1: Create the middleware
+    const sagaMiddleware = createSagaMiddleware();
+
+    // Before we returned the created store without assigning it to a variable:
+    // return createStore(reducer, initialState);
+
+    // 2: Add an extra parameter for applying middleware:
+    const store = createStore(reducer, initialState, applyMiddleware(sagaMiddleware));
+   
+    // 3: Run your sagas:
+    sagaMiddleware.run(rootSaga);
+    
+    // 4: now return the store:
+    return store
+};
 ```
 
 ## Usage with Redux Persist
