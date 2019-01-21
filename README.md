@@ -110,7 +110,7 @@ class Page extends Component {
     }
 }
 
-export default connect()(Page);
+export default connect(state => state)(Page);
 ```
 
 ## How it works
