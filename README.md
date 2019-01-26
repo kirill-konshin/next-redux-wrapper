@@ -2,6 +2,7 @@ Redux wrapper for Next.js
 =========================
 
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/kirill-konshin/next-redux-wrapper/badge.svg?branch=master)](https://coveralls.io/github/kirill-konshin/next-redux-wrapper?branch=master)
 
 :warning: This will work only with NextJS 6+ :warning:
 

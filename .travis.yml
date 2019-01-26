@@ -6,16 +6,24 @@ node_js:
 before_install:
 - npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 
+before_script:
+- DEBUG=eslint:cli-engine npm run lint:all
+- npm run build
+
 deploy:
 #- provider: script
-#  script: bash npm run publish:canary -- --yes
+#  script: npm run publish:canary -- --yes
 #  skip_cleanup: true
 #  on:
+#    tags: false
 #    branch: master
 #    repo: kirill-konshin/next-redux-wrapper
 - provider: script
-  script: bash npm run publish:fromgit -- --yes
+  script: npm run publish:fromgit -- --yes
   skip_cleanup: true
   on:
     tags: true
     repo: kirill-konshin/next-redux-wrapper
+
+after_success:
+- npm run test:coverage

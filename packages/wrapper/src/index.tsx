@@ -3,51 +3,54 @@ import {Store} from 'redux';
 import {NextComponentType, NextContext} from 'next';
 import {NextAppContext} from 'next/app';
 
-const _debug = false;
-const DEFAULT_KEY = '__NEXT_REDUX_STORE__';
-const isServer = typeof window === 'undefined';
-
-const initStore = ({makeStore, initialState, config, ctx}: InitStoreOptions): Store => {
-    const {storeKey} = config;
-
-    const createStore = () =>
-        makeStore(config.deserializeState(initialState), {
-            ...ctx,
-            ...config,
-            isServer
-        });
-
-    if (isServer) return createStore();
-
-    // Memoize store if client
-    if (!window[storeKey]) {
-        window[storeKey] = createStore();
-    }
-
-    return window[storeKey];
+const defaultConfig: Config = {
+    storeKey: '__NEXT_REDUX_STORE__',
+    debug: false,
+    serializeState: state => state,
+    deserializeState: state => state,
 };
 
 export default (makeStore: MakeStore, config?: Config) => {
     config = {
-        storeKey: DEFAULT_KEY,
-        debug: _debug,
-        serializeState: state => state,
-        deserializeState: state => state,
-        ...config
+        ...defaultConfig,
+        ...config,
+    };
+
+    const isServer = typeof window === 'undefined';
+
+    const initStore = ({initialState, ctx}: InitStoreOptions): Store => {
+        const {storeKey} = config;
+
+        const createStore = () =>
+            makeStore(config.deserializeState(initialState), {
+                ...ctx,
+                ...config,
+                isServer,
+            });
+
+        if (isServer) return createStore();
+
+        // Memoize store if client
+        if (!window.hasOwnProperty(storeKey)) {
+            window[storeKey] = createStore();
+        }
+
+        return window[storeKey];
     };
 
     return (App: NextComponentType | any) =>
         class WrappedApp extends Component<WrappedAppProps> {
-            static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
+            /* istanbul ignore next */
+            public static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
-            static getInitialProps = async (appCtx: NextJSAppContext) => {
+            public static getInitialProps = async (appCtx: NextJSAppContext) => {
+                /* istanbul ignore next */
                 if (!appCtx) throw new Error('No app context');
+                /* istanbul ignore next */
                 if (!appCtx.ctx) throw new Error('No page context');
 
                 const store = initStore({
-                    makeStore,
-                    config,
-                    ctx: appCtx.ctx
+                    ctx: appCtx.ctx,
                 });
 
                 if (config.debug)
@@ -67,11 +70,11 @@ export default (makeStore: MakeStore, config?: Config) => {
                 return {
                     isServer,
                     initialState: config.serializeState(store.getState()),
-                    initialProps
+                    initialProps,
                 };
             };
 
-            constructor(props, context) {
+            public constructor(props, context) {
                 super(props, context);
 
                 const {initialState} = props;
@@ -79,15 +82,13 @@ export default (makeStore: MakeStore, config?: Config) => {
                 if (config.debug) console.log('4. WrappedApp.render created new store with initialState', initialState);
 
                 this.store = initStore({
-                    makeStore,
                     initialState,
-                    config
                 });
             }
 
-            store: Store;
+            protected store: Store;
 
-            render() {
+            public render() {
                 const {initialProps, initialState, ...props} = this.props;
 
                 // Cmp render must return something like <Provider><Component/></Provider>
@@ -101,6 +102,7 @@ export interface Config {
     deserializeState?: (any) => any;
     storeKey?: string;
     debug?: boolean;
+    overrideIsServer?: boolean;
 }
 
 export interface NextJSContext extends NextContext {
@@ -119,8 +121,6 @@ export interface MakeStoreOptions extends Config, NextJSContext {
 export declare type MakeStore = (initialState: any, options: MakeStoreOptions) => Store;
 
 export interface InitStoreOptions {
-    makeStore: MakeStore;
-    config: Config;
     initialState?: any;
     ctx?: NextJSContext;
 }

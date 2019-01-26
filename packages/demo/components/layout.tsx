@@ -1,7 +1,7 @@
-import React from 'react';
+import React, {FunctionComponent} from 'react';
 import {connect} from 'react-redux';
 
-const Layout = ({tick, toe, children}) => (
+const Layout: FunctionComponent<any> = ({tick, toe, children}) => (
     <div className="layout">
         <div>Redux tick: {tick}</div>
         <div>Redux toe: {toe}</div>

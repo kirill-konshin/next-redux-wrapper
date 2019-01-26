@@ -23,10 +23,8 @@ const reducer = (state = {reduxStatus: 'init'}, action) => {
 
 const makeStore = initialState => createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
 
-class SyncPageBase extends Component {
-    props; //FIXME TS Crap
-
-    render() {
+class SyncPageBase extends Component<any> {
+    public render() {
         const {store, ...props} = this.props;
         return (
             <div>
@@ -36,8 +34,9 @@ class SyncPageBase extends Component {
         );
     }
 }
+
 class SyncPage extends SyncPageBase {
-    static getInitialProps({ctx}) {
+    public static getInitialProps({ctx}) {
         ctx.store.dispatch({type: 'FOO', payload: 'foo'});
         return {custom: 'custom'};
     }
@@ -45,12 +44,18 @@ class SyncPage extends SyncPageBase {
 
 const someAsyncAction = {
     type: 'FOO',
-    payload: new Promise(res => res('foo'))
+    payload: new Promise(res => res('foo')),
 };
 
 class AsyncPage extends SyncPageBase {
-    static async getInitialProps({ctx}) {
+    public static async getInitialProps({ctx}) {
         await ctx.store.dispatch(someAsyncAction);
+        return {custom: 'custom'};
+    }
+}
+
+class NoStorePage extends SyncPageBase {
+    public static async getInitialProps({ctx}) {
         return {custom: 'custom'};
     }
 }
@@ -69,22 +74,40 @@ async function verifyComponent(WrappedPage) {
     expect(tree).toMatchSnapshot();
 }
 
-test('simple store integration', async () => {
-    const WrappedPage = withRedux(makeStore)(SyncPage);
-    await verifyComponent(WrappedPage);
+describe('store integration', () => {
+    test('simple', async () => {
+        const WrappedPage = withRedux(makeStore)(SyncPage);
+        await verifyComponent(WrappedPage);
+    });
+
+    test('async', async () => {
+        const WrappedPage = withRedux(makeStore)(AsyncPage);
+        await verifyComponent(WrappedPage);
+    });
 });
 
-test('async store integration', async () => {
-    const WrappedPage = withRedux(makeStore)(AsyncPage);
-    await verifyComponent(WrappedPage);
+describe('client integration', () => {
+    test('store taken from window', async () => {
+        global['window'] = {}; // nasty hackery
+        const WrappedPage = withRedux(makeStore, {storeKey: 'testStoreKey'})(NoStorePage);
+        const store = makeStore({});
+        global['window']['testStoreKey'] = store;
+        await store.dispatch({type: 'FOO', payload: 'foo'});
+        await verifyComponent(WrappedPage);
+        delete global['window'];
+    });
+    test('store not taken from window', async () => {
+        global['window'] = {}; // nasty hackery
+        const WrappedPage = withRedux(makeStore, {storeKey: 'testStoreKey'})(SyncPage);
+        await verifyComponent(WrappedPage);
+        delete global['window'];
+    });
 });
 
 describe('custom serialization', () => {
     test('custom state serialization on the server and deserialization on the client', async () => {
-        class MyApp extends Component {
-            props;
-
-            render() {
+        class MyApp extends Component<any> {
+            public render() {
                 const {store} = this.props;
                 return <div>{JSON.stringify(store.getState())}</div>;
             }
@@ -92,7 +115,8 @@ describe('custom serialization', () => {
 
         const WrappedPage = withRedux(makeStore, {
             serializeState: state => ({...state, serialized: true}),
-            deserializeState: state => ({...state, deserialized: true})
+            deserializeState: state => ({...state, deserialized: true}),
+            debug: true,
         })(MyApp);
 
         const props = await WrappedPage.getInitialProps(appCtx);

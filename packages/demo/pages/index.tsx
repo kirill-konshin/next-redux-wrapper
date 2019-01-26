@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {connect} from 'react-redux';
 
 class Page extends React.Component<any> {
-    static getInitialProps({store, isServer, pathname, query}) {
+    public static getInitialProps({store, isServer, pathname, query}) {
         console.log('2. Page.getInitialProps uses the store to dispatch things, pathname', pathname, 'query', query);
 
         // All async actions must be await'ed before return or return a promise
@@ -22,7 +22,7 @@ class Page extends React.Component<any> {
         return {custom: 'custom client'};
     }
 
-    render() {
+    public render() {
         // console.log('5. Page.render');
         const {custom} = this.props;
         return (

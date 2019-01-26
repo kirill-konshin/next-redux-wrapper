@@ -4,34 +4,33 @@
   "version": "2.1.0",
   "description": "Demo of redux wrapper for Next.js",
   "scripts": {
-    "clean": "rimraf .next",
-    "test": "jest",
-    "start": "next",
-    "next": "next",
-    "next:export": "next export",
-    "next:build": "next build",
-    "next:start": "next start"
+    "clean": "rimraf .next coverage",
+    "test": "jest --runInBand",
+    "start": "next || exit 0"
+  },
+  "dependencies": {
+    "next-redux-wrapper": "2.1.0",
+    "react": "16.7.0",
+    "react-dom": "16.7.0",
+    "react-redux": "6.0.0",
+    "redux": "4.0.1"
   },
   "devDependencies": {
-    "@types/jest": "23.3.10",
+    "@types/jest": "23.3.13",
     "@types/jest-environment-puppeteer": "2.2.1",
-    "@types/next": "7.0.5",
-    "@types/puppeteer": "1.11.1",
-    "@types/react": "16.7.13",
-    "@types/react-redux": "6.0.10",
+    "@types/next": "7.0.6",
+    "@types/puppeteer": "1.11.2",
+    "@types/react": "16.7.20",
+    "@types/react-redux": "6.0.13",
+    "@types/redux-promise-middleware": "0.0.11",
     "@zeit/next-typescript": "1.1.1",
-    "jest-puppeteer": "3.5.2",
+    "jest-puppeteer": "3.9.0",
     "next": "7.0.2",
-    "next-redux-wrapper": "2.1.0",
     "next-redux-wrapper-configs": "2.1.0",
     "puppeteer": "1.11.0",
-    "react": "16.6.3",
-    "react-dom": "16.6.3",
-    "react-redux": "6.0.0",
-    "redux": "4.0.1",
-    "rimraf": "2.6.2",
+    "rimraf": "2.6.3",
     "ts-jest": "23.10.5",
-    "typescript": "3.2.1"
+    "typescript": "3.2.4"
   },
   "author": "Kirill Konshin",
   "repository": {
