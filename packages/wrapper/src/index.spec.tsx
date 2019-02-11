@@ -21,7 +21,7 @@ const reducer = (state = {reduxStatus: 'init'}, action) => {
     }
 };
 
-const makeStore = initialState => createStore(reducer, initialState, applyMiddleware(promiseMiddleware()));
+const makeStore = initialState => createStore(reducer, initialState, applyMiddleware(promiseMiddleware));
 
 class SyncPageBase extends Component<any> {
     public render() {

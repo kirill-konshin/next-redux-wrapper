@@ -31,6 +31,7 @@ class Page extends React.Component<any> {
                 <Link href="/other">
                     <a>Navigate</a>
                 </Link>
+                {' | '}
                 <Link href="/error">
                     <a>Navigate to error</a>
                 </Link>
