@@ -8,6 +8,7 @@
   "source": "lib/index.ts",
   "scripts": {
     "test": "jest",
+    "test:quick": "npm run test",
     "clean": "rimraf lib es6 types coverage",
     "build": "npm run clean && npm run build:tsc:es5 && npm run build:tsc:es6",
     "build:tsc:es5": "tsc",

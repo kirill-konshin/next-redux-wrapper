@@ -1,5 +1,7 @@
 __snapshots__
+coverage
 *.spec.ts
+*.spec.js
 jest.config.js
 tsconfig.json
 tsconfig.es6.json
