@@ -18,7 +18,7 @@ describe('Basic integration', () => {
 
         await page.waitForSelector('div.other');
 
-        await expect(page)['toClick']('a', {text: 'Navigate to index'}); //FIXME TS does not recognize toClick
+        await expect(page).toClick('a', {text: 'Navigate to index'});
 
         await page.waitForSelector('div.index');
 
