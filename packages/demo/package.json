@@ -1,7 +1,7 @@
 {
   "name": "next-redux-wrapper-demo",
   "private": true,
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "description": "Demo of redux wrapper for Next.js",
   "scripts": {
     "clean": "rimraf .next coverage",
@@ -9,7 +9,7 @@
     "start": "next || exit 0"
   },
   "dependencies": {
-    "next-redux-wrapper": "^3.0.0-alpha.1",
+    "next-redux-wrapper": "^3.0.0-alpha.2",
     "react": "16.8.1",
     "react-dom": "16.8.1",
     "react-redux": "6.0.0",
@@ -28,7 +28,7 @@
     "@zeit/next-typescript": "1.1.1",
     "jest-puppeteer": "3.9.0",
     "next": "8.0.0",
-    "next-redux-wrapper-configs": "^3.0.0-alpha.1",
+    "next-redux-wrapper-configs": "^3.0.0-alpha.2",
     "puppeteer": "1.12.2",
     "rimraf": "2.6.3",
     "ts-jest": "23.10.5",
