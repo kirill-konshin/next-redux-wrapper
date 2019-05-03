@@ -6,33 +6,35 @@
   "scripts": {
     "clean": "rimraf .next coverage",
     "test": "jest --runInBand",
-    "start": "next || exit 0"
+    "start": "next",
+    "build": "next build",
+    "serve": "next start"
   },
   "dependencies": {
     "next-redux-wrapper": "^3.0.0-alpha.2",
-    "react": "16.8.1",
-    "react-dom": "16.8.1",
-    "react-redux": "6.0.0",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
+    "react-redux": "7.0.3",
     "redux": "4.0.1"
   },
   "devDependencies": {
     "@types/expect-puppeteer": "3.3.1",
-    "@types/jest": "24.0.0",
-    "@types/jest-environment-puppeteer": "2.2.1",
-    "@types/next": "7.0.9",
-    "@types/puppeteer": "1.12.1",
-    "@types/react": "16.8.2",
-    "@types/react-redux": "7.0.1",
+    "@types/jest": "24.0.12",
+    "@types/jest-environment-puppeteer": "4.0.0",
+    "@types/next": "8.0.5",
+    "@types/puppeteer": "1.12.4",
+    "@types/react": "16.8.15",
+    "@types/react-redux": "7.0.8",
     "@types/redux-promise-middleware": "0.0.11",
-    "@types/webpack-env": "1.13.7",
+    "@types/webpack-env": "1.13.9",
     "@zeit/next-typescript": "1.1.1",
-    "jest-puppeteer": "3.9.0",
-    "next": "8.0.0",
+    "jest-puppeteer": "4.1.1",
+    "next": "8.1.0",
     "next-redux-wrapper-configs": "^3.0.0-alpha.2",
-    "puppeteer": "1.12.2",
+    "puppeteer": "1.15.0",
     "rimraf": "2.6.3",
-    "ts-jest": "23.10.5",
-    "typescript": "3.3.3"
+    "ts-jest": "24.0.2",
+    "typescript": "3.4.5"
   },
   "author": "Kirill Konshin",
   "repository": {

@@ -3,6 +3,7 @@
     "ringcentral-typescript"
   ],
   "rules": {
+    "import/no-default-export":"off",
     "import/no-unresolved": "off", // to capture direct deps in TS
     "jsx-a11y/anchor-is-valid": "off", // Next.js use <a>
     "no-console": "off",
