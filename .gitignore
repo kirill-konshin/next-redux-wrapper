@@ -7,3 +7,4 @@ node_modules
 npm-debug*
 out
 types
+lerna-debug.log

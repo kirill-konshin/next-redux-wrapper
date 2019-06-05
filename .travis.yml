@@ -19,7 +19,7 @@ deploy:
 #    branch: master
 #    repo: kirill-konshin/next-redux-wrapper
 - provider: script
-  script: npm run publish:fromgit -- --yes
+  script: npm run publish:release -- --yes
   skip_cleanup: true
   on:
     tags: true

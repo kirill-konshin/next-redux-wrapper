@@ -1,7 +1,9 @@
 {
   "extends": "next-redux-wrapper-configs/tsconfig.json",
   "compilerOptions": {
-    "outDir": "lib"
+    "declaration": true,
+    "outDir": "lib",
+    "declarationDir": "lib"
   },
   "include": [
     "src"
