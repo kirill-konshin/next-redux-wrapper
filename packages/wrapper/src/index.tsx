@@ -22,7 +22,7 @@ export default (makeStore: MakeStore, config?: Config) => {
         const {storeKey} = config;
 
         const createStore = () =>
-            makeStore(config.deserializeState(initialState), {
+            makeStore(config.deserializeState(initialState, ctx), {
                 ...ctx,
                 ...config,
                 isServer,
@@ -49,6 +49,8 @@ export default (makeStore: MakeStore, config?: Config) => {
                 /* istanbul ignore next */
                 if (!appCtx.ctx) throw new Error('No page context');
 
+                appCtx.ctx.isServer = isServer;
+
                 const store = initStore({
                     ctx: appCtx.ctx,
                 });
@@ -57,7 +59,6 @@ export default (makeStore: MakeStore, config?: Config) => {
                     console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
 
                 appCtx.ctx.store = store;
-                appCtx.ctx.isServer = isServer;
 
                 let initialProps = {};
 
@@ -69,7 +70,7 @@ export default (makeStore: MakeStore, config?: Config) => {
 
                 return {
                     isServer,
-                    initialState: config.serializeState(store.getState()),
+                    initialState: config.serializeState(store.getState(), appCtx.ctx),
                     initialProps,
                 };
             };
@@ -98,8 +99,8 @@ export default (makeStore: MakeStore, config?: Config) => {
 };
 
 export interface Config {
-    serializeState?: (any) => any;
-    deserializeState?: (any) => any;
+    serializeState?: (any, NextJSContext) => any;
+    deserializeState?: (any, NextJSContext) => any;
     storeKey?: string;
     debug?: boolean;
     overrideIsServer?: boolean;
