@@ -37,6 +37,9 @@
     "ts-jest": "24.0.2",
     "typescript": "3.5.1"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "next": ">=6.0.0",
     "react": "*"
