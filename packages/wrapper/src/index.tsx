@@ -6,6 +6,7 @@ import {NextAppContext} from 'next/app';
 const defaultConfig: Config = {
     storeKey: '__NEXT_REDUX_STORE__',
     debug: false,
+    printState: false,
     serializeState: state => state,
     deserializeState: state => state,
 };
@@ -56,7 +57,10 @@ export default (makeStore: MakeStore, config?: Config) => {
                 });
 
                 if (config.debug)
-                    console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
+                    console.log(
+                        '1. WrappedApp.getInitialProps wrapper got the store with state',
+                        config.printState ? store.getState() : {},
+                    );
 
                 appCtx.ctx.store = store;
 
@@ -66,7 +70,11 @@ export default (makeStore: MakeStore, config?: Config) => {
                     initialProps = await App.getInitialProps.call(App, appCtx);
                 }
 
-                if (config.debug) console.log('3. WrappedApp.getInitialProps has store state', store.getState());
+                if (config.debug)
+                    console.log(
+                        '3. WrappedApp.getInitialProps has store state',
+                        config.printState ? store.getState() : {},
+                    );
 
                 return {
                     isServer,
@@ -80,7 +88,11 @@ export default (makeStore: MakeStore, config?: Config) => {
 
                 const {initialState} = props;
 
-                if (config.debug) console.log('4. WrappedApp.render created new store with initialState', initialState);
+                if (config.debug)
+                    console.log(
+                        '4. WrappedApp.render created new store with initialState',
+                        config.printState ? initialState : {},
+                    );
 
                 this.store = initStore({
                     initialState,
@@ -103,6 +115,7 @@ export interface Config {
     deserializeState?: (any, NextJSContext) => any;
     storeKey?: string;
     debug?: boolean;
+    printState?: boolean;
     overrideIsServer?: boolean;
 }
 
