@@ -1,5 +1,5 @@
 {
-  "name": "@nist-gmbh/next-redux-wrapper",
+  "name": "@teamnist/next-redux-wrapper",
   "version": "3.0.0-alpha.3",
   "description": "Redux wrapper for Next.js",
   "main": "lib/index.js",
