@@ -41,14 +41,14 @@
     "next": ">=6.0.0",
     "react": "*"
   },
-  "author": "Kirill Konshin",
+  "author": "NIST GmbH",
   "repository": {
     "type": "git",
-    "url": "git://github.com/kirill-konshin/next-redux-wrapper.git"
+    "url": "git://github.com/teamnist/next-redux-wrapper.git"
   },
   "bugs": {
-    "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
+    "url": "https://github.com/teamnist/next-redux-wrapper/issues"
   },
-  "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
+  "homepage": "https://github.com/teamnist/next-redux-wrapper",
   "license": "MIT"
 }
