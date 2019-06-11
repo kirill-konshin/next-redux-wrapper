@@ -11,7 +11,7 @@
     "test": "lerna run test --concurrency=1 --stream",
     "test:quick": "lerna run test:quick --concurrency=1 --stream",
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
-    "publish:canary": "lerna publish --canary --force-publish=* --access=public",
+    "publish:canary": "lerna publish --canary --force-publish=*",
     "publish:release": "lerna publish from-package --tag-version-prefix=''",
     "prepare:release": "lerna version --tag-version-prefix='' --force-publish=*",
     "prepare:prerelease": "npm run prepare:release prerelease -- --preid alpha",
