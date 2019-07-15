@@ -9,7 +9,7 @@ Redux wrapper for Next.js
 If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) 
 or you can follow these simple [upgrade instructions](#upgrade).
 
-This library is not compatible with [NextJS 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see [explanation below](#automatic-partial-static-export).
+This library is compatible with NextJS 9, but it is not compatible with [NextJS 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see [explanation below](#automatic-partial-static-export).
 
 - [Usage](#usage)
 - [How it works](#how-it-works)
