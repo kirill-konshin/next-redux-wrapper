@@ -9,16 +9,18 @@ Redux wrapper for Next.js
 If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) 
 or you can follow these simple [upgrade instructions](#upgrade).
 
+This library is not compatible with [NextJS 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see [explanation below](#automatic-partial-static-export).
+
 - [Usage](#usage)
 - [How it works](#how-it-works)
 - [Document](#document)
 - [Error Pages](#error-pages)
-- [Upgrade](#upgrade)
 - [Use with layout](#use-with-layout)
 - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
 - [Custom serialization and deserialization, usage with Immutable.JS](#custom-serialization-and-deserialization)
 - [Usage with Redux Saga](#usage-with-redux-saga)
 - [Usage with Redux Persist](#usage-with-redux-persist)
+- [Upgrade from 1.x](#upgrade)
 - [Resources](#resources)
 
 ## Installation
@@ -156,68 +158,6 @@ Error pages also can be wrapped the same way as any other pages.
 Transition to an error page (`pages/_error.js` template) will cause `pages/_app.js` to be applied but it is always a
 full page transition (not HTML5 pushstate), so client will have store created from scratch using state from the server,
 so unless you persist the store on client somehow the resulting previous client state will be ignored. 
-
-## Upgrade
-
-If your project was using NextJS 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
-version.
-
-1. Upgrade NextJS and Wrapper
-    ```bash
-    $ npm install next@6 --save-dev
-    $ npm install next-redux-wrapper@latest --save
-   ```
-   
-2. Replace all usages of `import withRedux from "next-redux-wrapper";` and `withRedux(...)(WrappedComponent)` in all
-    your pages with plain React Redux `connect` HOC:
-    
-    ```js
-    import {connect} from "react-redux";
-    
-    export default connect(...)(WrappedComponent);
-    ```
-    
-    You also may have to reformat your wrapper object-based config to simple React Redux config.
-    
-3. Create the `pages/_app.js` file with the following minimal code:
-
-    ```js
-    // pages/_app.js
-    import React from 'react'
-    import {Provider} from "react-redux";
-    import App, {Container} from "next/app";
-    import withRedux from "next-redux-wrapper";
-    import {makeStore} from "../components/store";
-    
-    export default withRedux(makeStore, {debug: true})(class MyApp extends App {
-    
-        static async getInitialProps({Component, ctx}) {
-            return {
-                pageProps: {
-                    // Call page-level getInitialProps
-                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
-                }
-            };
-        }
-    
-        render() {
-            const {Component, pageProps, store} = this.props;
-            return (
-                <Container>
-                    <Provider store={store}>
-                        <Component {...pageProps} />
-                    </Provider>
-                </Container>
-            );
-        }
-    
-    });
-    ```
-
-4. Follow [NextJS 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
-    (`props.router` instead of `props.url` and so on)
-    
-That's it, your project should now work same as before. 
 
 ## Use with layout
 
@@ -462,6 +402,78 @@ export default connect(
     </div>
 ));
 ```
+
+## Automatic Partial Static Export
+
+The main purpose of this library is to make sure actions are consistently dispatched on all pages on client and on server from `getInitialProps` function, which makes all pages incompatible with Automatic Partial Static Export feature.
+
+[Previous version of the lib](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) was working on page level, so theoretically you can wrap only *some* pages, but on the other hand you would then need to make sure that no redux-connected components will appear on pages that were not wrapped. So rule of thumb always was to wrap all pages. Which is exactly what the new version does.
+
+Which brings us to conclusion:
+
+If you need a static website you don't need this lib at all because you can always dispatch at client side on `componentDidMount` just like you normally would with bare React Redux, and let server only serve initial/static markup.
+
+## Upgrade
+
+If your project was using NextJS 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
+version.
+
+1. Upgrade NextJS and Wrapper
+    ```bash
+    $ npm install next@6 --save-dev
+    $ npm install next-redux-wrapper@latest --save
+   ```
+   
+2. Replace all usages of `import withRedux from "next-redux-wrapper";` and `withRedux(...)(WrappedComponent)` in all
+    your pages with plain React Redux `connect` HOC:
+    
+    ```js
+    import {connect} from "react-redux";
+    
+    export default connect(...)(WrappedComponent);
+    ```
+    
+    You also may have to reformat your wrapper object-based config to simple React Redux config.
+    
+3. Create the `pages/_app.js` file with the following minimal code:
+
+    ```js
+    // pages/_app.js
+    import React from 'react'
+    import {Provider} from "react-redux";
+    import App, {Container} from "next/app";
+    import withRedux from "next-redux-wrapper";
+    import {makeStore} from "../components/store";
+    
+    export default withRedux(makeStore, {debug: true})(class MyApp extends App {
+    
+        static async getInitialProps({Component, ctx}) {
+            return {
+                pageProps: {
+                    // Call page-level getInitialProps
+                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                }
+            };
+        }
+    
+        render() {
+            const {Component, pageProps, store} = this.props;
+            return (
+                <Container>
+                    <Provider store={store}>
+                        <Component {...pageProps} />
+                    </Provider>
+                </Container>
+            );
+        }
+    
+    });
+    ```
+
+4. Follow [NextJS 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
+    (`props.router` instead of `props.url` and so on)
+    
+That's it, your project should now work same as before. 
 
 ## Resources
 
