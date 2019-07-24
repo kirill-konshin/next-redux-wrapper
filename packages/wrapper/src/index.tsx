@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Store} from 'redux';
+import {Store, AnyAction, Action} from 'redux';
 import {NextComponentType, NextContext} from 'next';
 import {NextAppContext} from 'next/app';
 
@@ -105,8 +105,8 @@ export interface Config {
     overrideIsServer?: boolean;
 }
 
-export interface NextJSContext extends NextContext {
-    store: Store;
+export interface NextJSContext<S = any, A extends Action = AnyAction> extends NextContext {
+    store: Store<S, A>;
     isServer: boolean;
 }
 
