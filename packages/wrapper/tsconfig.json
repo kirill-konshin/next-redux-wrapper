@@ -1,6 +1,8 @@
 {
   "extends": "next-redux-wrapper-configs/tsconfig.json",
   "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./.tscache/tscache",
     "declaration": true,
     "outDir": "lib",
     "declarationDir": "lib"

@@ -1,5 +1,6 @@
 .idea
 .next
+.tscache
 coverage
 es6
 lib
