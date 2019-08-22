@@ -1,7 +1,7 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "3.0.0",
+  "version": "0.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "postinstall": "lerna bootstrap --hoist --no-ci",
@@ -11,24 +11,21 @@
     "test": "lerna run test --concurrency=1 --stream",
     "test:quick": "lerna run test:quick --concurrency=1 --stream",
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
-    "publish:canary": "lerna publish --canary --force-publish=*",
-    "publish:release": "lerna publish from-package --tag-version-prefix=''",
-    "prepare:release": "lerna version --tag-version-prefix='' --force-publish=*",
-    "prepare:prerelease": "npm run prepare:release prerelease -- --preid alpha",
+    "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint --fix",
     "lint:all": "npm run lint -- 'packages/*/**/*.ts?' 'packages/*/*.js'",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "coveralls": "3.0.3",
+    "coveralls": "3.0.6",
     "eslint": "5.16.0",
-    "eslint-config-ringcentral-typescript": "1.0.0",
-    "husky": "2.4.0",
-    "lerna": "3.14.1",
-    "lint-staged": "8.1.7",
-    "prettier": "1.17.1",
-    "rimraf": "2.6.3",
-    "typescript": "3.5.1"
+    "eslint-config-ringcentral-typescript": "1.0.1",
+    "husky": "3.0.4",
+    "lerna": "3.16.4",
+    "lint-staged": "9.2.3",
+    "prettier": "1.18.2",
+    "rimraf": "3.0.0",
+    "typescript": "3.5.3"
   },
   "author": "Kirill Konshin",
   "repository": {

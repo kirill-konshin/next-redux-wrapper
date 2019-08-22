@@ -1,5 +1,9 @@
 language: node_js
 
+cache:
+  directories:
+    - node_modules
+
 node_js:
 - stable
 
@@ -11,15 +15,8 @@ before_script:
 - npm run build
 
 deploy:
-#- provider: script
-#  script: npm run publish:canary -- --yes
-#  skip_cleanup: true
-#  on:
-#    tags: false
-#    branch: master
-#    repo: kirill-konshin/next-redux-wrapper
 - provider: script
-  script: npm run publish:release -- --yes
+  script: npm run publish:release -- ${TRAVIS_TAG} --yes
   skip_cleanup: true
   on:
     tags: true

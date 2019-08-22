@@ -4,10 +4,9 @@ Redux wrapper for Next.js
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/kirill-konshin/next-redux-wrapper/badge.svg?branch=master)](https://coveralls.io/github/kirill-konshin/next-redux-wrapper?branch=master)
 
-:warning: This will work only with NextJS 6+ :warning:
+:warning: Version 4 of this library will work only with Next.js 9. If you're using Next.js 6-8 you can use previous versions. :warning:
 
-If you're looking for a version for NextJS 5 (for individual pages) use [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) 
-or you can follow these simple [upgrade instructions](#upgrade).
+Next.js 5 (for individual pages) is compatible only with [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) or you can follow these simple [upgrade instructions](#upgrade).
 
 This library is compatible with NextJS 9, but it is not compatible with [NextJS 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see [explanation below](#automatic-partial-static-export).
 
