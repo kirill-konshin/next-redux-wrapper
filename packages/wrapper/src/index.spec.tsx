@@ -2,14 +2,14 @@ import React, {Component} from 'react';
 import {applyMiddleware, createStore} from 'redux';
 import promiseMiddleware from 'redux-promise-middleware';
 import renderer from 'react-test-renderer';
-import {NextAppContext} from 'next/app';
 import withRedux from '../src/index';
+import {AppContext} from 'next/app';
 
-interface NextAppContextTest extends NextAppContext {
+interface NextAppContextTest extends AppContext {
     ctx: any;
 }
 
-const appCtx: NextAppContextTest = {ctx: {}, Component: null, router: null};
+const appCtx: NextAppContextTest = {ctx: {}, Component: null, router: null, AppTree: () => null};
 
 const reducer = (state = {reduxStatus: 'init'}, action) => {
     switch (action.type) {

@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {Store, AnyAction, Action} from 'redux';
-import {NextComponentType, NextContext} from 'next';
-import {NextAppContext} from 'next/app';
+import {NextComponentType, NextPageContext} from 'next';
+import {AppContext} from 'next/app';
 
 const defaultConfig: Config = {
     storeKey: '__NEXT_REDUX_STORE__',
@@ -105,12 +105,12 @@ export interface Config {
     overrideIsServer?: boolean;
 }
 
-export interface NextJSContext<S = any, A extends Action = AnyAction> extends NextContext {
+export interface NextJSContext<S = any, A extends Action = AnyAction> extends NextPageContext {
     store: Store<S, A>;
     isServer: boolean;
 }
 
-export interface NextJSAppContext extends NextAppContext {
+export interface NextJSAppContext extends AppContext {
     ctx: NextJSContext;
 }
 
