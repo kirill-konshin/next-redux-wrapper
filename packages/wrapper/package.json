@@ -5,7 +5,9 @@
   "main": "lib/index.js",
   "module": "es6/index.js",
   "types": "es6/index.d.ts",
-  "source": "lib/index.ts",
+  "source": "src/index.ts",
+  "jsnext:main": "src/index.ts",
+  "main:src": "src/index.ts",
   "scripts": {
     "test": "jest",
     "test:quick": "npm run test",
