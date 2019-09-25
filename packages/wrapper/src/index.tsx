@@ -31,7 +31,7 @@ export default (makeStore: MakeStore, config?: Config) => {
         if (isServer) return createStore();
 
         // Memoize store if client
-        if (!window.hasOwnProperty(storeKey)) {
+        if (!(storeKey in window)) {
             window[storeKey] = createStore();
         }
 

@@ -1,8 +1,10 @@
 language: node_js
 
 cache:
+  yarn: true
   directories:
     - node_modules
+    - packages/*/node_modules
 
 node_js:
 - stable
@@ -11,16 +13,16 @@ before_install:
 - npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 
 before_script:
-- DEBUG=eslint:cli-engine npm run lint:all
-- npm run build
+- DEBUG=eslint:cli-engine yarn lint:all
+- yarn build
 
 deploy:
 - provider: script
-  script: npm run publish:release -- ${TRAVIS_TAG} --yes
+  script: yarn publish:release ${TRAVIS_TAG} --yes
   skip_cleanup: true
   on:
     tags: true
     repo: kirill-konshin/next-redux-wrapper
 
 after_success:
-- npm run test:coverage
+- yarn test:coverage

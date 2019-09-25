@@ -1,32 +1,37 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "0.0.0",
+  "version": "4.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
-    "postinstall": "lerna bootstrap --hoist --no-ci",
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
-    "start": "npm run build && lerna run start --parallel",
+    "start": "yarn build && lerna run start --parallel",
     "build": "lerna run build --concurrency=1 --stream",
     "test": "lerna run test --concurrency=1 --stream",
     "test:quick": "lerna run test:quick --concurrency=1 --stream",
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint --fix",
-    "lint:all": "npm run lint -- 'packages/*/**/*.ts?' 'packages/*/*.js'",
+    "lint:all": "yarn lint 'packages/*/**/*.ts?' 'packages/*/*.js'",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
     "coveralls": "3.0.6",
-    "eslint": "5.16.0",
-    "eslint-config-ringcentral-typescript": "1.0.1",
-    "husky": "3.0.4",
+    "eslint": "6.4.0",
+    "eslint-config-ringcentral-typescript": "2.1.1",
+    "husky": "3.0.5",
     "lerna": "3.16.4",
-    "lint-staged": "9.2.3",
+    "lint-staged": "9.3.0",
     "prettier": "1.18.2",
     "rimraf": "3.0.0",
-    "typescript": "3.5.3"
+    "typescript": "3.6.3"
   },
+  "resolutions": {
+    "@types/react": "16.9.3"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
   "author": "Kirill Konshin",
   "repository": {
     "type": "git",
