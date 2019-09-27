@@ -89,6 +89,22 @@ class MyApp extends App {
 export default withRedux(makeStore)(MyApp);
 ```
 
+> **NOTE**: For versions of NextJS < 9.04, you will need to wrap the `Provider` with `Container` from `next/app`.
+> Thus, the import statement will be:
+> ```js
+> import App, {Container} from "next/app";
+> ```
+> And wrapping the `Provider` will be:
+> ```js
+> return (
+>     <Container>
+>         <Provider store={store}>
+>             <Component {...pageProps} />
+>         </Provider>
+>     </Container>
+> );
+> ```
+
 And then actual page components can be simply connected:
 
 ```js
