@@ -38,7 +38,7 @@ Here is the minimal setup (`makeStore` and `reducer` usually are located in othe
 import React from "react";
 import {createStore} from "redux";
 import {Provider} from "react-redux";
-import App, {Container} from "next/app";
+import App from "next/app";
 import withRedux from "next-redux-wrapper";
 
 const reducer = (state = {foo: ''}, action) => {
@@ -78,11 +78,9 @@ class MyApp extends App {
     render() {
         const {Component, pageProps, store} = this.props;
         return (
-            <Container>
-                <Provider store={store}>
-                    <Component {...pageProps} />
-                </Provider>
-            </Container>
+            <Provider store={store}>
+                <Component {...pageProps} />
+            </Provider>
         );
     }
 
@@ -90,6 +88,22 @@ class MyApp extends App {
 
 export default withRedux(makeStore)(MyApp);
 ```
+
+> **NOTE**: For versions of NextJS < 9.04, you will need to wrap the `Provider` with `Container` from `next/app`.
+> Thus, the import statement will be:
+> ```js
+> import App, {Container} from "next/app";
+> ```
+> And wrapping the `Provider` will be:
+> ```js
+> return (
+>     <Container>
+>         <Provider store={store}>
+>             <Component {...pageProps} />
+>         </Provider>
+>     </Container>
+> );
+> ```
 
 And then actual page components can be simply connected:
 
