@@ -5,9 +5,9 @@
   "main": "lib/index.js",
   "module": "es6/index.js",
   "types": "es6/index.d.ts",
-  "source": "src/index.ts",
-  "jsnext:main": "src/index.ts",
-  "main:src": "src/index.ts",
+  "source": "src/index.tsx",
+  "jsnext:main": "src/index.tsx",
+  "main:src": "src/index.tsx",
   "scripts": {
     "test": "jest",
     "test:quick": "yarn test",
