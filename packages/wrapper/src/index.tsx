@@ -56,8 +56,8 @@ export default (makeStore: MakeStore, config?: Config) => {
                 if (config.debug)
                     console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
 
-                appCtx.stx = {
-                    ...appCtx.stx,
+                appCtx.ctx = {
+                    ...appCtx.ctx,
                     isServer,
                     store,
                 };
