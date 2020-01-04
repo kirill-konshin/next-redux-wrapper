@@ -10,7 +10,7 @@ Next.js 5 (for individual pages) is compatible only with [1.x branch](https://gi
 
 This library is compatible with NextJS 9, but it is not compatible with [NextJS 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see [explanation below](#automatic-partial-static-export).
 
-- [Usage](#usage)
+- [Installation](#installation)
 - [How it works](#how-it-works)
 - [Document](#document)
 - [Error Pages](#error-pages)
