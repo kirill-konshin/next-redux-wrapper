@@ -28,7 +28,7 @@ This library is compatible with NextJS 9, but it is not compatible with [NextJS 
 npm install next-redux-wrapper --save
 ```
 
-Wrapper has to be attached your `_app` component (located in `/pages`). All other pages may use regular `connect`
+Wrapper has to be attached to your `_app` component (located in `/pages`). All other pages may use the regular `connect`
 function of `react-redux`.
 
 Here is the minimal setup (`makeStore` and `reducer` usually are located in other files):
@@ -131,15 +131,15 @@ export default connect(state => state)(Page);
 
 ## How it works
 
-No magic is involved, it auto-creates Redux store when `getInitialProps` is called by Next.js and then passes this store
-down to React Redux's `Provider`, which is used to wrap the original component, also automatically. On the client side
-it also takes care of using same store every time, whereas on server new store is created for each request.
+No magic is involved. It auto-creates the Redux store when `getInitialProps` is called by Next.js and then passes this store
+down to React Redux's `Provider`, which is used to wrap the original component (also automatically). On the client side
+it also takes care of using the same store every time, whereas on the server a new store is created for each request.
 
-The `withRedux` function accepts `makeStore` as first argument. The `makeStore` function will receive initial state and
-should return a new instance of Redux `store` each time when called, no memoization needed here, it is automatically done
+The `withRedux` function accepts `makeStore` as its first argument. The `makeStore` function will receive initial state and
+should return a new instance of Redux `store` each time it's called. No memoization is needed here, it is automatically done
 inside the wrapper.
 
-`withRedux` also optionally accepts a config object as second paramter:
+`withRedux` also optionally accepts a config object as a second paramter:
 
 - `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
@@ -154,27 +154,27 @@ When `makeStore` is invoked it is provided with a configuration object along wit
 
 Additional config properties `req` and `res` are not set when client applies `initialState` from server.
 
-Although it is possible to create server or client specific logic in both `makeStore` function and `getInitialProps`
-method I highly don't recommend to have different behavior. This may cause errors and checksum mismatches which in turn
-will ruin the whole purpose of server rendering.
+Although it is possible to create server or client specific logic in both `makeStore` and `getInitialProps`, I highly
+recommend that they do not have different behavior. This may cause errors and checksum mismatches which in turn will
+ruin the whole purpose of server rendering.
 
 ## Document
 
-I don't recommend to use `withRedux` in `pages/_document.js`, Next.JS [does not provide](https://github.com/zeit/next.js/issues/1267)
+I don't recommend using `withRedux` in `pages/_document.js`, Next.JS [does not provide](https://github.com/zeit/next.js/issues/1267)
 a reliable way to determine the sequence when components will be rendered. So per Next.JS recommendation it is better
 to have just data-agnostic things in `pages/_document`. 
 
 ## Error Pages
 
-Error pages also can be wrapped the same way as any other pages.
+Error pages can also be wrapped the same way as any other pages.
 
 Transition to an error page (`pages/_error.js` template) will cause `pages/_app.js` to be applied but it is always a
-full page transition (not HTML5 pushstate), so client will have store created from scratch using state from the server,
-so unless you persist the store on client somehow the resulting previous client state will be ignored. 
+full page transition (not HTML5 pushState), so client will have the store created from scratch using state from the server.
+So unless you persist the store on the client somehow the resulting previous client state will be ignored. 
 
 ## Use with layout
 
-`MyApp` is not connected to Redux by design in order to keep the interface as minimal as possible, you can return
+`MyApp` is not connected to Redux by design in order to keep the interface as minimal as possible. You can return
 whatever you want from `MyApp`'s `getInitialProps`, or if you need a shared layout just create it and `connect` it as
 usual, then include it either in the page itself or render in `MyApp` like so:
 
@@ -305,11 +305,11 @@ const makeStore = (initialState, options) => {
 
 ## Usage with Redux Persist
 
-Honestly, I think that putting a persistence gate is not necessary because server can already send *some* HTML with
+Honestly, I think that putting a persistence gate is not necessary because the server can already send *some* HTML with
 *some* state, so it's better to show it right away and then wait for `REHYDRATE` action to happen to show additional
-delta coming from persistence storage. That's why we use Server Side Rendering in a first place.
+delta coming from persistence storage. That's why we use Server Side Rendering in the first place.
 
-But, for those who actually want to block the UI while rehydration is happening, here is the solution (still hacky though).
+But, for those who actually want to block the UI while rehydration is happening, here is the solution (still hacky though):
 
 ```js
 // lib/redux.js
@@ -420,11 +420,11 @@ export default connect(
 
 The main purpose of this library is to make sure actions are consistently dispatched on all pages on client and on server from `getInitialProps` function, which makes all pages incompatible with Automatic Partial Static Export feature.
 
-[Previous version of the lib](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) was working on page level, so theoretically you can wrap only *some* pages, but on the other hand you would then need to make sure that no redux-connected components will appear on pages that were not wrapped. So rule of thumb always was to wrap all pages. Which is exactly what the new version does.
+[Previous version of the lib](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) was working on page level, so theoretically you can wrap only *some* pages. But on the other hand you would then need to make sure that no redux-connected components will appear on pages that were not wrapped. So rule of thumb always was to wrap all pages. Which is exactly what the new version does.
 
-Which brings us to conclusion:
+Which brings us to the conclusion:
 
-If you need a static website you don't need this lib at all because you can always dispatch at client side on `componentDidMount` just like you normally would with bare React Redux, and let server only serve initial/static markup.
+If you need a static website you don't need this lib at all because you can always dispatch at client side on `componentDidMount` just like you normally would with bare React Redux, and let the server only serve initial/static markup.
 
 ## Upgrade
 
@@ -486,7 +486,7 @@ version.
 4. Follow [NextJS 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
     (`props.router` instead of `props.url` and so on)
     
-That's it, your project should now work same as before. 
+That's it. Your project should now work the same as before. 
 
 ## Resources
 
