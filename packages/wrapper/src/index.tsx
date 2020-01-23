@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {Store, AnyAction, Action} from 'redux';
 import {NextComponentType, NextPageContext} from 'next';
-import {AppContext} from 'next/app';
+import {AppContext, AppProps as OriginalAppProps} from 'next/app'; //FIXME
 
 const defaultConfig: Config = {
     storeKey: '__NEXT_REDUX_STORE__',
@@ -43,7 +43,7 @@ export default (makeStore: MakeStore, config?: Config) => {
             /* istanbul ignore next */
             public static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
-            public static getInitialProps = async (appCtx: NextJSAppContext) => {
+            public static getInitialProps = async (appCtx: AppContext) => {
                 /* istanbul ignore next */
                 if (!appCtx) throw new Error('No app context');
                 /* istanbul ignore next */
@@ -105,16 +105,7 @@ export interface Config {
     overrideIsServer?: boolean;
 }
 
-export interface NextJSContext<S = any, A extends Action = AnyAction> extends NextPageContext {
-    store: Store<S, A>;
-    isServer: boolean;
-}
-
-export interface NextJSAppContext extends AppContext {
-    ctx: NextJSContext;
-}
-
-export interface MakeStoreOptions extends Config, NextJSContext {
+export interface MakeStoreOptions extends Config, NextPageContext {
     isServer: boolean;
 }
 
@@ -122,7 +113,7 @@ export declare type MakeStore = (initialState: any, options: MakeStoreOptions) =
 
 export interface InitStoreOptions {
     initialState?: any;
-    ctx?: NextJSContext;
+    ctx?: NextPageContext;
 }
 
 export interface WrappedAppProps {
@@ -131,6 +122,26 @@ export interface WrappedAppProps {
     isServer: boolean;
 }
 
-export interface AppProps {
-    store: Store;
+//FIXME Bad naming, shadows OriginalAppProps
+export interface AppProps<S, A extends Action = AnyAction, P = {}> extends OriginalAppProps<P> {
+    store: Store<S, A>;
 }
+
+declare module 'next/dist/next-server/lib/utils' {
+    export interface NextPageContext<S = any, A extends Action = AnyAction> {
+        /**
+         * Provided by next-redux-wrapper: Whether the code is executed on the server or the client side
+         */
+        isServer: boolean;
+
+        /**
+         * Provided by next-redux-wrapper: The redux store
+         */
+        store: Store<S, A>;
+    }
+}
+
+//FIXME Backwards compatibility, to be removed in next versions
+export interface NextJSContext<S, A extends Action = AnyAction> extends NextPageContext<S, A> {}
+export interface NextJSAppContext extends AppContext {}
+export interface NextJSAppProps<S, A extends Action = AnyAction, P = {}> extends AppProps<S, A, P> {}

@@ -1,6 +1,12 @@
 import {createStore} from 'redux';
 import reducer from './reducer';
 
+export interface State {
+    tick: string;
+    tack: string;
+    toe: string;
+}
+
 export const makeStore = initialState => {
     const store = createStore(reducer, initialState);
 
