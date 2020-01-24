@@ -1,4 +1,6 @@
-{
+const prettierOptions = JSON.parse(require('fs').readFileSync('./.prettierrc').toString());
+
+module.exports = {
   "extends": [
     "ringcentral-typescript"
   ],
@@ -9,6 +11,7 @@
     "no-console": "off",
     "no-undef": "off", //FIXME @see https://github.com/eslint/typescript-eslint-parser/issues/75
     "no-unused-expressions": "off", // tests
+    'prettier/prettier': ['warn', Object.assign({}, prettierOptions)],
     "react/sort-comp": "off",
     "react/prop-types": "off",
     "ringcentral/specified-comment-with-task-id": "off",
