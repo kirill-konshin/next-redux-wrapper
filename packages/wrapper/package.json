@@ -9,7 +9,7 @@
   "jsnext:main": "src/index.tsx",
   "main:src": "src/index.tsx",
   "scripts": {
-    "test": "jest",
+    "test": "jest && jest --config jest.config.jsdom.js",
     "test:quick": "yarn test",
     "clean": "rimraf lib es6 types coverage",
     "build": "yarn clean && yarn build:tsc:es5 && yarn build:tsc:es6",

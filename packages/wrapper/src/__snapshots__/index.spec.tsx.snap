@@ -13,23 +13,3 @@ exports[`client integration store taken from window 1`] = `
   {"reduxStatus":"foo"}
 </div>
 `;
-
-exports[`custom serialization custom state serialization on the server and deserialization on the client 1`] = `
-<div>
-  {"deserialized":true,"serialized":true}
-</div>
-`;
-
-exports[`store integration async 1`] = `
-<div>
-  {"isServer":true,"custom":"custom"}
-  {"reduxStatus":"foo"}
-</div>
-`;
-
-exports[`store integration simple 1`] = `
-<div>
-  {"isServer":true,"custom":"custom"}
-  {"reduxStatus":"foo"}
-</div>
-`;
