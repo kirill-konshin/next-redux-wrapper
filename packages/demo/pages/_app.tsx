@@ -1,15 +1,13 @@
 import React from 'react';
 import {Provider} from 'react-redux';
-import App, {Container} from 'next/app';
-import withRedux, {NextJSAppContext, NextJSAppProps} from 'next-redux-wrapper';
+import App, {Container, AppContext} from 'next/app';
+import withRedux from 'next-redux-wrapper';
 import {makeStore, State} from '../components/store';
 import Layout from '../components/layout';
 
-export interface MyAppProps extends NextJSAppProps<State> {}
-
 export default withRedux(makeStore, {debug: true})(
-    class MyApp extends App<MyAppProps> {
-        public static async getInitialProps({Component, ctx}: NextJSAppContext) {
+    class MyApp extends App {
+        public static async getInitialProps({Component, ctx}: AppContext) {
             // Keep in mind that this will be called twice on server, one for page and second for error page
             await new Promise<any>(res => {
                 setTimeout(() => {
@@ -29,7 +27,7 @@ export default withRedux(makeStore, {debug: true})(
         }
 
         public render() {
-            const {Component, pageProps, store} = this.props;
+            const {Component, pageProps, store} = this.props as any;
             return (
                 <Container>
                     <Provider store={store}>

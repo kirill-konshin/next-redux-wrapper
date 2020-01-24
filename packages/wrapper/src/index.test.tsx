@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import renderer from 'react-test-renderer';
 import withRedux from '../src/index';
-import {appCtx, AsyncPage, makeStore, SyncPage, verifyComponent} from './testlib';
+import {AsyncPage, makeStore, SyncPage, verifyComponent, createAppContext} from './testlib';
 
 describe('store integration', () => {
     test('simple', async () => {
@@ -30,7 +30,7 @@ describe('custom serialization', () => {
             debug: true,
         })(MyApp);
 
-        const props = await WrappedPage.getInitialProps(appCtx);
+        const props = await WrappedPage.getInitialProps(createAppContext());
         expect(props.initialState.serialized).toBeTruthy();
 
         const component = renderer.create(<WrappedPage {...props} />);
