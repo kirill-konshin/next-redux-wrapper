@@ -128,6 +128,23 @@ export interface AppProps<S, A extends Action = AnyAction, P = {}> extends Origi
     store: Store<S, A>;
 }
 
+/**
+ * Convenience type that adds the Redux store provided by `next-redux-wrapper` to the props of a
+ * wrapped `App` component.
+ *
+ * Usage example (within `_app.js`):
+ * ```
+ * class MyApp extends App<ReduxWrappedAppProps> {
+ * ```
+ * or, if you want to provide custom state and action types for the store:
+ * ```
+ * class MyApp extends App<ReduxWrappedAppProps<MyStateType, MyActionType>> {
+ * ```
+ *
+ * You can also add custom `App` props via the third type argument.
+ */
+export interface ReduxWrappedAppProps<S = any, A extends Action = AnyAction, P = {}> extends AppProps<S, A, P> {}
+
 declare module 'next/dist/next-server/lib/utils' {
     export interface NextPageContext<S = any, A extends Action = AnyAction> {
         /**
@@ -145,4 +162,3 @@ declare module 'next/dist/next-server/lib/utils' {
 //FIXME Backwards compatibility, to be removed in next versions
 export interface NextJSContext<S, A extends Action = AnyAction> extends NextPageContext<S, A> {}
 export interface NextJSAppContext extends AppContext {}
-export interface NextJSAppProps<S, A extends Action = AnyAction, P = {}> extends AppProps<S, A, P> {}

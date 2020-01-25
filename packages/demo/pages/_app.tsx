@@ -1,12 +1,12 @@
 import React from 'react';
 import {Provider} from 'react-redux';
 import App, {Container, AppContext} from 'next/app';
-import withRedux from 'next-redux-wrapper';
+import withRedux, {ReduxWrappedAppProps} from 'next-redux-wrapper';
 import {makeStore, State} from '../components/store';
 import Layout from '../components/layout';
 
 export default withRedux(makeStore, {debug: true})(
-    class MyApp extends App {
+    class MyApp extends App<ReduxWrappedAppProps<State>> {
         public static async getInitialProps({Component, ctx}: AppContext) {
             // Keep in mind that this will be called twice on server, one for page and second for error page
             await new Promise<any>(res => {
@@ -27,7 +27,7 @@ export default withRedux(makeStore, {debug: true})(
         }
 
         public render() {
-            const {Component, pageProps, store} = this.props as any;
+            const {Component, pageProps, store} = this.props;
             return (
                 <Container>
                     <Provider store={store}>
