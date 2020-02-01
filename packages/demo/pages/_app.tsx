@@ -1,6 +1,6 @@
 import React from 'react';
 import {Provider} from 'react-redux';
-import App, {Container, AppContext} from 'next/app';
+import App, {AppContext} from 'next/app';
 import withRedux, {ReduxWrapperAppProps} from 'next-redux-wrapper';
 import {makeStore, State} from '../components/store';
 import Layout from '../components/layout';
@@ -29,13 +29,11 @@ export default withRedux(makeStore, {debug: true})(
         public render() {
             const {Component, pageProps, store} = this.props;
             return (
-                <Container>
-                    <Provider store={store}>
-                        <Layout>
-                            <Component {...pageProps} />
-                        </Layout>
-                    </Provider>
-                </Container>
+                <Provider store={store}>
+                    <Layout>
+                        <Component {...pageProps} />
+                    </Layout>
+                </Provider>
             );
         }
     },
