@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Store, AnyAction, Action} from 'redux';
 import {NextComponentType, NextPageContext} from 'next';
-import {AppContext, AppProps as OriginalAppProps} from 'next/app'; //FIXME
+import {AppContext, AppProps} from 'next/app';
 
 const defaultConfig = {
     storeKey: '__NEXT_REDUX_STORE__',
@@ -123,11 +123,6 @@ export interface WrappedAppProps {
     isServer: boolean;
 }
 
-//FIXME Bad naming, shadows OriginalAppProps
-export interface AppProps<S, A extends Action = AnyAction, P = {}> extends OriginalAppProps<P> {
-    store: Store<S, A>;
-}
-
 /**
  * Convenience type that adds the Redux store provided by `next-redux-wrapper` to the props of a
  * wrapped `App` component.
@@ -143,7 +138,9 @@ export interface AppProps<S, A extends Action = AnyAction, P = {}> extends Origi
  *
  * You can also add custom `App` props via the third type argument.
  */
-export interface ReduxWrappedAppProps<S = any, A extends Action = AnyAction, P = {}> extends AppProps<S, A, P> {}
+export interface ReduxWrapperAppProps<S = any, A extends Action = AnyAction, P = {}> extends AppProps<P> {
+    store: Store<S, A>;
+}
 
 declare module 'next/dist/next-server/lib/utils' {
     export interface NextPageContext<S = any, A extends Action = AnyAction> {
