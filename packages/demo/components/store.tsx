@@ -1,4 +1,5 @@
 import {createStore} from 'redux';
+import {MakeStore} from 'next-redux-wrapper';
 import reducer from './reducer';
 
 export interface State {
@@ -7,7 +8,7 @@ export interface State {
     toe: string;
 }
 
-export const makeStore = initialState => {
+export const makeStore: MakeStore = (initialState: State) => {
     const store = createStore(reducer, initialState);
 
     if (module.hot) {

@@ -1,16 +1,10 @@
 import {AppContext} from 'next/app';
-import {applyMiddleware, createStore} from 'redux';
+import {applyMiddleware, createStore, AnyAction} from 'redux';
 import promiseMiddleware from 'redux-promise-middleware';
 import React, {Component} from 'react';
 import renderer from 'react-test-renderer';
 
-interface NextAppContextTest extends AppContext {
-    ctx: any;
-}
-
-export const appCtx: NextAppContextTest = {ctx: {}, Component: null, router: null, AppTree: () => null};
-
-const reducer = (state = {reduxStatus: 'init'}, action) => {
+export const reducer = (state = {reduxStatus: 'init'}, action: AnyAction) => {
     switch (action.type) {
         case 'FOO': // sync
         case 'FOO_FULFILLED': // async
@@ -20,7 +14,7 @@ const reducer = (state = {reduxStatus: 'init'}, action) => {
     }
 };
 
-export const makeStore = initialState => createStore(reducer, initialState, applyMiddleware(promiseMiddleware));
+export const makeStore = (initialState: any) => createStore(reducer, initialState, applyMiddleware(promiseMiddleware));
 
 class SyncPageBase extends Component<any> {
     public render() {
@@ -35,7 +29,7 @@ class SyncPageBase extends Component<any> {
 }
 
 export class SyncPage extends SyncPageBase {
-    public static getInitialProps({ctx}) {
+    public static getInitialProps({ctx}: AppContext) {
         ctx.store.dispatch({type: 'FOO', payload: 'foo'});
         return {custom: 'custom'};
     }
@@ -47,21 +41,35 @@ const someAsyncAction = {
 };
 
 export class AsyncPage extends SyncPageBase {
-    public static async getInitialProps({ctx}) {
+    public static async getInitialProps({ctx}: AppContext) {
         await ctx.store.dispatch(someAsyncAction);
         return {custom: 'custom'};
     }
 }
 
 export class NoStorePage extends SyncPageBase {
-    public static async getInitialProps({ctx}) {
+    public static async getInitialProps() {
         return {custom: 'custom'};
     }
 }
 
-export async function verifyComponent(WrappedPage) {
+/**
+ * Creates a stub AppContext declared as any
+ */
+export function createAppContext(): any {
+    return {
+        ctx: {
+            pathname: '/',
+            req: {},
+            res: {},
+            query: {},
+        },
+    };
+}
+
+export async function verifyComponent(WrappedPage: any) {
     // this is called by Next.js
-    const props = await WrappedPage.getInitialProps(appCtx);
+    const props = await WrappedPage.getInitialProps(createAppContext());
 
     expect(props.initialProps.custom).toBe('custom');
     expect(props.initialState.reduxStatus).toBe('foo');

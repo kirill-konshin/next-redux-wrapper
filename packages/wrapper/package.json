@@ -9,7 +9,7 @@
   "jsnext:main": "src/index.tsx",
   "main:src": "src/index.tsx",
   "scripts": {
-    "test": "jest && jest --config jest.config.jsdom.js",
+    "test": "jest",
     "test:quick": "yarn test",
     "clean": "rimraf lib es6 types coverage",
     "build": "yarn clean && yarn build:tsc:es5 && yarn build:tsc:es6",
@@ -23,6 +23,7 @@
     "@types/jest": "24.0.18",
     "@types/react": "16.9.3",
     "@types/react-redux": "7.1.3",
+    "@types/react-test-renderer": "16.9.2",
     "@types/redux-promise-middleware": "0.0.11",
     "jest": "24.9.0",
     "next": "9.0.6",
