@@ -1,19 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`client integration store not taken from window 1`] = `
-<div>
-  {"isServer":false,"custom":"custom"}
-  {"reduxStatus":"foo"}
-</div>
-`;
-
-exports[`client integration store taken from window 1`] = `
-<div>
-  {"isServer":false,"custom":"custom"}
-  {"reduxStatus":"foo"}
-</div>
-`;
-
 exports[`custom serialization custom state serialization on the server and deserialization on the client 1`] = `
 <div>
   {"deserialized":true,"serialized":true}

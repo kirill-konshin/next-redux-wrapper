@@ -10,7 +10,7 @@
     ],
     "module": "commonjs",
     "moduleResolution": "node",
-    "noImplicitAny": false,
+    "strict": true,
     "preserveConstEnums": true,
     "pretty": true,
     "resolveJsonModule": true,

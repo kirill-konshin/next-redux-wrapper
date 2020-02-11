@@ -1,7 +1,14 @@
 import {createStore} from 'redux';
+import {MakeStore} from 'next-redux-wrapper';
 import reducer from './reducer';
 
-export const makeStore = initialState => {
+export interface State {
+    tick: string;
+    tack: string;
+    toe: string;
+}
+
+export const makeStore: MakeStore = (initialState: State) => {
     const store = createStore(reducer, initialState);
 
     if (module.hot) {

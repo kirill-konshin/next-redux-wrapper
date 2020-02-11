@@ -1,17 +1,17 @@
-import React, {Component} from 'react';
+import * as React from 'react';
 import {Store, AnyAction, Action} from 'redux';
 import {NextComponentType, NextPageContext} from 'next';
-import {AppContext} from 'next/app';
+import {AppContext, AppProps} from 'next/app';
 
-const defaultConfig: Config = {
+const defaultConfig = {
     storeKey: '__NEXT_REDUX_STORE__',
     debug: false,
-    serializeState: state => state,
-    deserializeState: state => state,
+    serializeState: (state: any) => state,
+    deserializeState: (state: any) => state,
 };
 
 export default (makeStore: MakeStore, config?: Config) => {
-    config = {
+    const defaultedConfig = {
         ...defaultConfig,
         ...config,
     };
@@ -19,10 +19,10 @@ export default (makeStore: MakeStore, config?: Config) => {
     const isServer = typeof window === 'undefined';
 
     const initStore = ({initialState, ctx}: InitStoreOptions): Store => {
-        const {storeKey} = config;
+        const {storeKey} = defaultedConfig;
 
         const createStore = () =>
-            makeStore(config.deserializeState(initialState), {
+            makeStore(defaultedConfig.deserializeState(initialState), {
                 ...ctx,
                 ...config,
                 isServer,
@@ -32,18 +32,18 @@ export default (makeStore: MakeStore, config?: Config) => {
 
         // Memoize store if client
         if (!(storeKey in window)) {
-            window[storeKey] = createStore();
+            (window as any)[storeKey] = createStore();
         }
 
-        return window[storeKey];
+        return (window as any)[storeKey];
     };
 
     return (App: NextComponentType | any) =>
-        class WrappedApp extends Component<WrappedAppProps> {
+        class WrappedApp extends React.Component<WrappedAppProps> {
             /* istanbul ignore next */
             public static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
-            public static getInitialProps = async (appCtx: NextJSAppContext) => {
+            public static getInitialProps = async (appCtx: AppContext) => {
                 /* istanbul ignore next */
                 if (!appCtx) throw new Error('No app context');
                 /* istanbul ignore next */
@@ -53,7 +53,7 @@ export default (makeStore: MakeStore, config?: Config) => {
                     ctx: appCtx.ctx,
                 });
 
-                if (config.debug)
+                if (defaultedConfig.debug)
                     console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
 
                 appCtx.ctx.store = store;
@@ -65,23 +65,26 @@ export default (makeStore: MakeStore, config?: Config) => {
                     initialProps = await App.getInitialProps.call(App, appCtx);
                 }
 
-                if (config.debug) console.log('3. WrappedApp.getInitialProps has store state', store.getState());
+                if (defaultedConfig.debug)
+                    console.log('3. WrappedApp.getInitialProps has store state', store.getState());
 
                 return {
                     isServer,
-                    initialState: isServer ? config.serializeState(store.getState()) : store.getState(),
+                    initialState: isServer ? defaultedConfig.serializeState(store.getState()) : store.getState(),
                     initialProps,
                 };
             };
 
-            public constructor(props, context) {
+            public constructor(props: WrappedAppProps, context: AppContext) {
                 super(props, context);
 
                 const {initialState} = props;
 
-                if (config.debug) console.log('4. WrappedApp.render created new store with initialState', initialState);
+                if (defaultedConfig.debug)
+                    console.log('4. WrappedApp.render created new store with initialState', initialState);
 
                 this.store = initStore({
+                    ctx: context.ctx,
                     initialState,
                 });
             }
@@ -98,31 +101,20 @@ export default (makeStore: MakeStore, config?: Config) => {
 };
 
 export interface Config {
-    serializeState?: (any) => any;
-    deserializeState?: (any) => any;
+    serializeState?: (state: any) => any;
+    deserializeState?: (state: any) => any;
     storeKey?: string;
     debug?: boolean;
     overrideIsServer?: boolean;
 }
 
-export interface NextJSContext<S = any, A extends Action = AnyAction> extends NextPageContext {
-    store: Store<S, A>;
-    isServer: boolean;
-}
-
-export interface NextJSAppContext extends AppContext {
-    ctx: NextJSContext;
-}
-
-export interface MakeStoreOptions extends Config, NextJSContext {
-    isServer: boolean;
-}
+export type MakeStoreOptions = Config & NextPageContext;
 
 export declare type MakeStore = (initialState: any, options: MakeStoreOptions) => Store;
 
 export interface InitStoreOptions {
     initialState?: any;
-    ctx?: NextJSContext;
+    ctx: NextPageContext;
 }
 
 export interface WrappedAppProps {
@@ -131,6 +123,39 @@ export interface WrappedAppProps {
     isServer: boolean;
 }
 
-export interface AppProps {
-    store: Store;
+/**
+ * Convenience type that adds the Redux store provided by `next-redux-wrapper` to the props of a
+ * wrapped `App` component.
+ *
+ * Usage example (within `_app.js`):
+ * ```
+ * class MyApp extends App<ReduxWrappedAppProps> {
+ * ```
+ * or, if you want to provide custom state and action types for the store:
+ * ```
+ * class MyApp extends App<ReduxWrappedAppProps<MyStateType, MyActionType>> {
+ * ```
+ *
+ * You can also add custom `App` props via the third type argument.
+ */
+export interface ReduxWrapperAppProps<S = any, A extends Action = AnyAction, P = {}> extends AppProps<P> {
+    store: Store<S, A>;
 }
+
+declare module 'next/dist/next-server/lib/utils' {
+    export interface NextPageContext<S = any, A extends Action = AnyAction> {
+        /**
+         * Provided by next-redux-wrapper: Whether the code is executed on the server or the client side
+         */
+        isServer: boolean;
+
+        /**
+         * Provided by next-redux-wrapper: The redux store
+         */
+        store: Store<S, A>;
+    }
+}
+
+//FIXME Backwards compatibility, to be removed in next versions
+export interface NextJSContext<S, A extends Action = AnyAction> extends NextPageContext<S, A> {}
+export interface NextJSAppContext extends AppContext {}
