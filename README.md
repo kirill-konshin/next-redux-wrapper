@@ -394,7 +394,6 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends App {
     }
 
 });
-
 ```
 
 And then in NextJS page:
