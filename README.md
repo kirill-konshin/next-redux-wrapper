@@ -551,7 +551,6 @@ const MyComponent = (props) => {
 }
 
 MyComponent.getInitialProps = async (ctx) => {
-  // Server side usage
   const mappedValueFromStore = ctx.store.state.mappedValueFromStore // we can retrieve data from redux store in getInitialProps
   ctx.store.dispatch({
     type: 'ACCESS_FROM_GET_INITIAL_PROPS'
