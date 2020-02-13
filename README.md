@@ -529,10 +529,12 @@ From now on, all your components will have access to the redux store (since we u
 ```jsx
 const MyComponent = (props) => {
   const {mappedValueFromStore} = props
-  const storeValue = useSelector(state => state.storeValue) // Client side only
-  const dispatch = useDispatch() // Client side only
+  // Regular redux hooks usage
+  const storeValue = useSelector(state => state.storeValue)
+  const dispatch = useDispatch()
 
   const triggerChange = () => {
+    // Dispatch a redux action with redux hooks
     dispatch({
       type: 'CHANGE_STORE_VALUE',
       storeValue: 'new store value'
@@ -550,7 +552,7 @@ const MyComponent = (props) => {
 
 MyComponent.getInitialProps = async (ctx) => {
   // Server side usage
-  const mappedValueFromStore = ctx.store.state.mappedValueFromStore // we can retrieve data from redux store
+  const mappedValueFromStore = ctx.store.state.mappedValueFromStore // we can retrieve data from redux store in getInitialProps
   ctx.store.dispatch({
     type: 'ACCESS_FROM_GET_INITIAL_PROPS'
   }) // We can dispatch actions too
