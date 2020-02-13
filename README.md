@@ -27,6 +27,7 @@ Contents:
   - [Custom serialization and deserialization](#custom-serialization-and-deserialization)
   - [Usage with Redux Saga](#usage-with-redux-saga)
   - [Usage with Redux Persist](#usage-with-redux-persist)
+  - [Usage with Redux Hooks](#usage-with-redux-hooks)
 - [Automatic Partial Static Export](#automatic-partial-static-export)
 - [Upgrade from 1.x](#upgrade-from-1x)
 - [Resources](#resources)
@@ -518,6 +519,50 @@ export default connect(
     </div>
 ));
 ```
+
+## Usage with Redux Hooks
+
+In order to use Redux Hooks you need to use `useSelector` and `useDispatch` hooks instead of `connect` with `mapStateToProps` and `mapDispatchToProps`. To do so you will need to use `withRedux` as stated in [installation](#installation).
+
+From now on, all your components will have access to the redux store (since we used `withRedux` in the `_app` component) and you'll have to remove the `connect` HOC (normal redux) in favour of `useSelector` and `useDispatch` as stated in the previous parragraph. E.g:
+
+```jsx
+const MyComponent = (props) => {
+  const {mappedValueFromStore} = props
+  // Regular redux hooks usage
+  const storeValue = useSelector(state => state.storeValue)
+  const dispatch = useDispatch()
+
+  const triggerChange = () => {
+    // Dispatch a redux action with redux hooks
+    dispatch({
+      type: 'CHANGE_STORE_VALUE',
+      storeValue: 'new store value'
+    })
+  }
+
+  return (
+    <div>
+      <p>From store directly: {storeValue}</p>
+      <p>From mapped props: {mappedValueFromStore}</p>
+      <button onClick={triggerChange}>Trigger change</button>
+    </div>
+  )
+}
+
+MyComponent.getInitialProps = async (ctx) => {
+  const mappedValueFromStore = ctx.store.state.mappedValueFromStore // we can retrieve data from redux store in getInitialProps
+  ctx.store.dispatch({
+    type: 'ACCESS_FROM_GET_INITIAL_PROPS'
+  }) // We can dispatch actions too
+
+  return {
+    mappedValueFromStore,
+  }
+}
+```
+
+We can use it both server and client side, using `ctx.store.state` and `ctx.store.dispatch` server side and with the hooks on the client side.
 
 ## Automatic Partial Static Export
 
