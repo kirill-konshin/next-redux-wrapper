@@ -109,52 +109,57 @@ export default withRedux(makeStore)(MyApp);
 <details>
     <summary>TypeScript</summary>
 
-```tsx
-// pages/_app.tsx
-import * as React from "react";
-import {createStore} from "redux";
-import {Provider} from "react-redux";
-import App, {AppContext} from 'next/app';
-import withRedux, {ReduxWrapperAppProps, MakeStore} from 'next-redux-wrapper';
+```ts
+// store/index.ts
+import { Action } from 'redux';
 
-interface State {
-    foo: string
+interface FooAction extends Action<'FOO'> {
+  payload: string;
 }
 
-const reducer = (state: State = {foo: ''}, action) => {
-    switch (action.type) {
-        case 'FOO':
-            return {...state, foo: action.payload};
-        default:
-            return state
-    }
+export const reducer = (state = { foo: '' }, action: FooAction) => {
+  switch (action.type) {
+    case 'FOO':
+      return { ...state, foo: action.payload };
+    default:
+      return state;
+  }
 };
+
+export type RootState = ReturnType<typeof reducer>;
+```
+
+```tsx
+// pages/_app.tsx
+import withRedux, { MakeStore } from 'next-redux-wrapper';
+import App, { AppContext } from 'next/app';
+import { Provider } from 'react-redux';
+import { createStore, Store } from 'redux';
+
+import { reducer, RootState } from '../store';
 
 /**
-* @param initialState The store's initial state (on the client side, the state of the server-side store is passed here)
-*/
-const makeStore: MakeStore = (initialState, options) => {
-    return createStore(reducer, initialState);
+ * @param initialState The store's initial state (on the client side, the state of the server-side store is passed here)
+ */
+const makeStore: MakeStore = (initialState: RootState) => {
+  return createStore(reducer, initialState);
 };
 
-class MyApp extends App<ReduxWrapperAppProps<State>> {
-    static async getInitialProps({Component, ctx}: AppContext) {
-        // We can dispatch from here too
-        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
+class MyApp extends App<{ store: Store<RootState> }> {
+  static async getInitialProps({ Component, ctx }: AppContext) {
+    const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
 
-        const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
+    return { pageProps };
+  }
 
-        return {pageProps};
-    }
-
-    render() {
-        const {Component, pageProps, store} = this.props;
-        return (
-            <Provider store={store}>
-                <Component {...pageProps} />
-            </Provider>
-        );
-    }
+  render() {
+    const { Component, pageProps, store } = this.props;
+    return (
+      <Provider store={store}>
+        <Component {...pageProps} />
+      </Provider>
+    );
+  }
 }
 
 export default withRedux(makeStore)(MyApp);
@@ -189,29 +194,48 @@ export default connect(state => state)(Page);
 <details>
     <summary>TypeScript</summary>
 
+```ts
+// types/wrapper.ts
+import { NextComponentType } from 'next';
+import { NextPageWithSrore } from 'next-redux-wrapper';
+import { RootState } from '../store';
+
+export type PageWithSrore<P = {}, IP = P> = NextPageWithSrore<RootState, P, IP>;
+```
+
 ```tsx
-import * as React from "react";
-import {connect, ConnectedProps} from "react-redux";
-import {NextPage} from "next";
-import State from "wherever/your-state-type/is-located";
+// pages/index.tsx
+import { useSelector } from 'react-redux';
 
-type Props = ConnectedProps<typeof connectToRedux>;
+import { RootState } from '../store';
+import { PageWithSrore } from '../types/wrapper';
 
-const Page: NextPage<Props, {custom: string}> = props => (
-    <div>
-        <div>Prop from Redux {props.foo}</div>
-        <div>Prop from getInitialProps {props.custom}</div>
-    </div>
-);
-
-Page.getInitialProps = ({store, isServer, pathname, query}) => {
-    store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
-    return {custom: 'custom'}; // You can pass some custom props to the component from here
+interface Props {
+  custom: string;
 }
 
-const connectToRedux = connect(state: State => state);
+const Page: PageWithSrore<Props> = props => {
+  const foo = useSelector((state: RootState) => state.foo);
 
-export default connectToRedux(Page);
+  return (
+    <div>
+      <div>Prop from Redux {foo}</div>
+      <div>Prop from getInitialProps {props.custom}</div>
+    </div>
+  );
+};
+
+Page.getInitialProps = ({ store, isServer }) => {
+  if (isServer) {
+    // Do some staff
+  }
+
+  store.dispatch({ type: 'FOO', payload: 'foo' }); // The component can read from the store's state when rendered
+
+  return { custom: 'custom' }; // You can pass some custom props to the component from here
+};
+
+export default Page;
 ```
 </details>
 

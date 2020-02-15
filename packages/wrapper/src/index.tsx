@@ -159,3 +159,4 @@ declare module 'next/dist/next-server/lib/utils' {
 //FIXME Backwards compatibility, to be removed in next versions
 export interface NextJSContext<S, A extends Action = AnyAction> extends NextPageContext<S, A> {}
 export interface NextJSAppContext extends AppContext {}
+export type NextPageWithSrore<S, P = {}, IP = P> = NextComponentType<NextJSContext<S>, IP, P>;
