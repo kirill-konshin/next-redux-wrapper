@@ -1,7 +1,7 @@
 import * as React from 'react';
-import renderer from 'react-test-renderer';
-import withRedux from './index';
-import {AsyncPage, makeStore, SyncPage, verifyComponent, createAppContext} from './testlib';
+import {create} from 'react-test-renderer';
+import withRedux, {ReduxWrapperAppProps} from '../src';
+import {AsyncPage, makeStore, SyncPage, verifyComponent, createAppContext, State} from './testlib';
 
 describe('store integration', () => {
     test('simple', async () => {
@@ -17,7 +17,7 @@ describe('store integration', () => {
 
 describe('custom serialization', () => {
     test('custom state serialization on the server and deserialization on the client', async () => {
-        class MyApp extends React.Component<any> {
+        class MyApp extends React.Component<ReduxWrapperAppProps<State>> {
             public render() {
                 const {store} = this.props;
                 return <div>{JSON.stringify(store.getState())}</div>;
@@ -33,7 +33,7 @@ describe('custom serialization', () => {
         const props = await WrappedPage.getInitialProps(createAppContext());
         expect(props.initialState.serialized).toBeTruthy();
 
-        const component = renderer.create(<WrappedPage {...props} />);
+        const component = create(<WrappedPage {...props} />);
 
         const tree = component.toJSON();
         expect(tree).toMatchSnapshot();

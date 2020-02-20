@@ -1,6 +1,12 @@
 import {AnyAction} from 'redux';
 
-const reducer = (state = {tick: 'init', tack: 'init', toe: 'init'}, action: AnyAction) => {
+export interface State {
+    tick: string;
+    tack: string;
+    toe: string;
+}
+
+const reducer = (state: State = {tick: 'init', tack: 'init', toe: 'init'}, action: AnyAction) => {
     switch (action.type) {
         case 'TICK':
             return {...state, tick: action.payload};

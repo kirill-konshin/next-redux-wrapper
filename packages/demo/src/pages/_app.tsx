@@ -2,7 +2,8 @@ import React from 'react';
 import {Provider} from 'react-redux';
 import App, {AppContext} from 'next/app';
 import withRedux, {ReduxWrapperAppProps} from 'next-redux-wrapper';
-import {makeStore, State} from '../components/store';
+import {makeStore} from '../components/store';
+import {State} from '../components/reducer';
 import Layout from '../components/layout';
 
 export default withRedux(makeStore, {debug: true})(
