@@ -6,11 +6,9 @@ cache:
     - node_modules
     - packages/*/node_modules
 
-node_js:
-- stable
+node_js: 13.9
 
-before_install:
-- npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+before_install: npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 
 before_script:
 - DEBUG=eslint:cli-engine yarn lint:all
@@ -24,5 +22,4 @@ deploy:
     tags: true
     repo: kirill-konshin/next-redux-wrapper
 
-after_success:
-- yarn test:coverage
+after_success: yarn test:coverage

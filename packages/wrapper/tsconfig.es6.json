@@ -1,5 +1,5 @@
 {
-  "extends": "next-redux-wrapper-configs/tsconfig.es6.json",
+  "extends": "../configs/tsconfig.es6.json",
   "compilerOptions": {
     "declaration": true,
     "outDir": "es6",

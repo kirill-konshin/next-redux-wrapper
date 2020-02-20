@@ -1,6 +1,7 @@
 .idea
 .next
 .tscache
+.eslint/cache
 coverage
 es6
 lib

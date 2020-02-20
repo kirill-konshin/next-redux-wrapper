@@ -155,7 +155,3 @@ declare module 'next/dist/next-server/lib/utils' {
         store: Store<S, A>;
     }
 }
-
-//FIXME Backwards compatibility, to be removed in next versions
-export interface NextJSContext<S, A extends Action = AnyAction> extends NextPageContext<S, A> {}
-export interface NextJSAppContext extends AppContext {}

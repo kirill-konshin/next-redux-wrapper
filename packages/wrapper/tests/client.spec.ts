@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  **/
 
-import withRedux from './index';
+import withRedux from '../src';
 import {verifyComponent, makeStore, NoStorePage, SyncPage} from './testlib';
 
 describe('client integration', () => {

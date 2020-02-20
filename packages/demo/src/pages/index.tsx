@@ -1,15 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
 import {connect} from 'react-redux';
-import {NextJSContext} from 'next-redux-wrapper';
-import {State} from '../components/store';
+import {NextPageContext} from 'next';
+import {State} from '../components/reducer';
 
 export interface PageProps {
     custom: string;
 }
 
 class Page extends React.Component<PageProps> {
-    public static getInitialProps({store, isServer, pathname, query}: NextJSContext<State>) {
+    public static getInitialProps({store, isServer, pathname, query}: NextPageContext<State>) {
         console.log('2. Page.getInitialProps uses the store to dispatch things, pathname', pathname, 'query', query);
 
         // All async actions must be await'ed before return or return a promise

@@ -471,7 +471,7 @@ export const setClientState = (clientState) => ({
 });
 ```
 
-And then in NextJS `_app` page:
+And then in Next.js `_app` page:
 
 ```js
 // pages/_app.js
@@ -501,7 +501,7 @@ export default withRedux(makeStore, {debug: true})(class MyApp extends App {
 });
 ```
 
-And then in NextJS page:
+And then in Next.js page:
 
 ```js
 // pages/index.js
@@ -576,10 +576,10 @@ If you need a static website you don't need this lib at all because you can alwa
 
 ## Upgrade from 1.x
 
-If your project was using NextJS 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
+If your project was using Next.js 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
 version.
 
-1. Upgrade NextJS and Wrapper
+1. Upgrade Next.js and Wrapper
     ```bash
     $ npm install next@6 --save-dev
     $ npm install next-redux-wrapper@latest --save
@@ -631,7 +631,7 @@ version.
     });
     ```
 
-4. Follow [NextJS 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
+4. Follow [Next.js 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
     (`props.router` instead of `props.url` and so on)
 
 That's it. Your project should now work the same as before.
