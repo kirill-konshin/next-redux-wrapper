@@ -9,8 +9,8 @@ export interface PageProps {
 }
 
 class Page extends React.Component<PageProps> {
-    public static getInitialProps({store, isServer, pathname, query}: NextPageContext<State>) {
-        console.log('2. Page.getInitialProps uses the store to dispatch things, pathname', pathname, 'query', query);
+    public static getInitialProps({store, isServer, pathname, query, req}: NextPageContext<State>) {
+        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query, isServer});
 
         // All async actions must be await'ed before return or return a promise
         if (isServer) {

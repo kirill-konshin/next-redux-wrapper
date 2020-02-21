@@ -5,8 +5,9 @@
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
-    "start": "yarn build && lerna run start --parallel",
+    "start": "yarn build:quick && lerna run start --parallel",
     "build": "lerna run build --stream",
+    "build:quick": "yarn build --scope=next-redux-wrapper",
     "test": "lerna run test --stream",
     "test:quick": "lerna run test:quick --stream",
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
