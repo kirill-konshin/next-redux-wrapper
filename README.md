@@ -145,7 +145,7 @@ const makeStore: MakeStore = (initialState: RootState) => {
   return createStore(reducer, initialState);
 };
 
-class MyApp extends App<{ store: Store<RootState> }> {
+class MyApp extends App<ReduxWrapperAppProps<RootState>> {
   static async getInitialProps({ Component, ctx }: AppContext) {
     const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
 
@@ -194,28 +194,17 @@ export default connect(state => state)(Page);
 <details>
     <summary>TypeScript</summary>
 
-```ts
-// types/wrapper.ts
-import { NextComponentType } from 'next';
-import { NextPageWithSrore } from 'next-redux-wrapper';
-import { RootState } from '../store';
-
-export type PageWithSrore<P = {}, IP = P> = NextPageWithSrore<RootState, P, IP>;
-```
-
 ```tsx
 // pages/index.tsx
 import { useSelector } from 'react-redux';
-
 import { RootState } from '../store';
-import { PageWithSrore } from '../types/wrapper';
 
 interface Props {
   custom: string;
 }
 
-const Page: PageWithSrore<Props> = props => {
-  const foo = useSelector((state: RootState) => state.foo);
+const Page: Props = props => {
+  const foo = useSelector<RootState, RootState['foo']>((state) => state.foo);
 
   return (
     <div>

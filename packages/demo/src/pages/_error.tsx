@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import {NextPage} from 'next';
 import {State} from '../components/reducer';
 
-const Error: NextPage<any> = ({pathname}) => {
+const Error: NextPage = () => {
     const toe = useSelector<State, State['toe']>(state => state.toe);
     return (
         <div>
