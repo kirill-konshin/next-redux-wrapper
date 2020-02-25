@@ -197,13 +197,14 @@ export default connect(state => state)(Page);
 ```tsx
 // pages/index.tsx
 import { useSelector } from 'react-redux';
+import { NextPage } from 'next';
 import { RootState } from '../store';
 
 interface Props {
   custom: string;
 }
 
-const Page: Props = props => {
+const Page: NextPage<Props> = props => {
   const foo = useSelector<RootState, RootState['foo']>((state) => state.foo);
 
   return (
