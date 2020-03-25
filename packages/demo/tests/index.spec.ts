@@ -2,18 +2,18 @@ import config from '../jest-puppeteer.config';
 
 const openPage = (url = '/') => page.goto(`http://localhost:${config.server.port}${url}`);
 
-describe('Basic integration', () => {
-    it('shows the page', async () => {
+describe('Using App wrapper', () => {
+    it('shows server values when page is visited directly', async () => {
         await openPage();
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('Redux tick: server');
-        await expect(page).toMatch('Redux toe: was set in _app');
-        await expect(page).toMatch('Custom: custom server');
+        await expect(page).toMatch('"custom": "server"');
+        await expect(page).toMatch('"app": "was set in _app"');
+        await expect(page).toMatch('"page": "server"');
     });
 
-    it('clicks the button', async () => {
+    it('shows client values when page is visited after navigation', async () => {
         await openPage('/other');
 
         await page.waitForSelector('div.other');
@@ -22,8 +22,8 @@ describe('Basic integration', () => {
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('Redux tick: client');
-        await expect(page).toMatch('Redux toe: was set in _app');
-        await expect(page).toMatch('Custom: custom client');
+        await expect(page).toMatch('"custom": "client"');
+        await expect(page).toMatch('"app": "was set in _app"');
+        await expect(page).toMatch('"page": "client"');
     });
 });

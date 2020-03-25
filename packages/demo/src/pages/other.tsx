@@ -5,11 +5,13 @@ import {NextPage} from 'next';
 import {State} from '../components/reducer';
 
 const Other: NextPage<any> = ({pathname}) => {
-    const {tick, tack, toe} = useSelector<State, State>(state => state);
+    const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="other">
-            <div>Using Next.js default prop in a wrapped component: {pathname}</div>
-            <div>{JSON.stringify({tick, tack, toe})}</div>
+            <p>Page has access to store even though it does not dispatch anything itself</p>
+
+            <pre>{JSON.stringify({app, page}, null, 2)}</pre>
+
             <nav>
                 <Link href="/">
                     <a>Navigate to index</a>

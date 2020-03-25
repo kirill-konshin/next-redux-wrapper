@@ -1,9 +1,10 @@
 import {AppContext} from 'next/app';
 import {applyMiddleware, createStore, AnyAction} from 'redux';
+import {useSelector} from 'react-redux';
 import promiseMiddleware from 'redux-promise-middleware';
 import * as React from 'react';
 import {create} from 'react-test-renderer';
-import {ReduxWrapperAppProps} from '../src';
+import {createWrapper, HYDRATE} from '../src';
 
 export interface State {
     reduxStatus?: string;
@@ -12,6 +13,8 @@ export interface State {
 
 export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction) => {
     switch (action.type) {
+        case HYDRATE:
+            return {...state, ...action.payload};
         case 'FOO': // sync
         case 'FOO_FULFILLED': // async
             return {reduxStatus: action.payload};
@@ -20,45 +23,37 @@ export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction)
     }
 };
 
-export const makeStore = (initialState: State) =>
-    createStore(reducer, initialState, applyMiddleware(promiseMiddleware));
+export const makeStore = () => createStore(reducer, undefined, applyMiddleware(promiseMiddleware));
 
-class SyncPageBase extends React.Component<ReduxWrapperAppProps<State>> {
-    public render() {
-        const {store, ...props} = this.props;
-        return (
-            <div>
-                {JSON.stringify(props)}
-                {JSON.stringify(store.getState())}
-            </div>
-        );
-    }
-}
+export const wrapper = createWrapper(makeStore, {storeKey: 'testStoreKey'});
 
-export class SyncPage extends SyncPageBase {
-    public static getInitialProps({ctx}: AppContext) {
-        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
-        return {custom: 'custom'};
-    }
-}
-
-const someAsyncAction = {
-    type: 'FOO',
-    payload: new Promise(res => res('foo')),
+export const SyncPageBase = (props: any) => {
+    const state = useSelector(state => state);
+    return (
+        <div>
+            {JSON.stringify(props)}
+            {JSON.stringify(state)}
+        </div>
+    );
 };
 
-export class AsyncPage extends SyncPageBase {
-    public static async getInitialProps({ctx}: AppContext) {
-        await ctx.store.dispatch(someAsyncAction);
-        return {custom: 'custom'};
-    }
-}
+export const SyncPage = (props: any) => <SyncPageBase {...props} />;
+SyncPage.getInitialProps = wrapper.getInitialPageProps(({store}) => {
+    store.dispatch({type: 'FOO', payload: 'foo'});
+    return {custom: 'custom'};
+});
 
-export class NoStorePage extends SyncPageBase {
-    public static async getInitialProps() {
-        return {custom: 'custom'};
-    }
-}
+export const AsyncPage = (props: any) => <SyncPageBase {...props} />;
+AsyncPage.getInitialProps = wrapper.getInitialPageProps(async ({store}) => {
+    await store.dispatch({
+        type: 'FOO',
+        payload: new Promise(res => res('foo')),
+    });
+    return {custom: 'custom'};
+});
+
+export const NoStorePage = (props: any) => <SyncPageBase {...props} />;
+NoStorePage.getInitialProps = wrapper.getInitialPageProps(({store}) => ({custom: 'custom'}));
 
 /**
  * Creates a stub AppContext declared as any
