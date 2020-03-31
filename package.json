@@ -1,7 +1,7 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
