@@ -19,15 +19,15 @@ deploy:
   script: yarn publish:release ${TRAVIS_TAG} --yes
   skip_cleanup: true
   on:
-    tags: true
-    branch: master
+    all_branches: true
+    condition: $TRAVIS_BRANCH == master && $TRAVIS_TAG != ""
     repo: kirill-konshin/next-redux-wrapper
 - provider: script
   script: yarn publish:release ${TRAVIS_TAG} --yes --dist-tag next
   skip_cleanup: true
   on:
-    tags: true
-    branch: dev
+    all_branches: true
+    condition: $TRAVIS_BRANCH == dev && $TRAVIS_TAG != ""
     repo: kirill-konshin/next-redux-wrapper
 
 after_success: yarn test:coverage
