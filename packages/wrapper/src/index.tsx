@@ -174,7 +174,9 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
                 return (
                     <Provider store={this.store}>
-                        <Component {...props} {...initialProps} />
+                        {/* order is important! Next.js overwrites props from pages/_app with getStaticProps from page */}
+                        {/* FIXME https://github.com/zeit/next.js/issues/11648 */}
+                        <Component {...initialProps} {...props} />
                     </Provider>
                 );
             }
