@@ -5,32 +5,33 @@ import {NextPageContext} from 'next';
 import {State} from '../components/reducer';
 
 export interface PageProps extends State {
-    custom: string;
+    pageProp: string;
+    appProp: string;
 }
 
 class Index extends React.Component<PageProps> {
     // note that since _app is wrapped no need to wrap page
-    public static async getInitialProps({store, isServer, pathname, query, req}: NextPageContext<State>) {
-        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query, isServer});
+    public static async getInitialProps({store, pathname, query, req}: NextPageContext<State>) {
+        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query});
 
-        if (isServer) {
+        if (req) {
             // All async actions must be await'ed
             await store.dispatch({type: 'PAGE', payload: 'server'});
 
             // Some custom thing for this particular page
-            return {custom: 'server'};
+            return {pageProp: 'server'};
         }
 
         // await is not needed if action is synchronous
         store.dispatch({type: 'PAGE', payload: 'client'});
 
         // Some custom thing for this particular page
-        return {custom: 'client'};
+        return {pageProp: 'client'};
     }
 
     public render() {
         // console.log('5. Page.render');
-        const {custom, app, page} = this.props;
+        const {pageProp, appProp, app, page} = this.props;
         return (
             <div className="index">
                 <p>
@@ -38,7 +39,7 @@ class Index extends React.Component<PageProps> {
                     used on client side.
                 </p>
 
-                <pre>{JSON.stringify({custom, app, page}, null, 2)}</pre>
+                <pre>{JSON.stringify({pageProp, appProp, app, page}, null, 2)}</pre>
 
                 <Link href="/other">
                     <a>Navigate</a>

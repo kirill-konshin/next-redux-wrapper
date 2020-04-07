@@ -81,20 +81,16 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         callback: any;
         context: Context;
         isApp?: boolean;
-    }): Promise<WrappedAppProps> => {
+    }): Promise<WrapperProps> => {
         const store = initStore({context, makeStore, config});
 
         if (config.debug) console.log(`1. getProps created store with state`, store.getState());
-
-        const isServer = getIsServer();
 
         const initialProps =
             (callback &&
                 (await callback(
                     // merging store into context instead of just passing as another argument because it's impossible to override getInitialProps signature
-                    isApp
-                        ? {...context, ctx: {...(context as AppContext).ctx, store, isServer}}
-                        : {...context, store, isServer},
+                    isApp ? {...context, ctx: {...(context as AppContext).ctx, store}} : {...context, store},
                 ))) ||
             {};
 
@@ -102,9 +98,8 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
         const state = store.getState();
         return {
-            isServer,
             initialProps,
-            initialState: isServer ? getSerializedState(state, config) : state,
+            initialState: getIsServer() ? getSerializedState(state, config) : state,
         };
     };
 
@@ -113,7 +108,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     ) => async (context: NextPageContext) => {
         if (context.store) {
             console.warn('No need to wrap pages if _app was wrapped');
-            return callback ? await callback(context as any) : null;
+            return callback ? await callback(context as any) : undefined;
         }
         return await makeProps({callback, context});
     };
@@ -121,7 +116,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     const getInitialAppProps = <P extends {} = any>(
         callback?: (context: AppContext & {store: Store<S, A>}) => P | void,
     ) => async (context: AppContext) =>
-        (await makeProps({callback, context, isApp: true})) as WrappedAppProps & AppInitialProps; // this is just to convince TS
+        (await makeProps({callback, context, isApp: true})) as WrapperProps & AppInitialProps; // this is just to convince TS
 
     const getStaticProps = <P extends {} = any>(
         callback?: (context: GetStaticPropsContext & {store: Store<S, A>}) => P | void,
@@ -146,14 +141,12 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
     const withRedux = (Component: NextComponentType | App | any) => {
         const hasGetInitialProps = 'getInitialProps' in Component;
+        const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
 
-        class WrappedComponentBase extends React.Component<WrappedAppProps> {
+        class Wrapper extends React.Component<WrapperProps> {
             public store: Store<S, A>;
 
-            /* istanbul ignore next */
-            public static displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
-
-            public constructor(props: WrappedAppProps, context: AppContext) {
+            public constructor(props: WrapperProps, context: AppContext) {
                 super(props, context);
 
                 const {initialState} = props;
@@ -161,6 +154,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                 if (config.debug)
                     console.log('4. WrappedApp.constructor created new store with initialState', initialState);
 
+                //TODO Check if pages/_app was wrapped and there's no need to wrap a page itself
                 this.store = initStore({makeStore, config, context});
 
                 this.store.dispatch({
@@ -170,12 +164,18 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             }
 
             public render() {
-                const {initialState, initialProps, isServer, ...props} = this.props;
+                const {initialState, initialProps, ...props} = this.props as any;
+
+                // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
+                // @see https://github.com/zeit/next.js/issues/11648
+                if (initialProps && initialProps.pageProps)
+                    props.pageProps = {
+                        ...initialProps.pageProps, // this comes from wrapper in _app mode
+                        ...props.pageProps, // this comes from gssp/gsp in _app mode
+                    };
 
                 return (
                     <Provider store={this.store}>
-                        {/* order is important! Next.js overwrites props from pages/_app with getStaticProps from page */}
-                        {/* FIXME https://github.com/zeit/next.js/issues/11648 */}
                         <Component {...initialProps} {...props} />
                     </Provider>
                 );
@@ -183,11 +183,14 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         }
 
         return hasGetInitialProps
-            ? class WrappedComponent extends WrappedComponentBase {
+            ? class WrappedPage extends Wrapper {
+                  public static displayName = displayName;
                   public static getInitialProps = async (...args: any) =>
                       Component.getInitialProps.call(Component, ...args);
               }
-            : class WrappedComponent extends WrappedComponentBase {};
+            : class WrappedApp extends Wrapper {
+                  public static displayName = displayName;
+              };
     };
 
     return {
@@ -208,19 +211,13 @@ export interface Config {
     debug?: boolean;
 }
 
-export interface WrappedAppProps {
+export interface WrapperProps {
     initialProps: any; // stuff returned from getInitialProps
     initialState: any; // stuff in the Store state after getInitialProps
-    isServer: boolean;
 }
 
 declare module 'next/dist/next-server/lib/utils' {
     export interface NextPageContext<S = any, A extends Action = AnyAction> {
-        /**
-         * Provided by next-redux-wrapper: Whether the code is executed on the server or the client side
-         */
-        isServer: boolean;
-
         /**
          * Provided by next-redux-wrapper: The redux store
          */

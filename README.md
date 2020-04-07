@@ -434,27 +434,72 @@ createWrapper({
 
 ### Usage with Redux Saga
 
-[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, redux-saga needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
+[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
 
-```js
-// Before this, import what you need and create a root saga as usual
+Create your root saga as usual, then implement the store creator:
 
-const makeStore = (context) => {
+```typescript
+import {createStore, applyMiddleware, Store} from 'redux';
+import {MakeStore, createWrapper, Context} from 'next-redux-wrapper';
+import createSagaMiddleware, {Task} from 'redux-saga';
+import reducer, {State} from './reducer';
+import rootSaga from './saga';
+
+export interface SagaStore extends Store {
+    sagaTask?: Task;
+}
+
+export const makeStore: MakeStore<State> = (context: Context) => {
     // 1: Create the middleware
     const sagaMiddleware = createSagaMiddleware();
 
-    // Before we returned the created store without assigning it to a variable:
-    // return createStore(reducer);
-
     // 2: Add an extra parameter for applying middleware:
-    const store = createStore(reducer, undefined, applyMiddleware(sagaMiddleware));
+    const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
-    // 3: Run your sagas:
-    sagaMiddleware.run(rootSaga);
+    // 3: Run your sagas on server
+    (store as SagaStore).sagaTask = sagaMiddleware.run(rootSaga);
 
     // 4: now return the store:
-    return store
+    return store;
 };
+
+export const wrapper = createWrapper<State>(makeStore, {debug: true});
+```
+
+Then in the `pages/_app` wait stop saga and wait for it to finish when execution is on server:
+
+```typescript
+import React from 'react';
+import App, {AppInitialProps} from 'next/app';
+import {END} from 'redux-saga';
+import {SagaStore, wrapper} from '../components/store';
+
+class WrappedApp extends App<AppInitialProps> {
+    public static getInitialProps = wrapper.getInitialAppProps<Promise<AppInitialProps>>(async ({Component, ctx}) => {
+        // 1. Wait for all page actions to dispatch
+        const pageProps = {
+            ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+        };
+
+        // 2. Stop the saga if on server
+        if (ctx.req) {
+            ctx.store.dispatch(END);
+            await (ctx.store as SagaStore).sagaTask.toPromise();
+        }
+
+        // 3. Return props
+        return {
+            pageProps,
+        };
+    });
+
+    public render() {
+        const {Component, pageProps} = this.props;
+        return <Component {...pageProps} />;
+    }
+}
+
+export default wrapper.withRedux(WrappedApp);
 ```
 
 ### Usage with Redux Persist
@@ -580,6 +625,9 @@ Major change in the way how things are wrapped in version 6.
 6. If you haven't used App then Pages' `getInitialProps` do need to be wrapped with `wrapper.getInitialProps`
 
 7. `App` should no longer wrap it's childern with `Provider`
+
+8. `isServer` is no longer passed in context/props, use your own function or simple check `const isServer = typeof window === 'undefined'`
+8. `WrappedAppProps` was renamed to `WrapperProps`
 
 ## Upgrade from 1.x to 2.x
 

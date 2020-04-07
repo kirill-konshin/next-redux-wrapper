@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`client integration store is put to window when created 1`] = `
+Object {
+  "initialProps": Object {},
+  "initialState": Object {
+    "baz": "qux",
+  },
+}
+`;
+
+exports[`client integration store is put to window when created 2`] = `
+Object {
+  "baz": "qux",
+}
+`;
+
+exports[`client integration store taken from window API functions 1`] = `
+Object {
+  "initialProps": Object {},
+  "initialState": Object {
+    "state": "val",
+  },
+}
+`;
+
+exports[`client integration store taken from window withRedux 1`] = `
+<div>
+  {"props":{},"state":{"state":"val"}}
+</div>
+`;

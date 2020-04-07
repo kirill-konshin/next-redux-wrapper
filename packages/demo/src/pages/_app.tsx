@@ -12,7 +12,7 @@ class WrappedApp extends App<AppInitialProps> {
                 // Call page-level getInitialProps
                 ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
                 // Some custom thing for all pages
-                pathname: ctx.pathname,
+                appProp: ctx.pathname,
             },
         };
     });

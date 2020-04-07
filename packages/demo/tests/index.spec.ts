@@ -8,7 +8,8 @@ describe('Using App wrapper', () => {
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"custom": "server"');
+        await expect(page).toMatch('"pageProp": "server"');
+        await expect(page).toMatch('"appProp": "/"');
         await expect(page).toMatch('"app": "was set in _app"');
         await expect(page).toMatch('"page": "server"');
     });
@@ -22,8 +23,16 @@ describe('Using App wrapper', () => {
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"custom": "client"');
         await expect(page).toMatch('"app": "was set in _app"');
         await expect(page).toMatch('"page": "client"');
+    });
+
+    it('properly combines props from _app and page', async () => {
+        await openPage('/other');
+
+        await page.waitForSelector('div.other');
+
+        await expect(page).toMatch('"getStaticProp": "bar"');
+        await expect(page).toMatch('"appProp": "/other"');
     });
 });
