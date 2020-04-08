@@ -567,27 +567,51 @@ export const setClientState = (clientState) => ({
 });
 ```
 
-And then in Next.js `_app` page:
+And then in Next.js `_app` page you can use bare context access to get the store (https://react-redux.js.org/api/provider#props):
 
-```js
-// pages/_app.js
+```typescript
+// pages/_app.tsx
 import React from "react";
 import App from "next/app";
 import withRedux from "next-redux-wrapper";
+import {ReactReduxContext} from 'react-redux'
 import {wrapper} from "./lib/redux";
 import {PersistGate} from 'redux-persist/integration/react';
 
 export default wrapper.withRedux(class MyApp extends App {
-
     render() {
         const {Component, pageProps} = this.props;
         return (
-            <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
-                <Component {...pageProps} />
-            </PersistGate>
+            <ReactReduxContext.Consumer>
+                {({ store }) => {
+                    <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
+                        <Component {...pageProps} />
+                    </PersistGate>
+                }}
+            </ReactReduxContext.Consumer>
         );
     }
+});
+```
 
+Or using hooks:
+
+```typescript
+// pages/_app.tsx
+import React from "react";
+import App from "next/app";
+import withRedux from "next-redux-wrapper";
+import {useStore} from 'react-redux'
+import {wrapper} from "./lib/redux";
+import {PersistGate} from 'redux-persist/integration/react';
+
+export default wrapper.withRedux(({Component, pageProps}) => {
+    const store = useStore();
+    return (
+        <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
+            <Component {...pageProps} />
+        </PersistGate>
+    );
 });
 ```
 
@@ -620,14 +644,17 @@ Major change in the way how things are wrapped in version 6.
 
 3. Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly
 
-5. App that used `getInitialProps` need to have App `getInitialProps` wrapped with `wrapper.getInitialProps`, Page's `getInitialProps` can remain unwrapped then
+5. App's `getInitialProps` need to be wrapped with `wrapper.getInitialProps`, Page's `getInitialProps` can remain unwrapped then
 
-6. If you haven't used App then Pages' `getInitialProps` do need to be wrapped with `wrapper.getInitialProps`
+6. If you haven't used App (early versions of this lib) then `getInitialProps` of Pages need to be wrapped with `wrapper.getInitialPageProps`
 
 7. `App` should no longer wrap it's childern with `Provider`
 
 8. `isServer` is no longer passed in context/props, use your own function or simple check `const isServer = typeof window === 'undefined'`
-8. `WrappedAppProps` was renamed to `WrapperProps`
+
+9. `WrappedAppProps` was renamed to `WrapperProps`
+
+10. `store` is not passed to wrapped component props
 
 ## Upgrade from 1.x to 2.x
 
