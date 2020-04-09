@@ -1,49 +1,120 @@
 import * as React from 'react';
-import {create} from 'react-test-renderer';
 import {createWrapper} from '../src';
-import {DummyComponent, makeStore, makeStoreStub} from './testlib';
+import {child, DummyComponent, makeStore} from './testlib';
 import {NextPageContext} from 'next';
 
 describe('function API', () => {
+    const ctx = {req: {request: true}};
+    const pageProps = {prop: 'val'};
+    const initialState = {reduxStatus: 'val'};
+
     test.each([
-        ['getInitialAppProps', 'simple context', 1, {pageProps: {prop: 'val'}}, {ctx: {req: 'request'}}],
-        ['getInitialPageProps', 'simple context', 1, {pageProps: {prop: 'val'}}, {req: 'request'}],
-        ['getInitialPageProps', 'context with store', 0, {pageProps: {prop: 'val'}}, {req: 'request', store: 'foo'}],
+        [
+            'getInitialAppProps',
+            'simple context',
+            {pageProps},
+            {
+                initialProps: {pageProps},
+                initialState,
+            },
+            {ctx},
+        ],
+        [
+            'getInitialPageProps',
+            'simple context',
+            {pageProps: {prop: 'val'}},
+            {
+                initialProps: {pageProps},
+                initialState,
+            },
+            ctx,
+        ],
+        [
+            'getInitialPageProps',
+            'context with store',
+            {pageProps},
+            {pageProps}, // no wrapping
+            {...ctx, store: {dispatch: jest.fn()}},
+        ],
         [
             'getStaticProps',
             'simple context',
-            1,
-            {props: {prop: 'val'}, revalidate: true},
-            {preview: true, previewData: 'previewData'},
+            {props: pageProps, preview: true},
+            {
+                props: {...pageProps, initialState},
+                preview: true,
+            },
+            ctx,
         ],
-        ['getServerSideProps', 'simple context', 1, {props: {prop: 'val'}}, {req: 'request'}],
-    ])('%s (%s)', async (func: string, subtype: string, calledTime: number, props: any, context: any) => {
-        const makeStore = makeStoreStub({state: 'val'});
-        const wrapper = createWrapper(makeStore);
-
-        const propsCb = jest.fn(async context => {
-            expect(makeStore).toBeCalledTimes(calledTime);
-            expect(context).toMatchSnapshot();
-            return props;
-        });
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-        //@ts-ignore
-        const fn = wrapper[func](propsCb);
-        expect(await fn(context)).toMatchSnapshot();
-        expect(propsCb).toBeCalledTimes(1);
+        [
+            'getServerSideProps',
+            'simple context',
+            {props: pageProps, revalidate: true},
+            {
+                props: {...pageProps, initialState},
+                revalidate: true,
+            },
+            ctx,
+        ],
+    ])('%s (%s)', async (func: string, subname: string, props: any, expected: any, context: any) => {
+        expect(
+            await (createWrapper(makeStore) as any)[func](async (context: any) => {
+                (context.ctx || context).store.dispatch({type: 'FOO', payload: 'val'});
+                return props;
+            })(context),
+        ).toEqual(expected);
     });
 
     test('getInitialPageProps context with store & no callback', async () => {
-        const makeStore = makeStoreStub({state: 'val'});
+        const makeStoreMock = jest.fn(makeStore);
+        const wrapper = createWrapper(makeStoreMock);
+        expect(await wrapper.getInitialPageProps()({store: makeStoreMock()} as any)).toBeUndefined();
+        expect(makeStoreMock).toBeCalledTimes(1); // make sure makeStore has not been called in wrapper
+    });
+
+    test('getInitialAppProps and getServerSideProps', async () => {
         const wrapper = createWrapper(makeStore);
-        expect(
-            await wrapper.getInitialPageProps()({
-                // purposely make a store to enter condition
-                store: makeStore(),
-            } as any),
-        ).toMatchSnapshot();
-        expect(makeStore).toBeCalledTimes(1); // make sure makeStore has not been called in wrapper
+        const context = {ctx: {req: {}}} as any;
+
+        // execute App level
+
+        const initialAppProps = await wrapper.getInitialAppProps(({ctx}: any) => {
+            ctx.store.dispatch({type: 'FOO', payload: 'app'});
+            return {pageProps: {fromApp: true}};
+        })(context);
+
+        expect(initialAppProps).toEqual({
+            initialProps: {pageProps: {fromApp: true}},
+            initialState: {reduxStatus: 'app'},
+        });
+
+        // execute Page level
+
+        const serverSideProps = await wrapper.getServerSideProps(({store}) => {
+            expect(store.getState()).toEqual({reduxStatus: 'app'});
+            store.dispatch({type: 'FOO', payload: 'ssp'});
+            return {props: {fromSSP: true}};
+        })(context);
+
+        expect(serverSideProps).toEqual({
+            props: {
+                fromSSP: true,
+                initialState: {reduxStatus: 'ssp'},
+            },
+        });
+
+        // merge props and verify
+
+        const resultingProps = {
+            ...initialAppProps,
+            pageProps: serverSideProps.props, // this is what NextJS will wrap it like this
+        };
+
+        const WrappedPage: any = wrapper.withRedux(DummyComponent);
+
+        expect(child(<WrappedPage {...resultingProps} />)).toEqual(
+            '{"props":{"pageProps":{"fromApp":true,"fromSSP":true}},"state":{"reduxStatus":"ssp"}}',
+        );
     });
 });
 
@@ -52,18 +123,16 @@ describe('withRedux', () => {
         test('for page case', () => {
             const wrapper = createWrapper(makeStore);
             const WrappedPage: any = wrapper.withRedux(DummyComponent);
-            expect(
-                create(<WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} />).toJSON(),
-            ).toMatchSnapshot();
+            expect(child(<WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} />)).toEqual(
+                '{"props":{"fromPage":true,"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
+            );
         });
         test('for app case', () => {
             const wrapper = createWrapper(makeStore);
             const WrappedApp: any = wrapper.withRedux(DummyComponent);
             expect(
-                create(
-                    <WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />,
-                ).toJSON(),
-            ).toMatchSnapshot();
+                child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />),
+            ).toEqual('{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}');
         });
     });
     describe('wrapped component', () => {
@@ -73,12 +142,12 @@ describe('withRedux', () => {
         });
         test('should have getInitialProps if source component have it', async () => {
             const wrapper = createWrapper(makeStore);
-
+            const props = {prop: 'val'};
             const Page = (props: any) => <DummyComponent {...props} />;
-            Page.getInitialProps = () => ({prop: 'val'});
+            Page.getInitialProps = () => props;
             const WrappedPage = wrapper.withRedux(Page) as any;
-            expect(await WrappedPage.getInitialProps()).toMatchSnapshot();
-            expect(create(<WrappedPage />).toJSON()).toMatchSnapshot(); // to trigger creation of class
+            expect(await WrappedPage.getInitialProps()).toEqual(props); // no wrapping
+            expect(child(<WrappedPage />)).toEqual('{"props":{},"state":{"reduxStatus":"init"}}'); // to trigger creation of class
         });
     });
 });
@@ -93,10 +162,18 @@ describe('custom serialization', () => {
 
         const props = await wrapper.getInitialPageProps()({} as NextPageContext);
 
-        expect(props).toMatchSnapshot();
+        expect(props).toEqual({
+            initialProps: {},
+            initialState: {
+                reduxStatus: 'init',
+                serialized: true,
+            },
+        });
 
         const WrappedApp = wrapper.withRedux(DummyComponent);
 
-        expect(create(<WrappedApp {...props} />).toJSON()).toMatchSnapshot();
+        expect(child(<WrappedApp {...props} />)).toEqual(
+            '{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}',
+        );
     });
 });

@@ -3,37 +3,42 @@
  **/
 
 import * as React from 'react';
-import {create} from 'react-test-renderer';
-import {makeStoreStub, DummyComponent, wrapper} from './testlib';
+import {DummyComponent, wrapper, child, makeStore} from './testlib';
 import {createWrapper} from '../src';
 import {Store} from 'redux';
-// import {act} from 'react-dom/test-utils';
 
 const w: {testStoreKey: Store} = window as any;
+
+const defaultState = {reduxStatus: 'init'};
 
 describe('client integration', () => {
     afterEach(() => {
         delete w.testStoreKey;
     });
 
-    describe('store taken from window', () => {
+    describe('existing store is taken from window', () => {
         beforeEach(() => {
-            w.testStoreKey = makeStoreStub({state: 'val'})();
+            w.testStoreKey = makeStore();
         });
 
         test('withRedux', async () => {
             const WrappedPage: any = wrapper.withRedux(DummyComponent);
-            expect(create(<WrappedPage initialState={w.testStoreKey.getState()} />).toJSON()).toMatchSnapshot();
+            expect(child(<WrappedPage initialState={w.testStoreKey.getState()} />)).toEqual(
+                '{"props":{},"state":{"reduxStatus":"init"}}',
+            );
         });
 
         test('API functions', async () => {
-            expect(await wrapper.getInitialPageProps()({} as any)).toMatchSnapshot();
+            expect(await wrapper.getInitialPageProps()({} as any)).toEqual({
+                initialProps: {},
+                initialState: defaultState,
+            });
         });
     });
 
-    test('store is put to window when created', async () => {
-        const wrapper = createWrapper(makeStoreStub({baz: 'qux'}), {storeKey: 'testStoreKey'});
-        expect(await wrapper.getInitialPageProps()({} as any)).toMatchSnapshot();
-        expect(w.testStoreKey.getState()).toMatchSnapshot();
+    test('store is available in window when created', async () => {
+        const wrapper = createWrapper(makeStore, {storeKey: 'testStoreKey'});
+        await wrapper.getInitialPageProps()({} as any);
+        expect(w.testStoreKey.getState()).toEqual(defaultState);
     });
 });

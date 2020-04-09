@@ -6,7 +6,8 @@ import App, {AppContext, AppInitialProps} from 'next/app';
 import {IncomingMessage, ServerResponse} from 'http';
 import {ParsedUrlQuery} from 'querystring';
 
-export const HYDRATE = 'NEXT-REDUX-HYDRATE';
+export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
+export const STOREKEY = '__NEXT_REDUX_WRAPPER_STORE__';
 
 const getIsServer = () => typeof window === 'undefined';
 
@@ -16,7 +17,7 @@ const getDeserializedState = (initialState: any, {deserializeState}: Config = {}
 const getSerializedState = (state: any, {serializeState}: Config = {}) =>
     serializeState ? serializeState(state) : state;
 
-const getStoreKey = ({storeKey}: Config = {}) => storeKey || '__NEXT_REDUX_STORE__';
+const getStoreKey = ({storeKey}: Config = {}) => storeKey || STOREKEY;
 
 export declare type MakeStore<S = any, A extends Action = AnyAction> = (context: Context) => Store<S, A>;
 
@@ -35,7 +36,19 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
 
     const createStore = () => makeStore(context);
 
-    if (getIsServer()) return createStore();
+    if (getIsServer()) {
+        const c = context as any;
+        let req;
+        if (c.req) req = c.req;
+        if (c.ctx && c.ctx.req) req = c.ctx.req;
+        if (req) {
+            // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
+            // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
+            if (!req.__nextReduxWrapperStore) req.__nextReduxWrapperStore = createStore();
+            return req.__nextReduxWrapperStore;
+        }
+        return createStore();
+    }
 
     // Memoize store if client
     if (!(storeKey in window)) {
@@ -44,13 +57,6 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
 
     return (window as any)[storeKey];
 };
-
-// export interface GetProps {
-//     (makeStore: MakeStore, callback?: (appCtx: AppContext) => any, config?: Config): (appCtx: AppContext) => any;
-//     (makeStore: MakeStore, callback?: (ctx: NextPageContext) => any, config?: Config): (ctx: NextPageContext) => any;
-//     (makeStore: MakeStore, callback?: GetServerSideProps, config?: Config): GetServerSideProps; //FIXME Types!
-//     (makeStore: MakeStore, callback?: GetStaticProps, config?: Config): GetStaticProps; //FIXME Types!
-// }
 
 //FIXME Use Parameters<GetServerSideProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
 export interface GetServerSidePropsContext {
@@ -97,6 +103,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         if (config.debug) console.log(`3. getProps after dispatches has store state`, store.getState());
 
         const state = store.getState();
+
         return {
             initialProps,
             initialState: getIsServer() ? getSerializedState(state, config) : state,
@@ -159,7 +166,12 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
                 this.store.dispatch({
                     type: HYDRATE,
-                    payload: getDeserializedState(initialState, config),
+                    payload: getDeserializedState(
+                        // this happens when App has page with getServerSideProps
+                        // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
+                        props?.pageProps?.initialState ?? initialState,
+                        config,
+                    ),
                 } as any);
             }
 
@@ -173,6 +185,12 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                         ...initialProps.pageProps, // this comes from wrapper in _app mode
                         ...props.pageProps, // this comes from gssp/gsp in _app mode
                     };
+
+                if (props.pageProps) {
+                    // this happens when App has page with getServerSideProps
+                    // just some cleanup here
+                    delete props.pageProps.initialState;
+                }
 
                 return (
                     <Provider store={this.store}>
@@ -214,6 +232,7 @@ export interface Config {
 export interface WrapperProps {
     initialProps: any; // stuff returned from getInitialProps
     initialState: any; // stuff in the Store state after getInitialProps
+    pageProps?: any; // stuff from page's getServerSideProps or getInitialProps when used with App
 }
 
 declare module 'next/dist/next-server/lib/utils' {

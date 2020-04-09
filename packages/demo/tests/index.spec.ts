@@ -32,7 +32,8 @@ describe('Using App wrapper', () => {
 
         await page.waitForSelector('div.other');
 
-        await expect(page).toMatch('"getStaticProp": "bar"');
+        await expect(page).toMatch('"getServerSideProp": "bar"');
+        await expect(page).toMatch('"page": "other"');
         await expect(page).toMatch('"appProp": "/other"');
     });
 });

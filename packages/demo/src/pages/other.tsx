@@ -3,19 +3,20 @@ import Link from 'next/link';
 import {useSelector} from 'react-redux';
 import {NextPage} from 'next';
 import {State} from '../components/reducer';
+import {wrapper} from '../components/store';
 
 interface OtherProps {
-    getStaticProp: string;
+    getServerSideProp: string;
     appProp: string;
 }
 
-const Other: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
+const Other: NextPage<OtherProps> = ({appProp, getServerSideProp}) => {
     const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="other">
             <p>Page has access to store even though it does not dispatch anything itself</p>
 
-            <pre>{JSON.stringify({app, page, getStaticProp, appProp}, null, 2)}</pre>
+            <pre>{JSON.stringify({app, page, getServerSideProp, appProp}, null, 2)}</pre>
 
             <nav>
                 <Link href="/">
@@ -26,6 +27,10 @@ const Other: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
     );
 };
 
-export const getStaticProps = () => ({props: {getStaticProp: 'bar'}});
+export const getServerSideProps = wrapper.getServerSideProps(({store}) => {
+    store.dispatch({type: 'PAGE', payload: 'other'});
+    console.log(store.getState(), 'getServerSideProps');
+    return {props: {getServerSideProp: 'bar'}};
+});
 
 export default Other;
