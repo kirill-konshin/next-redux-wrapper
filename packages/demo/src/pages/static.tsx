@@ -6,17 +6,17 @@ import {State} from '../components/reducer';
 import {wrapper} from '../components/store';
 
 interface OtherProps {
-    getServerSideProp: string;
+    getStaticProp: string;
     appProp: string;
 }
 
-const Other: NextPage<OtherProps> = ({appProp, getServerSideProp}) => {
+const Other: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
     const {app, page} = useSelector<State, State>(state => state);
     return (
-        <div className="other">
+        <div className="static">
             <p>Page has access to store even though it does not dispatch anything itself</p>
 
-            <pre>{JSON.stringify({app, page, getServerSideProp, appProp}, null, 2)}</pre>
+            <pre>{JSON.stringify({app, page, getStaticProp, appProp}, null, 2)}</pre>
 
             <nav>
                 <Link href="/">
@@ -27,10 +27,9 @@ const Other: NextPage<OtherProps> = ({appProp, getServerSideProp}) => {
     );
 };
 
-export const getServerSideProps = wrapper.getServerSideProps(({store}) => {
-    store.dispatch({type: 'PAGE', payload: 'other'});
-    console.log(store.getState(), 'getServerSideProps');
-    return {props: {getServerSideProp: 'bar'}};
+export const getStaticProps = wrapper.getStaticProps(({store}) => {
+    store.dispatch({type: 'PAGE', payload: 'static'});
+    return {props: {getStaticProp: 'bar'}};
 });
 
 export default Other;

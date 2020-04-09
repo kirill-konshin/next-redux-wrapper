@@ -8,16 +8,16 @@ describe('Using App wrapper', () => {
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"pageProp": "server"');
-        await expect(page).toMatch('"appProp": "/"');
-        await expect(page).toMatch('"app": "was set in _app"');
-        await expect(page).toMatch('"page": "server"');
+        await expect(page).toMatch('"pageProp": "server"'); // props
+        await expect(page).toMatch('"appProp": "/"'); // props
+        await expect(page).toMatch('"app": "was set in _app"'); // redux
+        await expect(page).toMatch('"page": "server"'); // redux
     });
 
     it('shows client values when page is visited after navigation', async () => {
-        await openPage('/other');
+        await openPage('/server');
 
-        await page.waitForSelector('div.other');
+        await page.waitForSelector('div.server');
 
         await expect(page).toClick('a', {text: 'Navigate to index'});
 
@@ -27,13 +27,25 @@ describe('Using App wrapper', () => {
         await expect(page).toMatch('"page": "client"');
     });
 
-    it('properly combines props from _app and page', async () => {
-        await openPage('/other');
+    it("properly combines state from App.getInitialProps and page's getServerSideProps", async () => {
+        await openPage('/server');
 
-        await page.waitForSelector('div.other');
+        await page.waitForSelector('div.server');
 
-        await expect(page).toMatch('"getServerSideProp": "bar"');
-        await expect(page).toMatch('"page": "other"');
-        await expect(page).toMatch('"appProp": "/other"');
+        await expect(page).toMatch('"getServerSideProp": "bar"'); // props
+        await expect(page).toMatch('"appProp": "/server"'); // props
+        await expect(page).toMatch('"page": "server"'); // redux
+        await expect(page).toMatch('"app": "was set in _app"'); // redux
+    });
+
+    it("properly combines state from App.getInitialProps and page's getStaticProps", async () => {
+        await openPage('/static');
+
+        await page.waitForSelector('div.static');
+
+        await expect(page).toMatch('"getStaticProp": "bar"'); // props
+        await expect(page).toMatch('"appProp": "/static"'); // props
+        await expect(page).toMatch('"page": "static"'); // redux
+        await expect(page).toMatch('"app": "was set in _app"'); // redux
     });
 });

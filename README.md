@@ -4,25 +4,24 @@
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/kirill-konshin/next-redux-wrapper/badge.svg?branch=master)](https://coveralls.io/github/kirill-konshin/next-redux-wrapper?branch=master)
 
-
 A HOC that brings Next.js and Redux together
 
 :warning: The current version of this library only works with Next.js 9.3 and newer. If you are required to use Next.js 6-9 you can use version 3-5 of this library. Otherwise, consider upgrading Next.js. :warning:
-
-Next.js 5 (for individual pages) is only compatible with the [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x). You can upgrade it following these simple [instructions](#upgrade-from-1x).
 
 Contents:
 
 - [Motivation](#motivation)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Configuration](#configuration)
   - [getStaticProps](#getstaticprops)
   - [getServerSideProps](#getserversideprops)
   - [getInitialProps](#getinitialprops)
   - [App](#app)
+  - [App and getServerSideProps or getStaticProps at page level](#app-and-getserversideprops-or-getstaticprops-at-page-level)
 - [How it works](#how-it-works)
-- [Configuration](#configuration)
 - [Tips and Tricks](#tips-and-tricks)
+  - [Server and Client state separation](#server-and-client-state-separation)
   - [Document](#document)
   - [Error Pages](#error-pages)
   - [Async actions](#async-actions)
@@ -39,9 +38,13 @@ Setting up Redux for static apps is rather simple: a single Redux store has to b
 
 When Next.js static site generator or server side rendering is involved, however, things start to get complicated as another store instance is needed on the server to render Redux-connected components.
 
-Furthermore, access to the Redux store may also be needed during a page's `getInitialProps`.
+Furthermore, access to the Redux `Store` may also be needed during a page's `getInitialProps`.
 
 This is where `next-redux-wrapper` comes in handy: It automatically creates the store instances for you and makes sure they all have the same state.
+
+Moreover it allows to properly handle complex cases like `App.getInitialProps` (when using `pages/_app`) together with `getStaticProps` or `getServerSideProps` at individual page level.
+
+Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
 
 # Installation
 
@@ -284,7 +287,37 @@ Page.getInitialProps = ({store, isServer, pathname, query}: NextPageContext) => 
 export default connect((state: State) => state)(Page);
 ```
 
-## How it works
+## App and `getServerSideProps` or `getStaticProps` at page level
+
+You can also use `getServerSideProps` or `getStaticProps` at page level, in this case `HYDRATE` action will be dispatched twice: with state after `App.getInitialProps` and then with state after `getServerSideProps` or `getStaticProps`:
+
+- If you use `getServerSideProps` at page level then `store` in `getServerSideProps` will be executed after `App.getInitialProps` and will have state from it, so second `HYDRATE` will have full state from both
+- :warning: If you use `getStaticProps` at page level then `store` in `getStaticProps` will be executed at compile time and will **NOT** have state from `App.getInitialProps` because they are executed in different contexts and state cannot be shared. First `HYDRATE` actions state after `App.getInitialProps` and second will have state after `getStaticProps` (even though it was executed earlier in time).
+
+Simplest way to ensure proper merging is to drop initial values from `action.payload`:
+
+```typescript
+const reducer = (state: State = {app: 'init', page: 'init'}, action: AnyAction) => {
+    switch (action.type) {
+        case HYDRATE:
+            if (action.payload.app === 'init') delete action.payload.app;
+            if (action.payload.page === 'init') delete action.payload.page;
+            return {...state, ...action.payload};
+        case 'APP':
+            return {...state, app: action.payload};
+        case 'PAGE':
+            return {...state, page: action.payload};
+        default:
+            return state;
+    }
+};
+```
+
+Assume page only dispatches `PAGE` actiona and App only `APP`, this makes state merging safe.
+
+More about that in [Server and Client state separation](#server-and-client-state-separation).
+
+# How it works
 
 Using `next-redux-wrapper` ("the wrapper"), the following things happen on a request:
 

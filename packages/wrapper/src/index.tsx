@@ -166,13 +166,20 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
                 this.store.dispatch({
                     type: HYDRATE,
-                    payload: getDeserializedState(
-                        // this happens when App has page with getServerSideProps
-                        // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
-                        props?.pageProps?.initialState ?? initialState,
-                        config,
-                    ),
+                    payload: getDeserializedState(initialState, config),
                 } as any);
+
+                if (props?.pageProps?.initialState) {
+                    this.store.dispatch({
+                        type: HYDRATE,
+                        payload: getDeserializedState(
+                            // this happens when App has page with getServerSideProps/getStaticProps
+                            // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
+                            props.pageProps.initialState,
+                            config,
+                        ),
+                    } as any);
+                }
             }
 
             public render() {
