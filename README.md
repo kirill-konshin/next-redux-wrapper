@@ -217,7 +217,7 @@ const Page: NextPage<Props> = props => {
 
 Page.getInitialProps = ({ store, isServer }) => {
   if (isServer) {
-    // Do some staff
+    // Do some stuff
   }
 
   store.dispatch({ type: 'FOO', payload: 'foo' }); // The component can read from the store's state when rendered
