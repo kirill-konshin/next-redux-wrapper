@@ -111,22 +111,22 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getInitialPageProps = <P extends {} = any>(
-        callback?: (context: NextPageContext & {store: Store<S, A>}) => P | void,
+        callback: (context: NextPageContext & {store: Store<S, A>}) => P | void,
     ) => async (context: NextPageContext) => {
         if (context.store) {
             console.warn('No need to wrap pages if _app was wrapped');
-            return callback ? await callback(context as any) : undefined;
+            return callback(context as any);
         }
-        return await makeProps({callback, context});
+        return makeProps({callback, context});
     };
 
     const getInitialAppProps = <P extends {} = any>(
-        callback?: (context: AppContext & {store: Store<S, A>}) => P | void,
+        callback: (context: AppContext & {store: Store<S, A>}) => P | void,
     ) => async (context: AppContext) =>
         (await makeProps({callback, context, isApp: true})) as WrapperProps & AppInitialProps; // this is just to convince TS
 
     const getStaticProps = <P extends {} = any>(
-        callback?: (context: GetStaticPropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetStaticPropsContext & {store: Store<S, A>}) => P | void,
     ): GetStaticProps<P> => async (context: any) => {
         const {
             initialProps: {props, ...settings},
@@ -143,7 +143,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getServerSideProps = <P extends {} = any>(
-        callback?: (context: GetServerSidePropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetServerSidePropsContext & {store: Store<S, A>}) => P | void,
     ): GetServerSideProps<P> => getStaticProps<P>(callback as any) as any; // just not to repeat myself
 
     const withRedux = (Component: NextComponentType | App | any) => {
@@ -208,23 +208,31 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         }
 
         return hasGetInitialProps
-            ? class WrappedPage extends Wrapper {
+            ? class WrappedCmp extends Wrapper {
                   public static displayName = displayName;
-                  public static getInitialProps = async (...args: any) =>
-                      Component.getInitialProps.call(Component, ...args);
+                  public static getInitialProps = async (context: any) => {
+                      const callback = Component.getInitialProps; // bind?
+                      return (context.ctx ? getInitialAppProps(callback) : getInitialPageProps(callback))(context);
+                  };
               }
-            : class WrappedApp extends Wrapper {
+            : class WrappedCmp extends Wrapper {
                   public static displayName = displayName;
               };
     };
 
     return {
-        getInitialAppProps,
-        getInitialPageProps,
         getServerSideProps,
         getStaticProps,
         withRedux,
     };
+};
+
+// Legacy
+export default <S extends {} = any, A extends Action = AnyAction>(makeStore: MakeStore<S, A>, config: Config = {}) => {
+    console.warn(
+        '/!\\ You are using legacy implementaion. Please update your code: use createWrapper and wrapper.withRedux.',
+    );
+    return createWrapper(makeStore, config).withRedux;
 };
 
 export type Context = NextPageContext | AppContext | GetStaticPropsContext | GetServerSidePropsContext;

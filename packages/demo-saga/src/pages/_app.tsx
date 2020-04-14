@@ -1,10 +1,11 @@
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppContext, AppInitialProps} from 'next/app';
 import {END} from 'redux-saga';
-import {SagaStore, wrapper} from '../components/store';
+import {SagaStore, makeStore} from '../components/store';
+import withRedux from 'next-redux-wrapper';
 
 class WrappedApp extends App<AppInitialProps> {
-    public static getInitialProps = wrapper.getInitialAppProps<Promise<AppInitialProps>>(async ({Component, ctx}) => {
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
         // 1. Wait for all page actions to dispatch
         const pageProps = {
             ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
@@ -21,7 +22,7 @@ class WrappedApp extends App<AppInitialProps> {
         return {
             pageProps,
         };
-    });
+    };
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -29,4 +30,4 @@ class WrappedApp extends App<AppInitialProps> {
     }
 }
 
-export default wrapper.withRedux(WrappedApp);
+export default withRedux(makeStore)(WrappedApp);

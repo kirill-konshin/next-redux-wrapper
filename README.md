@@ -16,7 +16,7 @@ Contents:
   - [Configuration](#configuration)
   - [getStaticProps](#getstaticprops)
   - [getServerSideProps](#getserversideprops)
-  - [getInitialProps](#getinitialprops)
+  - [Page.getInitialProps](#pagegetinitialprops)
   - [App](#app)
   - [App and getServerSideProps or getStaticProps at page level](#app-and-getserversideprops-or-getstaticprops-at-page-level)
 - [How it works](#how-it-works)
@@ -176,7 +176,7 @@ export default wrapper.withRedux(connect(state: State) => state)(Page));
 
 :warning: **Each time when pages that have `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of server side rendering, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
 
-## `getInitialProps`
+## `Page.getInitialProps`
 
 ```typescript
 import React, {Component} from 'react';
@@ -191,12 +191,10 @@ const Page: NextPage = () => {
     );
 };
 
-Page.getInitialProps = wrapper.getInitialPageProps(
-   ({store, pathname, req, res}) => {
-       console.log('2. Page.getInitialProps uses the store to dispatch things');
-       store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
-   }
-);
+Page.getInitialProps = ({store, pathname, req, res}) => {
+    console.log('2. Page.getInitialProps uses the store to dispatch things');
+    store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
+};
 
 export default wrapper.withRedux(Page);
 ```
@@ -208,12 +206,14 @@ Stateless function component also can be replaced with class:
 ```typescript
 class Page extends Component {
 
-    public static getInitialProps = wrapper.getInitialPageProps(...)
+    public static getInitialProps = () => { ... };
 
     render() {
         // stuff
     }
 }
+
+export default wrapper.withRedux(Page);
 ```
 
 ## App
@@ -226,26 +226,25 @@ The wrapper can also be attached to your `_app` component (located in `/pages`).
 # pages/_app.tsx
 
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppInitialProps, AppContext} from 'next/app';
 import {wrapper, State} from '../components/store';
 import {State} from '../components/reducer';
 
 class MyApp extends App<AppInitialProps> {
 
-    public static getInitialProps = wrapper.getInitialAppProps<Promise<AppInitialProps>>(
-        async ({Component, ctx}) => {
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
 
-            ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
+        ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
-            return {
-                pageProps: {
-                    // Call page-level getInitialProps
-                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
-                    // Some custom thing for all pages
-                    pathname: ctx.pathname,
-                },
-            };
-        },
+        return {
+            pageProps: {
+                // Call page-level getInitialProps
+                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                // Some custom thing for all pages
+                pathname: ctx.pathname,
+            },
+        };
+
     );
 
     public render() {
@@ -503,12 +502,12 @@ Then in the `pages/_app` wait stop saga and wait for it to finish when execution
 
 ```typescript
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppInitialProps, AppContext} from 'next/app';
 import {END} from 'redux-saga';
 import {SagaStore, wrapper} from '../components/store';
 
 class WrappedApp extends App<AppInitialProps> {
-    public static getInitialProps = wrapper.getInitialAppProps<Promise<AppInitialProps>>(async ({Component, ctx}) => {
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
         // 1. Wait for all page actions to dispatch
         const pageProps = {
             ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
@@ -524,7 +523,7 @@ class WrappedApp extends App<AppInitialProps> {
         return {
             pageProps,
         };
-    });
+    };
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -671,23 +670,17 @@ export default connect(
 
 Major change in the way how things are wrapped in version 6.
 
-1. `withRedux` no longer takes `makeStore` and config as parameters, you need to create a wrapper `const wrapper = createWrapper(makeStore, {debug: true})` and then use `wrapper.withRedux(Page)`
+1. Default export `withRedux` is marked deprecated, you should create a wrapper `const wrapper = createWrapper(makeStore, {debug: true})` and then use `wrapper.withRedux(Page)`.
 
-2. `makeStore` no longer gets `initialState`, the signature is `makeStore(context: Context)`, where context could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap
+2. Your `makeStore` function no longer gets `initialState`, it only receives the context: `makeStore(context: Context)`. Context could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap. Instead, you need to handle the `HYDRATE` action in the reducer. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
 
-3. Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly
+3. `App` should no longer wrap its children with `Provider`, it is now done internally.
 
-5. App's `getInitialProps` need to be wrapped with `wrapper.getInitialProps`, Page's `getInitialProps` can remain unwrapped then
+4. `isServer` is not passed in `context`/`props`, use your own function or simple check `const isServer = typeof window === 'undefined'` or `!!context.req` or `!!context.ctx.req`.
 
-6. If you haven't used App (early versions of this lib) then `getInitialProps` of Pages need to be wrapped with `wrapper.getInitialPageProps`
+5. `store` is not passed to wrapped component props.
 
-7. `App` should no longer wrap it's childern with `Provider`
-
-8. `isServer` is no longer passed in context/props, use your own function or simple check `const isServer = typeof window === 'undefined'`
-
-9. `WrappedAppProps` was renamed to `WrapperProps`
-
-10. `store` is not passed to wrapped component props
+6. `WrappedAppProps` was renamed to `WrapperProps`.
 
 ## Upgrade from 1.x to 2.x
 

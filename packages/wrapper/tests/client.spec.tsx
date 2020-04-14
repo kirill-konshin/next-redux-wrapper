@@ -29,7 +29,9 @@ describe('client integration', () => {
         });
 
         test('API functions', async () => {
-            expect(await wrapper.getInitialPageProps()({} as any)).toEqual({
+            const Page = () => null;
+            Page.getInitialProps = () => null;
+            expect(await (wrapper.withRedux(Page) as any).getInitialProps({} as any)).toEqual({
                 initialProps: {},
                 initialState: defaultState,
             });
@@ -37,8 +39,10 @@ describe('client integration', () => {
     });
 
     test('store is available in window when created', async () => {
+        const Page = () => null;
+        Page.getInitialProps = () => null;
         const wrapper = createWrapper(makeStore, {storeKey: 'testStoreKey'});
-        await wrapper.getInitialPageProps()({} as any);
+        await (wrapper.withRedux(Page) as any).getInitialProps({} as any);
         expect(w.testStoreKey.getState()).toEqual(defaultState);
     });
 });

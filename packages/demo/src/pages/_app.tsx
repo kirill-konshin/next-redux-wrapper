@@ -1,9 +1,9 @@
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppInitialProps, AppContext} from 'next/app';
 import {wrapper} from '../components/store';
 
 class WrappedApp extends App<AppInitialProps> {
-    public static getInitialProps = wrapper.getInitialAppProps<Promise<AppInitialProps>>(async ({Component, ctx}) => {
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
         // Keep in mind that this will be called twice on server, one for page and second for error page
         ctx.store.dispatch({type: 'APP', payload: 'was set in _app'});
 
@@ -15,7 +15,7 @@ class WrappedApp extends App<AppInitialProps> {
                 appProp: ctx.pathname,
             },
         };
-    });
+    };
 
     public render() {
         const {Component, pageProps} = this.props;
