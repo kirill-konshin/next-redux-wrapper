@@ -7,7 +7,7 @@ import {wrapper} from '../components/store';
 
 export const getStaticProps = wrapper.getStaticProps(({store, previewData}) => {
     console.log('2. Page.getStaticProps uses the store to dispatch things');
-    store.dispatch({type: 'PAGE', payload: 'was set in other page ' + JSON.stringify({previewData})});
+    store.dispatch({type: 'PAGE', payload: 'was set in other (SECOND) page ' + JSON.stringify({previewData})});
 });
 
 const OtherPage: NextPage<State> = () => {
@@ -23,8 +23,8 @@ const OtherPage: NextPage<State> = () => {
                 <Link href="/">
                     <a>Navigate to index</a>
                 </Link>
-                <Link href="/other2">
-                    <a>Navigate to other 2</a>
+                <Link href="/other">
+                    <a>Navigate to other</a>
                 </Link>
             </nav>
         </div>
