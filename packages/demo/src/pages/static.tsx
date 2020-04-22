@@ -10,7 +10,7 @@ interface OtherProps {
     appProp: string;
 }
 
-const Other: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
+const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
     const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="static">
@@ -32,4 +32,4 @@ export const getStaticProps = wrapper.getStaticProps(({store}) => {
     return {props: {getStaticProp: 'bar'}};
 });
 
-export default Other;
+export default Static;

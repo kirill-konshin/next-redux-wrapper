@@ -48,4 +48,15 @@ describe('Using App wrapper', () => {
         await expect(page).toMatch('"page": "static"'); // redux
         await expect(page).toMatch('"app": "was set in _app"'); // redux
     });
+
+    it('other page -> static', async () => {
+        await openPage('/');
+
+        await page.waitForSelector('div.index');
+
+        await expect(page).toClick('a', {text: 'Navigate to static'});
+
+        await expect(page).toMatch('"page": "static"'); // redux
+        await expect(page).toMatch('"app": "was set in _app"'); // redux
+    });
 });
