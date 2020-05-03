@@ -131,10 +131,10 @@ export type RootState = ReturnType<typeof reducer>;
 
 ```tsx
 // pages/_app.tsx
-import withRedux, { MakeStore } from 'next-redux-wrapper';
+import withRedux, { MakeStore, ReduxWrapperAppProps } from 'next-redux-wrapper';
 import App, { AppContext } from 'next/app';
 import { Provider } from 'react-redux';
-import { createStore, Store } from 'redux';
+import { createStore } from 'redux';
 
 import { reducer, RootState } from '../store';
 
