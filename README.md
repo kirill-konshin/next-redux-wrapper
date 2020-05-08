@@ -708,13 +708,11 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
     ```js
     // pages/_app.js
     import React from 'react'
-    import {Provider} from "react-redux";
-    import App from "next/app";
-    import withRedux from "next-redux-wrapper";
-    import {makeStore} from "../components/store";
+    import {Provider} from 'react-redux';
+    import App from 'next/app';
+    import {wrapper} from '../store';
 
-    export default withRedux(makeStore, {debug: true})(class MyApp extends App {
-
+    class MyApp extends App {
         static async getInitialProps({Component, ctx}) {
             return {
                 pageProps: {
@@ -731,7 +729,9 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
             );
         }
 
-    });
+    }
+    
+    export default wrapper.withRedux(MyApp);
     ```
 
 4. Follow [Next.js 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components
