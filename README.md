@@ -245,7 +245,7 @@ class MyApp extends App<AppInitialProps> {
             },
         };
 
-    );
+    };
 
     public render() {
         const {Component, pageProps} = this.props;
