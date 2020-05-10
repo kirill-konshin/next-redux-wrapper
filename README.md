@@ -254,7 +254,7 @@ class MyApp extends App<AppInitialProps> {
             <Component {...pageProps} />
         );
     }
-},
+}
 
 export default wrapper.withRedux(MyApp);
 ```
