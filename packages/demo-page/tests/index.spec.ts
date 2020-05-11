@@ -23,7 +23,7 @@ describe('Basic integration', () => {
 
         await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"page": "was set in index page /"');
+        await expect(page).toMatch('"page": "was set in index page');
         await expect(page).toMatch('"custom": "custom"');
     });
 });
