@@ -245,7 +245,7 @@ class MyApp extends App<AppInitialProps> {
             },
         };
 
-    );
+    };
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -254,7 +254,7 @@ class MyApp extends App<AppInitialProps> {
             <Component {...pageProps} />
         );
     }
-},
+}
 
 export default wrapper.withRedux(MyApp);
 ```
