@@ -20,15 +20,15 @@
     "start:tsc:es6": "yarn build:tsc:es6 --watch --preserveWatchOutput"
   },
   "devDependencies": {
-    "@types/jest": "25.1.4",
-    "@types/react": "16.9.31",
-    "@types/react-redux": "7.1.7",
+    "@types/jest": "25.2.1",
+    "@types/react": "16.9.35",
+    "@types/react-redux": "7.1.8",
     "@types/react-test-renderer": "16.9.2",
     "@types/redux-promise-middleware": "6.0.0",
-    "jest": "25.2.4",
-    "next": "9.3.4",
+    "jest": "26.0.1",
+    "next": "9.4.0",
     "next-redux-wrapper-configs": "^6.0.0",
-    "concurrently": "5.1.0",
+    "concurrently": "5.2.0",
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-redux": "7.2.0",
@@ -36,7 +36,7 @@
     "redux": "4.0.5",
     "redux-promise-middleware": "6.1.2",
     "rimraf": "3.0.2",
-    "ts-jest": "25.3.0",
+    "ts-jest": "25.5.1",
     "typescript": "3.8.3"
   },
   "peerDependencies": {
