@@ -4,38 +4,49 @@ import {connect} from 'react-redux';
 import {NextPageContext} from 'next';
 import {State} from '../components/reducer';
 
-export interface PageProps {
-    custom: string;
+export interface PageProps extends State {
+    pageProp: string;
+    appProp: string;
 }
 
-class Page extends React.Component<PageProps> {
-    public static getInitialProps({store, isServer, pathname, query, req}: NextPageContext<State>) {
-        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query, isServer});
+class Index extends React.Component<PageProps> {
+    // note that since _app is wrapped no need to wrap page
+    public static async getInitialProps({store, pathname, query, req}: NextPageContext<State>) {
+        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query});
 
-        // All async actions must be await'ed before return or return a promise
-        if (isServer) {
-            return new Promise(res => {
-                setTimeout(() => {
-                    store.dispatch({type: 'TICK', payload: 'server'});
-                    res({custom: 'custom server'});
-                }, 200);
-            });
+        if (req) {
+            // All async actions must be await'ed
+            await store.dispatch({type: 'PAGE', payload: 'server'});
+
+            // Some custom thing for this particular page
+            return {pageProp: 'server'};
         }
 
-        store.dispatch({type: 'TICK', payload: 'client'});
+        // await is not needed if action is synchronous
+        store.dispatch({type: 'PAGE', payload: 'client'});
 
         // Some custom thing for this particular page
-        return {custom: 'custom client'};
+        return {pageProp: 'client'};
     }
 
     public render() {
         // console.log('5. Page.render');
-        const {custom} = this.props;
+        const {pageProp, appProp, app, page} = this.props;
         return (
             <div className="index">
-                <div>Custom: {custom}</div>
-                <Link href="/other">
+                <p>
+                    Try to navigate to another page and return back here to see how <code>getInitialProps</code> will be
+                    used on client side.
+                </p>
+
+                <pre>{JSON.stringify({pageProp, appProp, app, page}, null, 2)}</pre>
+
+                <Link href="/server">
                     <a>Navigate</a>
+                </Link>
+                {' | '}
+                <Link href="/static">
+                    <a>Navigate to static</a>
                 </Link>
                 {' | '}
                 <Link href="/error">
@@ -46,4 +57,4 @@ class Page extends React.Component<PageProps> {
     }
 }
 
-export default connect(state => state)(Page);
+export default connect(state => state)(Index);

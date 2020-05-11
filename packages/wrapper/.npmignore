@@ -3,5 +3,6 @@ coverage
 *.spec.ts
 *.spec.js
 jest.config.js
+tests
 tsconfig.json
 tsconfig.es6.json

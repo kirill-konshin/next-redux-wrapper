@@ -1,15 +1,16 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
-    "start": "yarn build:quick && lerna run start --parallel",
+    "start": "yarn build:quick && yarn start:quick",
+    "start:quick": "lerna run start --parallel",
     "build": "lerna run build --stream",
     "build:quick": "yarn build --scope=next-redux-wrapper",
-    "test": "lerna run test --stream",
-    "test:quick": "lerna run test:quick --stream",
+    "test": "lerna run test --parallel",
+    "test:quick": "lerna run test:quick --parallel",
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "lint": "eslint --cache --cache-location .eslint/cache --fix",
@@ -17,17 +18,17 @@
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "coveralls": "3.0.9",
-    "eslint": "6.8.0",
+    "coveralls": "3.1.0",
+    "eslint": "7.0.0",
     "eslint-config-ringcentral-typescript": "3.0.0",
-    "husky": "4.2.3",
+    "husky": "4.2.5",
     "lerna": "3.20.2",
-    "lint-staged": "10.0.7",
+    "lint-staged": "10.2.2",
     "rimraf": "3.0.2",
-    "typescript": "3.7.5"
+    "typescript": "3.8.3"
   },
   "resolutions": {
-    "@types/react": "16.9.21"
+    "@types/react": "16.9.31"
   },
   "workspaces": [
     "packages/*"

@@ -4,278 +4,394 @@
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/kirill-konshin/next-redux-wrapper/badge.svg?branch=master)](https://coveralls.io/github/kirill-konshin/next-redux-wrapper?branch=master)
 
-
 A HOC that brings Next.js and Redux together
 
-:warning: The current version of this library only works with Next.js 9. If you are required to use Next.js 6-8 you can use version 3 of this library. Otherwise, consider upgrading Next.js. :warning:
-
-Next.js 5 (for individual pages) is only compatible with the [1.x branch](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x). You can upgrade it following these simple [instructions](#upgrade).
-
-This library is not compatible with [Next.js 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see the [explanation below](#automatic-partial-static-export).
+:warning: The current version of this library only works with Next.js 9.3 and newer. If you are required to use Next.js 6-9 you can use version 3-5 of this library, see [branches](https://github.com/kirill-konshin/next-redux-wrapper/branches). Otherwise, consider upgrading Next.js. :warning:
 
 Contents:
 
 - [Motivation](#motivation)
 - [Installation](#installation)
+- [Usage](#usage)
+  - [Configuration](#configuration)
+  - [getStaticProps](#getstaticprops)
+  - [getServerSideProps](#getserversideprops)
+  - [Page.getInitialProps](#pagegetinitialprops)
+  - [App](#app)
+  - [App and getServerSideProps or getStaticProps at page level](#app-and-getserversideprops-or-getstaticprops-at-page-level)
 - [How it works](#how-it-works)
-- [Configuration](#configuration)
 - [Tips and Tricks](#tips-and-tricks)
+  - [Server and Client state separation](#server-and-client-state-separation)
   - [Document](#document)
   - [Error Pages](#error-pages)
-  - [Use with layout](#use-with-layout)
-  - [Async actions in `getInitialProps`](#async-actions-in-getinitialprops)
+  - [Async actions](#async-actions)
   - [Custom serialization and deserialization](#custom-serialization-and-deserialization)
   - [Usage with Redux Saga](#usage-with-redux-saga)
   - [Usage with Redux Persist](#usage-with-redux-persist)
-  - [Usage with Redux Hooks](#usage-with-redux-hooks)
-- [Automatic Partial Static Export](#automatic-partial-static-export)
-- [Upgrade from 1.x](#upgrade-from-1x)
+- [Upgrade from 5.x to 6.x](#upgrade-from-5x-to-6x)
+- [Upgrade from 1.x to 2.x](#upgrade-from-1x-to-2x)
 - [Resources](#resources)
 
-## Motivation
+# Motivation
 
-Setting up Redux for statically rendered Next.js apps is rather simple: A single Redux store has to be created that is provided to all pages (you won't need this package then).
-When SSR is involved, however, things start to get complicated as another store instance is needed on the server to render Redux-connected components.
-Furthermore, access to the Redux store may also be needed during a page's `getInitialProps`.
+Setting up Redux for static apps is rather simple: a single Redux store has to be created that is provided to all pages.
+
+When Next.js static site generator or server side rendering is involved, however, things start to get complicated as another store instance is needed on the server to render Redux-connected components.
+
+Furthermore, access to the Redux `Store` may also be needed during a page's `getInitialProps`.
 
 This is where `next-redux-wrapper` comes in handy: It automatically creates the store instances for you and makes sure they all have the same state.
 
-## Installation
+Moreover it allows to properly handle complex cases like `App.getInitialProps` (when using `pages/_app`) together with `getStaticProps` or `getServerSideProps` at individual page level.
+
+Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
+
+# Installation
 
 ```bash
 npm install next-redux-wrapper --save
 ```
 
-The wrapper has to be attached to your `_app` component (located in `/pages`). All other components can use the `connect` function of `react-redux`.
+# Usage
 
-Here is a minimal setup (`makeStore` and `reducer` are usually located in separate files):
+All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations.
 
-<details>
-    <summary>JavaScript</summary>
+Next.js has several data fetching mechanisms, this library can attach to any of them. But first you have to write some common code.
 
-```jsx
-// pages/_app.jsx
-import React from "react";
-import {createStore} from "redux";
-import {Provider} from "react-redux";
-import App from "next/app";
-import withRedux from "next-redux-wrapper";
+**Please note that your reducer *must* have the `HYDRATE` action handler.** This behavior was added in version 6 of this library. We'll talk about this special action later.
 
-const reducer = (state = {foo: ''}, action) => {
+Create a file named `store.ts`:
+
+```typescript
+// store.ts
+
+import {createStore, AnyAction} from 'redux';
+import {MakeStore, createWrapper, Context, HYDRATE} from 'next-redux-wrapper';
+
+export interface State {
+    tick: string;
+}
+
+// create your reducer
+const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
     switch (action.type) {
-        case 'FOO':
-            return {...state, foo: action.payload};
+        case HYDRATE:
+            return {...state, ...action.payload};
+        case 'TICK':
+            return {...state, tick: action.payload};
         default:
-            return state
+            return state;
     }
 };
 
-/**
-* @param {object} initialState The store's initial state (on the client side, the state of the server-side store is passed here)
-* @param {boolean} options.isServer Indicates whether makeStore is executed on the server or the client side
-* @param {Request} options.req Node.js `Request` object (only set before `getInitialProps` on the server side)
-* @param {Response} options.res Node.js `Response` object (only set before `getInitialProps` on the server side)
-* @param {boolean} options.debug User-defined debug flag
-* @param {string} options.storeKey The key that will be used to persist the store in the browser's `window` object for safe HMR
-*/
-const makeStore = (initialState, options) => {
-    return createStore(reducer, initialState);
+// create a makeStore function
+const makeStore: MakeStore<State> = (context: Context) => {
+    const store = createStore(reducer);
+    return store;
 };
 
-class MyApp extends App {
-    static async getInitialProps({Component, ctx}) {
-        // We can dispatch from here too
-        ctx.store.dispatch({type: 'FOO', payload: 'foo'});
-
-        const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
-
-        return {pageProps};
-    }
-
-    render() {
-        const {Component, pageProps, store} = this.props;
-        return (
-            <Provider store={store}>
-                <Component {...pageProps} />
-            </Provider>
-        );
-    }
-}
-
-export default withRedux(makeStore)(MyApp);
+// export an assembled wrapper
+export const wrapper = createWrapper<State>(makeStore, {debug: true});
 ```
-</details>
-
-<details>
-    <summary>TypeScript</summary>
-
-```ts
-// store/index.ts
-import { Action } from 'redux';
-
-interface FooAction extends Action<'FOO'> {
-  payload: string;
-}
-
-export const reducer = (state = { foo: '' }, action: FooAction) => {
-  switch (action.type) {
-    case 'FOO':
-      return { ...state, foo: action.payload };
-    default:
-      return state;
-  }
-};
-
-export type RootState = ReturnType<typeof reducer>;
-```
-
-```tsx
-// pages/_app.tsx
-import withRedux, { MakeStore, ReduxWrapperAppProps } from 'next-redux-wrapper';
-import App, { AppContext } from 'next/app';
-import { Provider } from 'react-redux';
-import { createStore } from 'redux';
-
-import { reducer, RootState } from '../store';
-
-/**
- * @param initialState The store's initial state (on the client side, the state of the server-side store is passed here)
- */
-const makeStore: MakeStore = (initialState: RootState) => {
-  return createStore(reducer, initialState);
-};
-
-class MyApp extends App<ReduxWrapperAppProps<RootState>> {
-  static async getInitialProps({ Component, ctx }: AppContext) {
-    const pageProps = Component.getInitialProps ? await Component.getInitialProps(ctx) : {};
-
-    return { pageProps };
-  }
-
-  render() {
-    const { Component, pageProps, store } = this.props;
-    return (
-      <Provider store={store}>
-        <Component {...pageProps} />
-      </Provider>
-    );
-  }
-}
-
-export default withRedux(makeStore)(MyApp);
-```
-</details>
-
-And then components can simply be connected (the example considers page components):
-
-<details>
-    <summary>JavaScript</summary>
-
-```jsx
-import React from "react";
-import {connect} from "react-redux";
-
-const Page = props => (
-    <div>
-        <div>Prop from Redux {props.foo}</div>
-        <div>Prop from getInitialProps {props.custom}</div>
-    </div>
-);
-
-Page.getInitialProps = ({store, isServer, pathname, query}) => {
-    store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
-    return {custom: 'custom'}; // You can pass some custom props to the component from here
-}
-
-export default connect(state => state)(Page);
-```
-</details>
-
-<details>
-    <summary>TypeScript</summary>
-
-```tsx
-// pages/index.tsx
-import { useSelector } from 'react-redux';
-import { NextPage } from 'next';
-import { RootState } from '../store';
-
-interface Props {
-  custom: string;
-}
-
-const Page: NextPage<Props> = props => {
-  const foo = useSelector<RootState, RootState['foo']>((state) => state.foo);
-
-  return (
-    <div>
-      <div>Prop from Redux {foo}</div>
-      <div>Prop from getInitialProps {props.custom}</div>
-    </div>
-  );
-};
-
-Page.getInitialProps = ({ store, isServer }) => {
-  if (isServer) {
-    // Do some staff
-  }
-
-  store.dispatch({ type: 'FOO', payload: 'foo' }); // The component can read from the store's state when rendered
-
-  return { custom: 'custom' }; // You can pass some custom props to the component from here
-};
-
-export default Page;
-```
-</details>
-
-
-## How it works
-
-Using `next-redux-wrapper` ("the wrapper"), the following things happen on a request:
-
-* Phase 1: `getInitialProps`
-  * The wrapper creates a server-side store (using `makeStore`) with an empty initial state. In doing so it also provides the `Request` and `Response` objects as options to `makeStore`.
-  * The wrapper calls the `_app`'s `getInitialProps` function and passes the previously created store.
-  * Next.js takes the props returned from the `_app`'s `getInitialProps` method, along with the store's state.
-
-* Phase 2: SSR
-  * The wrapper creates a new store providing the previous store's state as `initialState` to `makeStore`. That store is passed as a property to the `_app` component.
-  * Connected components may alter the store's state, but the modified state will not be transferred to the client.
-
-* Phase 3: Client
-  * The wrapper uses the state from Phase 1 to create a new store, which is again provided to the `_app` component.
-  * The wrapper persists the store in the client's window object, so it can be restored in case of HMR.
-
-**Note:** The client's state is not persisted across requests (i.e. Phase 1 always starts with an empty state).
-Hence, it is reset on page reloads.
-Consider using [Redux persist](#usage-with-redux-persist) if you want to persist state between requests.
 
 ## Configuration
 
-The `withRedux` function accepts `makeStore` as its first argument. The `makeStore` function will receive the initial state and
-should return a new Redux `store` instance each time it's called. No memoization is needed here, it is automatically done inside the wrapper.
+The `createWrapper` function accepts `makeStore` as its first argument. The `makeStore` function should return a new Redux `Store` instance each time it's called. No memoization is needed here, it is automatically done inside the wrapper.
 
-`withRedux` also optionally accepts a config object as a second parameter:
+`createWrapper` also optionally accepts a config object as a second parameter:
 
 - `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
 - `serializeState` and `deserializeState`: custom functions for serializing and deserializing the redux state, see
     [Custom serialization and deserialization](#custom-serialization-and-deserialization).
 
-When `makeStore` is invoked it is provided with a configuration object along with a Next.js page context which includes:
+When `makeStore` is invoked it is provided with a Next.js context, which could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap.
 
-- `isServer` (boolean): Indicates whether makeStore is executed on the server or the client side
-- `req` (Request): The `next.js` `getInitialProps` context `req` attribute
-- `res` (Response): The `next.js` `getInitialProps` context `res` attribute
+Some of those contexts (`getServerSideProps` always, and `NextPageContext`, `AppContext` sometimes if page is rendered on server) can have request and response related properties:
 
-The `req` and `res` attributes are only set for the first server-side store ([Phase 1](#how-it-works)).
+- `req` (`IncomingMessage`)
+- `res` (`ServerResponse`)
 
-Although it is possible to create server or client specific logic in both `makeStore` and `getInitialProps`, I highly
-recommend that they do not have different behavior. This may cause errors and checksum mismatches which in turn will
-ruin the whole purpose of server rendering.
+Although it is possible to create server or client specific logic in both `makeStore`, I highly recommend that they do not have different behavior. This may cause errors and checksum mismatches which in turn will ruin the whole purpose of server rendering.
+
+## getStaticProps
+
+This section describes how to attach to [getStaticProps](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) lifecycle function.
+
+Let's create a page in `pages/pageName.tsx`:
+
+```typescript
+import React from 'react';
+import {NextPage} from 'next';
+import {Provider, useSelector} from 'react-redux';
+import {wrapper, State} from '../store';
+
+export const getStaticProps = wrapper.getStaticProps(
+    ({store, preview}) => {
+        console.log('2. Page.getStaticProps uses the store to dispatch things');
+        store.dispatch({type: 'TICK', payload: 'was set in other page ' + preview});
+    }
+);
+
+// you can also use `connect()` instead of hooks
+const Page: NextPage = () => {
+    const {tick} = useSelector<State, State>(state => state);
+    return (
+        <div>{tick}</div>
+    );
+};
+
+export default wrapper.withRedux(Page);
+```
+
+:warning: **Each time when pages that have `getStaticProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of static generation, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
+
+## getServerSideProps
+
+This section describes how to attach to [getServerSideProps](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) lifecycle function.
+
+Let's create a page in `pages/pageName.tsx`:
+
+```typescript
+import React from 'react';
+import {NextPage} from 'next';
+import {Provider, connect} from 'react-redux';
+import {wrapper, State} from '../store';
+
+export const getServerSideProps = wrapper.getServerSideProps(
+    ({store, req, res, ...etc}) => {
+        console.log('2. Page.getServerSideProps uses the store to dispatch things');
+        store.dispatch({type: 'TICK', payload: 'was set in other page'});
+    }
+);
+
+// Page itself is not connected to Redux Store, it has to render Provider to allow child components to connect to Redux Store
+const Page: NextPage<State> = ({tick}) => (
+    <div>{tick}</div>
+);
+
+// you can also use Redux `useSelector` and other hooks instead of `connect()`
+export default wrapper.withRedux(connect((state: State) => state)(Page));
+```
+
+:warning: **Each time when pages that have `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of server side rendering, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
+
+## `Page.getInitialProps`
+
+```typescript
+import React, {Component} from 'react';
+import {NextPage} from 'next';
+import {wrapper, State} from '../store';
+
+// you can also use `connect()` instead of hooks
+const Page: NextPage = () => {
+    const {tick} = useSelector<State, State>(state => state);
+    return (
+        <div>{tick}</div>
+    );
+};
+
+Page.getInitialProps = ({store, pathname, req, res}) => {
+    console.log('2. Page.getInitialProps uses the store to dispatch things');
+    store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
+};
+
+export default wrapper.withRedux(Page);
+```
+
+Keep in mind that `req` and `res` may not be available if `getInitialProps` is called on client side.
+
+Stateless function component also can be replaced with class:
+
+```typescript
+class Page extends Component {
+
+    public static getInitialProps = () => { ... };
+
+    render() {
+        // stuff
+    }
+}
+
+export default wrapper.withRedux(Page);
+```
+
+## App
+
+:warning: This mode is not compatible with [Next.js 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see the [explanation below](#automatic-partial-static-export).
+
+The wrapper can also be attached to your `_app` component (located in `/pages`). All other components can use the `connect` function of `react-redux`.
+
+```typescript
+# pages/_app.tsx
+
+import React from 'react';
+import App, {AppInitialProps, AppContext} from 'next/app';
+import {wrapper, State} from '../components/store';
+import {State} from '../components/reducer';
+
+class MyApp extends App<AppInitialProps> {
+
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
+
+        ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
+
+        return {
+            pageProps: {
+                // Call page-level getInitialProps
+                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                // Some custom thing for all pages
+                pathname: ctx.pathname,
+            },
+        };
+
+    };
+
+    public render() {
+        const {Component, pageProps} = this.props;
+
+        return (
+            <Component {...pageProps} />
+        );
+    }
+}
+
+export default wrapper.withRedux(MyApp);
+```
+
+And then all pages can simply be connected (the example considers page components):
+
+```jsx
+// pages/xxx.tsx
+
+import React from "react";
+import {NextPage} from 'next';
+import {connect} from "react-redux";
+import {NextPageContext} from "next";
+import {State} from "../store";
+
+const Page:NextPage<State> = ({foo, custom}) => (
+    <div>
+        <div>Prop from Redux {foo}</div>
+        <div>Prop from getInitialProps {custom}</div>
+    </div>
+);
+
+// No need to wrap pages if App was wrapped
+Page.getInitialProps = ({store, isServer, pathname, query}: NextPageContext) => {
+    store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
+    return {custom: 'custom'}; // You can pass some custom props to the component from here
+}
+
+export default connect((state: State) => state)(Page);
+```
+
+## App and `getServerSideProps` or `getStaticProps` at page level
+
+You can also use `getServerSideProps` or `getStaticProps` at page level, in this case `HYDRATE` action will be dispatched twice: with state after `App.getInitialProps` and then with state after `getServerSideProps` or `getStaticProps`:
+
+- If you use `getServerSideProps` at page level then `store` in `getServerSideProps` will be executed after `App.getInitialProps` and will have state from it, so second `HYDRATE` will have full state from both
+- :warning: If you use `getStaticProps` at page level then `store` in `getStaticProps` will be executed at compile time and will **NOT** have state from `App.getInitialProps` because they are executed in different contexts and state cannot be shared. First `HYDRATE` actions state after `App.getInitialProps` and second will have state after `getStaticProps` (even though it was executed earlier in time).
+
+Simplest way to ensure proper merging is to drop initial values from `action.payload`:
+
+```typescript
+const reducer = (state: State = {app: 'init', page: 'init'}, action: AnyAction) => {
+    switch (action.type) {
+        case HYDRATE:
+            if (action.payload.app === 'init') delete action.payload.app;
+            if (action.payload.page === 'init') delete action.payload.page;
+            return {...state, ...action.payload};
+        case 'APP':
+            return {...state, app: action.payload};
+        case 'PAGE':
+            return {...state, page: action.payload};
+        default:
+            return state;
+    }
+};
+```
+
+Assume page only dispatches `PAGE` actiona and App only `APP`, this makes state merging safe.
+
+More about that in [Server and Client state separation](#server-and-client-state-separation).
+
+# How it works
+
+Using `next-redux-wrapper` ("the wrapper"), the following things happen on a request:
+
+* Phase 1: `getInitialProps`/`getStaticProps`/`getServerSideProps`
+  * The wrapper creates a server-side store (using `makeStore`) with an empty initial state. In doing so it also provides the `Request` and `Response` objects as options to `makeStore`.
+  * In App mode:
+    * The wrapper calls the `_app`'s `getInitialProps` function and passes the previously created store.
+    * Next.js takes the props returned from the `_app`'s `getInitialProps` method, along with the store's state.
+  * In per-page mode:
+    * The wrapper calls the Page's `getXXXProps` function and passes the previously created store.
+    * Next.js takes the props returned from the Page's `getXXXProps` method, along with the store's state.
+
+* Phase 2: SSR
+  * The wrapper creates a new store using `makeStore`
+  * The wrapper dispatches `HYDRATE` action with the previous store's state as `payload`
+  * That store is passed as a property to the `_app` or `page` component.
+  * **Connected components may alter the store's state, but the modified state will not be transferred to the client.**
+
+* Phase 3: Client
+  * The wrapper creates a new store
+  * The wrapper dispatches `HYDRATE` action with the state from Phase 1 as `payload`
+  * That store is passed as a property to the `_app` or `page` component.
+  * The wrapper persists the store in the client's window object, so it can be restored in case of HMR.
+
+**Note:** The client's state is not persisted across requests (i.e. Phase 1 always starts with an empty state).
+Hence, it is reset on page reloads.
+Consider using [Redux persist](#usage-with-redux-persist) if you want to persist state between requests.
 
 ## Tips and Tricks
+
+### Server and Client state separation
+
+Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
+
+The easiest and most stable way to make sure nothing is accidentally overwritten is to make sure that your reducer applies client side and server side actions to different substates of your state and they never clash:
+
+```typescript
+export interface State {
+    server: any;
+    client: any;
+}
+
+const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
+    switch (action.type) {
+        case HYDRATE:
+            return {
+                ...state,
+                server: {
+                    ...state.server,
+                    ...action.payload.server
+                }
+            }
+        case 'CLIENT_SERVER':
+            return {
+                ...state,
+                server: {
+                    ...state.server,
+                    tick: action.payload
+                }
+            };
+        case 'CLIENT_ACTION':
+            return {
+                ...state,
+                client: {
+                    ...state.client,
+                    tick: action.payload
+                }
+            };
+        default:
+            return state;
+    }
+};
+```
+
+Also you can use a library like https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly.
 
 ### Document
 
@@ -291,50 +407,7 @@ Transition to an error page (`pages/_error.js` template) will cause `pages/_app.
 full page transition (not HTML5 pushState), so client will have the store created from scratch using state from the server.
 So unless you persist the store on the client somehow the resulting previous client state will be ignored.
 
-### Use with layout
-
-`MyApp` is not connected to Redux by design in order to keep the interface as minimal as possible. You can return
-whatever you want from `MyApp`'s `getInitialProps`, or if you need a shared layout just create it and `connect` it as
-usual, then include it either in the page itself or render in `MyApp` like so:
-
-```js
-import React from 'react'
-import {Provider} from "react-redux";
-import App, {Container} from "next/app";
-import withRedux from "next-redux-wrapper";
-import {makeStore} from "../components/store";
-import ConnectedLayout from "../components/Layout";
-
-export default withRedux(makeStore, {debug: true})(class MyApp extends App {
-
-    static async getInitialProps({Component, ctx}) {
-
-        return {
-            pageProps: {
-                // Call page-level getInitialProps
-                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {})
-            }
-        };
-
-    }
-
-    render() {
-        const {Component, pageProps, store} = this.props;
-        return (
-            <Container>
-                <Provider store={store}>
-                    <ConnectedLayout>
-                        <Component {...pageProps} />
-                    </ConnectedLayout>
-                </Provider>
-            </Container>
-        );
-    }
-
-});
-```
-
-### Async actions in `getInitialProps`
+### Async actions
 
 ```js
 function someAsyncAction() {
@@ -374,13 +447,10 @@ Example of a custom serialization of an Immutable.JS state using `json-immutable
 ```js
 const {serialize, deserialize} = require('json-immutable');
 
-withRedux(
-    (initialState, options) => {...}, // makeStore
-    {
-        serializeState: state => serialize(state),
-        deserializeState: state => deserialize(state)
-    }
-);
+createWrapper({
+    serializeState: state => serialize(state),
+    deserializeState: state => deserialize(state)
+});
 ```
 
 Same thing using Immutable.JS:
@@ -388,38 +458,80 @@ Same thing using Immutable.JS:
 ```js
 const {fromJS} = require('immutable');
 
-withRedux(
-    (initialState, options) => {...}, // makeStore,
-    {
-        serializeState: state => state.toJS(),
-        deserializeState: state => fromJS(state),
-    }
-);
+createWrapper({
+    serializeState: state => state.toJS(),
+    deserializeState: state => fromJS(state),
+});
 ```
 
 ### Usage with Redux Saga
 
-[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, redux-saga needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
+[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
 
-```js
-// Before this, import what you need and create a root saga as usual
+Create your root saga as usual, then implement the store creator:
 
-const makeStore = (initialState, options) => {
+```typescript
+import {createStore, applyMiddleware, Store} from 'redux';
+import {MakeStore, createWrapper, Context} from 'next-redux-wrapper';
+import createSagaMiddleware, {Task} from 'redux-saga';
+import reducer, {State} from './reducer';
+import rootSaga from './saga';
+
+export interface SagaStore extends Store {
+    sagaTask?: Task;
+}
+
+export const makeStore: MakeStore<State> = (context: Context) => {
     // 1: Create the middleware
     const sagaMiddleware = createSagaMiddleware();
 
-    // Before we returned the created store without assigning it to a variable:
-    // return createStore(reducer, initialState);
-
     // 2: Add an extra parameter for applying middleware:
-    const store = createStore(reducer, initialState, applyMiddleware(sagaMiddleware));
+    const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
-    // 3: Run your sagas:
-    sagaMiddleware.run(rootSaga);
+    // 3: Run your sagas on server
+    (store as SagaStore).sagaTask = sagaMiddleware.run(rootSaga);
 
     // 4: now return the store:
-    return store
+    return store;
 };
+
+export const wrapper = createWrapper<State>(makeStore, {debug: true});
+```
+
+Then in the `pages/_app` wait stop saga and wait for it to finish when execution is on server:
+
+```typescript
+import React from 'react';
+import App, {AppInitialProps, AppContext} from 'next/app';
+import {END} from 'redux-saga';
+import {SagaStore, wrapper} from '../components/store';
+
+class WrappedApp extends App<AppInitialProps> {
+    public static getInitialProps = async ({Component, ctx}: AppContext) => {
+        // 1. Wait for all page actions to dispatch
+        const pageProps = {
+            ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+        };
+
+        // 2. Stop the saga if on server
+        if (ctx.req) {
+            ctx.store.dispatch(END);
+            await (ctx.store as SagaStore).sagaTask.toPromise();
+        }
+
+        // 3. Return props
+        return {
+            pageProps,
+        };
+    };
+
+    public render() {
+        const {Component, pageProps} = this.props;
+        return <Component {...pageProps} />;
+    }
+}
+
+export default wrapper.withRedux(WrappedApp);
 ```
 
 ### Usage with Redux Persist
@@ -447,16 +559,16 @@ export const reducer = (state, {type, payload}) => {
     return state;
 };
 
-const makeConfiguredStore = (reducer, initialState) =>
-    createStore(reducer, initialState, applyMiddleware(logger));
+const makeConfiguredStore = (reducer) =>
+    createStore(reducer, undefined, applyMiddleware(logger));
 
-export const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
+const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
 
     if (isServer) {
 
         initialState = initialState || {fromServer: 'foo'};
 
-        return makeConfiguredStore(reducer, initialState);
+        return makeConfiguredStore(reducer);
 
     } else {
 
@@ -471,7 +583,7 @@ export const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
         };
 
         const persistedReducer = persistReducer(persistConfig, reducer);
-        const store = makeConfiguredStore(persistedReducer, initialState);
+        const store = makeConfiguredStore(persistedReducer);
 
         store.__persistor = persistStore(store); // Nasty hack
 
@@ -479,39 +591,59 @@ export const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
     }
 };
 
+export const wrapper = createWrapper(makeStore);
+
 export const setClientState = (clientState) => ({
     type: SET_CLIENT_STATE,
     payload: clientState
 });
 ```
 
-And then in Next.js `_app` page:
+And then in Next.js `_app` page you can use bare context access to get the store (https://react-redux.js.org/api/provider#props):
 
-```js
-// pages/_app.js
+```typescript
+// pages/_app.tsx
 import React from "react";
-import {Provider} from "react-redux";
-import App, {Container} from "next/app";
+import App from "next/app";
 import withRedux from "next-redux-wrapper";
-import {makeStore} from "./lib/redux";
+import {ReactReduxContext} from 'react-redux'
+import {wrapper} from "./lib/redux";
 import {PersistGate} from 'redux-persist/integration/react';
 
-export default withRedux(makeStore, {debug: true})(class MyApp extends App {
-
+export default wrapper.withRedux(class MyApp extends App {
     render() {
-        const {Component, pageProps, store} = this.props;
+        const {Component, pageProps} = this.props;
         return (
-            <Container>
-                <Provider store={store}>
+            <ReactReduxContext.Consumer>
+                {({ store }) => {
                     <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
                         <Component {...pageProps} />
                     </PersistGate>
-                </Provider>
-            </Container>
-
+                }}
+            </ReactReduxContext.Consumer>
         );
     }
+});
+```
 
+Or using hooks:
+
+```typescript
+// pages/_app.tsx
+import React from "react";
+import App from "next/app";
+import withRedux from "next-redux-wrapper";
+import {useStore} from 'react-redux'
+import {wrapper} from "./lib/redux";
+import {PersistGate} from 'redux-persist/integration/react';
+
+export default wrapper.withRedux(({Component, pageProps}) => {
+    const store = useStore();
+    return (
+        <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
+            <Component {...pageProps} />
+        </PersistGate>
+    );
 });
 ```
 
@@ -534,64 +666,25 @@ export default connect(
 ));
 ```
 
-## Usage with Redux Hooks
+## Upgrade from 5.x to 6.x
 
-In order to use Redux Hooks you need to use `useSelector` and `useDispatch` hooks instead of `connect` with `mapStateToProps` and `mapDispatchToProps`. To do so you will need to use `withRedux` as stated in [installation](#installation).
+Major change in the way how things are wrapped in version 6.
 
-From now on, all your components will have access to the redux store (since we used `withRedux` in the `_app` component) and you'll have to remove the `connect` HOC (normal redux) in favour of `useSelector` and `useDispatch` as stated in the previous parragraph. E.g:
+1. Default export `withRedux` is marked deprecated, you should create a wrapper `const wrapper = createWrapper(makeStore, {debug: true})` and then use `wrapper.withRedux(Page)`.
 
-```jsx
-const MyComponent = (props) => {
-  const {mappedValueFromStore} = props
-  // Regular redux hooks usage
-  const storeValue = useSelector(state => state.storeValue)
-  const dispatch = useDispatch()
+2. Your `makeStore` function no longer gets `initialState`, it only receives the context: `makeStore(context: Context)`. Context could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap. Instead, you need to handle the `HYDRATE` action in the reducer. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
 
-  const triggerChange = () => {
-    // Dispatch a redux action with redux hooks
-    dispatch({
-      type: 'CHANGE_STORE_VALUE',
-      storeValue: 'new store value'
-    })
-  }
+3. `App` should no longer wrap its children with `Provider`, it is now done internally.
 
-  return (
-    <div>
-      <p>From store directly: {storeValue}</p>
-      <p>From mapped props: {mappedValueFromStore}</p>
-      <button onClick={triggerChange}>Trigger change</button>
-    </div>
-  )
-}
+4. `isServer` is not passed in `context`/`props`, use your own function or simple check `const isServer = typeof window === 'undefined'` or `!!context.req` or `!!context.ctx.req`.
 
-MyComponent.getInitialProps = async (ctx) => {
-  const mappedValueFromStore = ctx.store.state.mappedValueFromStore // we can retrieve data from redux store in getInitialProps
-  ctx.store.dispatch({
-    type: 'ACCESS_FROM_GET_INITIAL_PROPS'
-  }) // We can dispatch actions too
+5. `store` is not passed to wrapped component props.
 
-  return {
-    mappedValueFromStore,
-  }
-}
-```
+6. `WrappedAppProps` was renamed to `WrapperProps`.
 
-We can use it both server and client side, using `ctx.store.state` and `ctx.store.dispatch` server side and with the hooks on the client side.
+## Upgrade from 1.x to 2.x
 
-## Automatic Partial Static Export
-
-The main purpose of this library is to make sure actions are consistently dispatched on all pages on client and on server from `getInitialProps` function, which makes all pages incompatible with Automatic Partial Static Export feature.
-
-[Previous version of the lib](https://github.com/kirill-konshin/next-redux-wrapper/tree/1.x) was working on page level, so theoretically you can wrap only *some* pages. But on the other hand you would then need to make sure that no redux-connected components will appear on pages that were not wrapped. So rule of thumb always was to wrap all pages. Which is exactly what the new version does.
-
-Which brings us to the conclusion:
-
-If you need a static website you don't need this lib at all because you can always dispatch at client side on `componentDidMount` just like you normally would with bare React Redux, and let the server only serve initial/static markup.
-
-## Upgrade from 1.x
-
-If your project was using Next.js 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to latest
-version.
+If your project was using Next.js 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to 2.x.
 
 1. Upgrade Next.js and Wrapper
     ```bash
@@ -615,13 +708,11 @@ version.
     ```js
     // pages/_app.js
     import React from 'react'
-    import {Provider} from "react-redux";
-    import App, {Container} from "next/app";
-    import withRedux from "next-redux-wrapper";
-    import {makeStore} from "../components/store";
+    import {Provider} from 'react-redux';
+    import App from 'next/app';
+    import {wrapper} from '../store';
 
-    export default withRedux(makeStore, {debug: true})(class MyApp extends App {
-
+    class MyApp extends App {
         static async getInitialProps({Component, ctx}) {
             return {
                 pageProps: {
@@ -632,17 +723,15 @@ version.
         }
 
         render() {
-            const {Component, pageProps, store} = this.props;
+            const {Component, pageProps} = this.props;
             return (
-                <Container>
-                    <Provider store={store}>
-                        <Component {...pageProps} />
-                    </Provider>
-                </Container>
+                <Component {...pageProps} />
             );
         }
 
-    });
+    }
+
+    export default wrapper.withRedux(MyApp);
     ```
 
 4. Follow [Next.js 6 upgrade instructions](https://github.com/zeit/next.js/issues/4239) for all your components

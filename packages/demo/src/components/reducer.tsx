@@ -1,19 +1,21 @@
 import {AnyAction} from 'redux';
+import {HYDRATE} from 'next-redux-wrapper';
 
 export interface State {
-    tick: string;
-    tack: string;
-    toe: string;
+    app: string;
+    page: string;
 }
 
-const reducer = (state: State = {tick: 'init', tack: 'init', toe: 'init'}, action: AnyAction) => {
+const reducer = (state: State = {app: 'init', page: 'init'}, action: AnyAction) => {
     switch (action.type) {
-        case 'TICK':
-            return {...state, tick: action.payload};
-        case 'TACK':
-            return {...state, tack: action.payload};
-        case 'TOE':
-            return {...state, toe: action.payload};
+        case HYDRATE:
+            if (action.payload.app === 'init') delete action.payload.app;
+            if (action.payload.page === 'init') delete action.payload.page;
+            return {...state, ...action.payload};
+        case 'APP':
+            return {...state, app: action.payload};
+        case 'PAGE':
+            return {...state, page: action.payload};
         default:
             return state;
     }
