@@ -171,7 +171,7 @@ const Page: NextPage<State> = ({tick}) => (
 );
 
 // you can also use Redux `useSelector` and other hooks instead of `connect()`
-export default wrapper.withRedux(connect(state: State) => state)(Page));
+export default wrapper.withRedux(connect((state: State) => state)(Page));
 ```
 
 :warning: **Each time when pages that have `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of server side rendering, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
@@ -730,7 +730,7 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
         }
 
     }
-    
+
     export default wrapper.withRedux(MyApp);
     ```
 
