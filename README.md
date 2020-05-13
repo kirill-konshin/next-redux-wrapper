@@ -299,8 +299,8 @@ Simplest way to ensure proper merging is to drop initial values from `action.pay
 const reducer = (state: State = {app: 'init', page: 'init'}, action: AnyAction) => {
     switch (action.type) {
         case HYDRATE:
-            if (action.payload.app === 'init') delete action.payload.app;
-            if (action.payload.page === 'init') delete action.payload.page;
+            if (action.payload.app === 'init') {delete action.payload.app};
+            if (action.payload.page === 'init') {delete action.payload.page};
             return {...state, ...action.payload};
         case 'APP':
             return {...state, app: action.payload};
