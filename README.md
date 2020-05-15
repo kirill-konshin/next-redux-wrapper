@@ -49,8 +49,10 @@ Library provides uniform interface no matter in which Next.js lifecycle method y
 # Installation
 
 ```bash
-npm install next-redux-wrapper --save
+npm install next-redux-wrapper react-redux --save
 ```
+
+Note that `next-redux-wrapper` requires `react-redux` as peer dependency.
 
 # Usage
 
