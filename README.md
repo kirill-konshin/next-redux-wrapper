@@ -13,6 +13,7 @@ Contents:
 - [Motivation](#motivation)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [State reconciliation during hydration](#state-reconciliation-during-hydration)
   - [Configuration](#configuration)
   - [getStaticProps](#getstaticprops)
   - [getServerSideProps](#getserversideprops)
@@ -60,7 +61,7 @@ All examples are written in TypeScript. If you're using plain JavaScript just om
 
 Next.js has several data fetching mechanisms, this library can attach to any of them. But first you have to write some common code.
 
-**Please note that your reducer *must* have the `HYDRATE` action handler.** This behavior was added in version 6 of this library. We'll talk about this special action later.
+**Please note that your reducer *must* have the `HYDRATE` action handler. `HYDRATE` action handler must properly reconciliate the hydrated state on top of the existing state (if any).** This behavior was added in version 6 of this library. We'll talk about this special action later.
 
 Create a file named `store.ts`:
 
@@ -78,6 +79,7 @@ export interface State {
 const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
     switch (action.type) {
         case HYDRATE:
+            // Attention! This will overwrite client state! Real apps should use proper reconciliation.
             return {...state, ...action.payload};
         case 'TICK':
             return {...state, tick: action.payload};
@@ -121,6 +123,90 @@ const makeStore = context => createStore(reducer);
 export const wrapper = createWrapper<State>(makeStore, {debug: true});
 ```
 </details>
+
+It is highly recommended to use `pages/_app` to wrap all pages at once, otherwise due to potential race conditions you may get `Cannot update component while rendering another component`:
+
+```typescript
+import React from 'react';
+import App, {AppInitialProps} from 'next/app';
+import {wrapper} from '../components/store';
+
+class WrappedApp extends App<AppInitialProps> {
+    public render() {
+        const {Component, pageProps} = this.props;
+        return <Component {...pageProps} />;
+    }
+}
+
+export default wrapper.withRedux(WrappedApp);
+```
+
+<details>
+<summary>Same code in JavaScript (without types)</summary>
+
+```js
+import React from 'react';
+import App from 'next/app';
+import {wrapper} from '../components/store';
+
+class WrappedApp extends App {
+    public render() {
+        const {Component, pageProps} = this.props;
+        return <Component {...pageProps} />;
+    }
+}
+
+export default wrapper.withRedux(WrappedApp);
+```
+</details>
+
+## State reconciliation during hydration
+
+Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. This may happen during initial page load and during regular page navigation. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
+
+Simplest way is to use [server and client state separation](#server-and-client-state-separation).
+
+Another way is to use https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly:
+
+```js
+import {HYDRATE} from 'next-redux-wrapper';
+
+// create your reducer
+const reducer = (state = {tick: 'init'}, action) => {
+    switch (action.type) {
+        case HYDRATE:
+            const stateDiff = diff(state, action.payload) as any;
+            const wasBumpedOnClient = stateDiff?.page?.[0]?.endsWith('X'); // or any other criteria
+            return {
+                ...state,
+                ...action.payload,
+                page: wasBumpedOnClient ? state.page : action.payload.page, // keep existing state or use hydrated
+            };
+        case 'TICK':
+            return {...state, tick: action.payload};
+        default:
+            return state;
+    }
+};
+```
+
+Or [like this](https://github.com/zeit/next.js/blob/canary/examples/with-redux-wrapper/store/store.js) (from [with-redux-wrapper example](https://github.com/zeit/next.js/tree/canary/examples/with-redux-wrapper) in Next.js repo):
+
+```js
+const reducer = (state, action) => {
+  if (action.type === HYDRATE) {
+    return { ...state, ...action.payload }
+    const nextState = {
+      ...state, // use previous state
+      ...action.payload, // apply delta from hydration
+    }
+    if (state.count) nextState.count = state.count // preserve count value on client side navigation
+    return nextState
+  } else {
+    return combinedReducer(state, action)
+  }
+}
+```
 
 ## Configuration
 
@@ -169,7 +255,7 @@ const Page: NextPage = () => {
     );
 };
 
-export default wrapper.withRedux(Page);
+export default Page;
 ```
 
 <details>
@@ -195,11 +281,13 @@ const Page = () => {
     );
 };
 
-export default wrapper.withRedux(Page);
+export default Page;
 ```
 </details>
 
 :warning: **Each time when pages that have `getStaticProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of static generation, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
+
+Although you can wrap individual pages (and not wrap the `pages/_app`) it is not recommended, see last paragraph in [usage section](#usage).
 
 ## getServerSideProps
 
@@ -226,7 +314,7 @@ const Page: NextPage<State> = ({tick}) => (
 );
 
 // you can also use Redux `useSelector` and other hooks instead of `connect()`
-export default wrapper.withRedux(connect((state: State) => state)(Page));
+export default connect((state: State) => state)(Page);
 ```
 
 <details>
@@ -250,11 +338,13 @@ const Page = ({tick}) => (
 );
 
 // you can also use Redux `useSelector` and other hooks instead of `connect()`
-export default wrapper.withRedux(connect(state => state)(Page));
+export default connect(state => state)(Page);
 ```
 </details>
 
 :warning: **Each time when pages that have `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of server side rendering, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
+
+Although you can wrap individual pages (and not wrap the `pages/_app`) it is not recommended, see last paragraph in [usage section](#usage).
 
 ## `Page.getInitialProps`
 
@@ -276,7 +366,7 @@ Page.getInitialProps = ({store, pathname, req, res}) => {
     store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
 };
 
-export default wrapper.withRedux(Page);
+export default Page;
 ```
 
 <details>
@@ -299,7 +389,7 @@ Page.getInitialProps = ({store, pathname, req, res}) => {
     store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
 };
 
-export default wrapper.withRedux(Page);
+export default Page;
 ```
 </details>
 
@@ -317,12 +407,14 @@ class Page extends Component {
     }
 }
 
-export default wrapper.withRedux(Page);
+export default Page;
 ```
+
+Although you can wrap individual pages (and not wrap the `pages/_app`) it is not recommended, see last paragraph in [usage section](#usage).
 
 ## App
 
-:warning: This mode is not compatible with [Next.js 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see the [explanation below](#automatic-partial-static-export).
+:warning: You can dispatch actions from the `pages/_app` too. But this mode is not compatible with [Next.js 9's Auto Partial Static Export](https://nextjs.org/blog/next-9#automatic-partial-static-export) feature, see the [explanation below](#automatic-partial-static-export).
 
 The wrapper can also be attached to your `_app` component (located in `/pages`). All other components can use the `connect` function of `react-redux`.
 
@@ -962,7 +1054,7 @@ export default connect(
 
 Major change in the way how things are wrapped in version 6.
 
-1. Default export `withRedux` is marked deprecated, you should create a wrapper `const wrapper = createWrapper(makeStore, {debug: true})` and then use `wrapper.withRedux(Page)`.
+1. Default export `withRedux` is marked deprecated, you should create a wrapper `const wrapper = createWrapper(makeStore, {debug: true})` and then use `wrapper.withRedux(MyApp)`.
 
 2. Your `makeStore` function no longer gets `initialState`, it only receives the context: `makeStore(context: Context)`. Context could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap. Instead, you need to handle the `HYDRATE` action in the reducer. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
 

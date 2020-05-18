@@ -147,6 +147,8 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     ): GetServerSideProps<P> => getStaticProps<P>(callback as any) as any; // just not to repeat myself
 
     const withRedux = (Component: NextComponentType | App | any) => {
+        const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
+
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
         const Wrapper: NextPage<WrapperProps> = ({initialState, initialProps, ...props}, context) => {
             const isFirstRender = useRef<boolean>(true);
@@ -155,7 +157,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
 
             if (config.debug)
-                console.log('4. WrappedApp.constructor created new store with', {
+                console.log('4. WrappedApp created new store with', displayName, {
                     initialState,
                     initialStateFromGSPorGSSR,
                 });
@@ -207,7 +209,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             );
         };
 
-        Wrapper.displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
+        Wrapper.displayName = displayName;
 
         if ('getInitialProps' in Component)
             Wrapper.getInitialProps = async (context: any) => {

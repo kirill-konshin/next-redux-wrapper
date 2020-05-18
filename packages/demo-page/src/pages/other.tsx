@@ -31,4 +31,4 @@ const OtherPage: NextPage<State> = () => {
     );
 };
 
-export default wrapper.withRedux(OtherPage);
+export default OtherPage;

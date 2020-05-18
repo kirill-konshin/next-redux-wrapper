@@ -32,4 +32,4 @@ export const getServerSideProps = wrapper.getServerSideProps(({store, req}) => {
     return {props: {custom: 'custom'}};
 });
 
-export default wrapper.withRedux(Page);
+export default Page;

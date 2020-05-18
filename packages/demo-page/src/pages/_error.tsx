@@ -2,13 +2,13 @@ import React, {Component} from 'react';
 import Link from 'next/link';
 import {NextPageContext} from 'next';
 import {connect} from 'react-redux';
-import {wrapper} from '../components/store';
 import {State} from '../components/reducer';
 
 class ErrorPage extends Component<State> {
     public static getInitialProps = ({store, pathname}: NextPageContext) => {
         console.log('2. Page.getInitialProps uses the store to dispatch things');
         store.dispatch({type: 'PAGE', payload: 'was set in error page ' + pathname});
+        return {};
     };
 
     render() {
@@ -28,4 +28,4 @@ class ErrorPage extends Component<State> {
     }
 }
 
-export default wrapper.withRedux(connect((state: State) => state)(ErrorPage));
+export default connect((state: State) => state)(ErrorPage);
