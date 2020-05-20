@@ -924,7 +924,7 @@ export default wrapper.withRedux(WrappedApp);
 
 #### Using `getServerSideProps` or `getStaticProps`
 
-In order to use it with `getServerSideProps` or `getStaticProps` you need to `await` for sagas in each page's hadnler:
+In order to use it with `getServerSideProps` or `getStaticProps` you need to `await` for sagas in each page's handler:
 
 ```js
 export const getServerSideProps = ReduxWrapper.getServerSideProps(
