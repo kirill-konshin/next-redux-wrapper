@@ -14,7 +14,7 @@
     "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "lint": "eslint --cache --cache-location .eslint/cache --fix",
-    "lint:all": "yarn lint 'packages/*/**/*.{ts,tsx}' 'packages/*/*.js'",
+    "lint:all": "yarn lint '**/*.{ts,tsx,js,jsx}'",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {

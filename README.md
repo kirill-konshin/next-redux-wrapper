@@ -846,6 +846,8 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 ```
 </details>
 
+#### Using `pages/_app`
+
 Then in the `pages/_app` wait stop saga and wait for it to finish when execution is on server:
 
 ```typescript
@@ -919,6 +921,22 @@ class WrappedApp extends App {
 export default wrapper.withRedux(WrappedApp);
 ```
 </details>
+
+#### Using `getServerSideProps` or `getStaticProps`
+
+In order to use it with `getServerSideProps` or `getStaticProps` you need to `await` for sagas in each page's hadnler:
+
+```js
+export const getServerSideProps = ReduxWrapper.getServerSideProps(
+  async ({ store, req, res, ...etc }) => {
+    // regular stuff
+    store.dispatch(ApplicationSlice.actions.updateConfiguration());
+    // end the saga
+    store.dispatch(END);
+    await store.sagaTask.toPromise();
+  }
+);
+```
 
 ### Usage with Redux Persist
 

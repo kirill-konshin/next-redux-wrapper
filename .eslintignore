@@ -1,3 +1,5 @@
 node_modules
+packages/*/.next
+packages/*/coverage
 packages/*/es6
 packages/*/lib
