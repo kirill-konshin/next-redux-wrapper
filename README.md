@@ -195,7 +195,6 @@ Or [like this](https://github.com/zeit/next.js/blob/canary/examples/with-redux-w
 ```js
 const reducer = (state, action) => {
   if (action.type === HYDRATE) {
-    return { ...state, ...action.payload }
     const nextState = {
       ...state, // use previous state
       ...action.payload, // apply delta from hydration
