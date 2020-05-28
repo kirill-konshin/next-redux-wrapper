@@ -122,7 +122,7 @@ const reducer = (state = {tick: 'init'}, action) => {
 const makeStore = context => createStore(reducer);
 
 // export an assembled wrapper
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper(makeStore, {debug: true});
 ```
 </details>
 
