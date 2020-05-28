@@ -13,7 +13,7 @@ A clear and concise description of what the bug is.
 
 ## To Reproduce
 
-*It is strongly recommended to fork CodeSandbox template https://codesandbox.io/s/github/zeit/next.js/tree/master/examples/hello-world and create a reproducible case. It will greatly speed up debugging.*
+*It is strongly recommended to fork CodeSandbox template https://codesandbox.io/s/next-redux-wrapper-demo-7n2t5 and create a reproducible case. It will greatly speed up debugging.*
 
 Steps to reproduce the behavior:
 

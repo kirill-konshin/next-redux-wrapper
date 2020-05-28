@@ -57,6 +57,8 @@ Note that `next-redux-wrapper` requires `react-redux` as peer dependency.
 
 # Usage
 
+Live example: https://codesandbox.io/s/next-redux-wrapper-demo-7n2t5.
+
 All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations.
 
 Next.js has several data fetching mechanisms, this library can attach to any of them. But first you have to write some common code.
