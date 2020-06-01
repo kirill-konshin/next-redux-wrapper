@@ -1,12 +1,7 @@
-import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import React, {FC} from 'react';
+import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
-class WrappedApp extends App<AppInitialProps> {
-    public render() {
-        const {Component, pageProps} = this.props;
-        return <Component {...pageProps} />;
-    }
-}
+const WrappedApp: FC<AppProps> = ({Component, pageProps}) => <Component {...pageProps} />;
 
 export default wrapper.withRedux(WrappedApp);

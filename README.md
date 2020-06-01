@@ -129,16 +129,13 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 It is highly recommended to use `pages/_app` to wrap all pages at once, otherwise due to potential race conditions you may get `Cannot update component while rendering another component`:
 
 ```typescript
-import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import React, {FC} from 'react';
+import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
-class WrappedApp extends App<AppInitialProps> {
-    public render() {
-        const {Component, pageProps} = this.props;
-        return <Component {...pageProps} />;
-    }
-}
+const WrappedApp: FC<AppProps> = ({Component, pageProps}) => (
+    <Component {...pageProps} />
+);
 
 export default wrapper.withRedux(WrappedApp);
 ```
@@ -148,19 +145,17 @@ export default wrapper.withRedux(WrappedApp);
 
 ```js
 import React from 'react';
-import App from 'next/app';
 import {wrapper} from '../components/store';
 
-class WrappedApp extends App {
-    public render() {
-        const {Component, pageProps} = this.props;
-        return <Component {...pageProps} />;
-    }
-}
+const MyApp = ({Component, pageProps}) => (
+    <Component {...pageProps} />
+);
 
-export default wrapper.withRedux(WrappedApp);
+export default wrapper.withRedux(MyApp, {wrapDefaultGetInitialProps: true});
 ```
 </details>
+
+:warning: Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/pages/_app.tsx#L21) when using `class MyApp extends App` which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component as in the example above.
 
 ## State reconciliation during hydration
 
