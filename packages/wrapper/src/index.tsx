@@ -165,10 +165,11 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             const store = useRef<Store<S, A>>(initStore({makeStore, config, context}));
 
             const hydrate = useCallback(() => {
-                store.current.dispatch({
-                    type: HYDRATE,
-                    payload: getDeserializedState(initialState, config),
-                } as any);
+                if (initialState)
+                    store.current.dispatch({
+                        type: HYDRATE,
+                        payload: getDeserializedState(initialState, config),
+                    } as any);
 
                 // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
                 // so we dispatch in this order
@@ -199,12 +200,17 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                     ...props.pageProps, // this comes from gssp/gsp in _app mode
                 };
 
-            // just some cleanup to prevent passing it as props
-            if (initialStateFromGSPorGSSR) delete props.pageProps.initialState;
+            let resultProps = props;
+
+            // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
+            if (initialStateFromGSPorGSSR) {
+                resultProps = {...props, pageProps: {...props.pageProps}};
+                delete resultProps.pageProps.initialState;
+            }
 
             return (
                 <Provider store={store.current}>
-                    <Component {...initialProps} {...props} />
+                    <Component {...initialProps} {...resultProps} />
                 </Provider>
             );
         };
