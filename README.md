@@ -151,7 +151,7 @@ const MyApp = ({Component, pageProps}) => (
     <Component {...pageProps} />
 );
 
-export default wrapper.withRedux(MyApp, {wrapDefaultGetInitialProps: true});
+export default wrapper.withRedux(MyApp);
 ```
 </details>
 
@@ -935,6 +935,8 @@ export const getServerSideProps = ReduxWrapper.getServerSideProps(
 ```
 
 ### Usage with Redux Persist
+
+Boilerplate: https://github.com/fazlulkarimweb/with-next-redux-wrapper-redux-persist
 
 Honestly, I think that putting a persistence gate is not necessary because the server can already send *some* HTML with
 *some* state, so it's better to show it right away and then wait for `REHYDRATE` action to happen to show additional
