@@ -1,0 +1,20 @@
+{
+  "extends": "../configs/tsconfig.json",
+  "include": [
+    "tests",
+    "src/pages"
+  ],
+  "compilerOptions": {
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "module": "esnext",
+    "outDir": "lib",
+    "isolatedModules": true,
+    "jsx": "preserve"
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

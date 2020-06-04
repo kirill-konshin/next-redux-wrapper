@@ -144,7 +144,9 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 
     const getServerSideProps = <P extends {} = any>(
         callback: (context: GetServerSidePropsContext & {store: Store<S, A>}) => P | void,
-    ): GetServerSideProps<P> => getStaticProps<P>(callback as any) as any; // just not to repeat myself
+    ): GetServerSideProps<P> => async (context: any) => {
+        return await getStaticProps(callback as any)(context); // just not to repeat myself
+    };
 
     const withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;

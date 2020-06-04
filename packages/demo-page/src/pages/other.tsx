@@ -5,7 +5,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import {State} from '../components/reducer';
 import {wrapper} from '../components/store';
 
-export const getStaticProps = wrapper.getStaticProps(({store, previewData}) => {
+export const getStaticProps = wrapper.getStaticProps(async ({store, previewData}) => {
     console.log('2. Page.getStaticProps uses the store to dispatch things');
     store.dispatch({type: 'PAGE', payload: 'was set in other page ' + JSON.stringify({previewData})});
 });
