@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Store, AnyAction, Action} from 'redux';
 import {Provider} from 'react-redux';
 import {GetServerSideProps, GetStaticProps, NextComponentType, NextPage, NextPageContext} from 'next';
@@ -32,8 +32,6 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
     context,
     config,
 }: InitStoreOptions<S, A>): Store<S, A> => {
-    const storeKey = getStoreKey(config);
-
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
@@ -49,6 +47,8 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
         }
         return createStore();
     }
+
+    const storeKey = getStoreKey(config);
 
     // Memoize store if client
     if (!(storeKey in window)) {
@@ -79,6 +79,8 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     makeStore: MakeStore<S, A>,
     config: Config<S> = {},
 ) => {
+    let initialStore: Store<S, A>;
+
     const makeProps = async ({
         callback,
         context,
@@ -88,21 +90,37 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         context: Context;
         isApp?: boolean;
     }): Promise<WrapperProps> => {
-        const store = initStore({context, makeStore, config});
+        initialStore = initStore({context, makeStore, config});
 
-        if (config.debug) console.log(`1. getProps created store with state`, store.getState());
+        if (config.debug) console.log(`1. getProps created store with state`, initialStore.getState());
 
-        const initialProps =
-            (callback &&
-                (await callback(
-                    // merging store into context instead of just passing as another argument because it's impossible to override getInitialProps signature
-                    isApp ? {...context, ctx: {...(context as AppContext).ctx, store}} : {...context, store},
-                ))) ||
-            {};
+        let initialProps = {};
 
-        if (config.debug) console.log(`3. getProps after dispatches has store state`, store.getState());
+        // merging store into context instead of just passing as another argument
+        // because it's impossible to override getInitialProps signature
+        if (callback) {
+            let callbackResult;
 
-        const state = store.getState();
+            if (isApp) {
+                callbackResult = await callback({
+                    ...context,
+                    ctx: {
+                        ...(context as AppContext).ctx,
+                        store: initialStore,
+                    },
+                });
+            } else {
+                callbackResult = await callback({...context, store: initialStore});
+            }
+
+            if (callbackResult) {
+                initialProps = callbackResult;
+            }
+        }
+
+        if (config.debug) console.log(`3. getProps after dispatches has store state`, initialStore.getState());
+
+        const state = initialStore.getState();
 
         return {
             initialProps,
@@ -164,11 +182,18 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                     initialStateFromGSPorGSSR,
                 });
 
-            const store = useRef<Store<S, A>>(initStore({makeStore, config, context}));
+            // see https://reactjs.org/docs/hooks-faq.html#how-to-create-expensive-objects-lazily
+            const [store] = useState(() => {
+                if (getIsServer() && initialStore) {
+                    return initialStore;
+                }
+
+                return initStore({makeStore, config, context});
+            });
 
             const hydrate = useCallback(() => {
                 if (initialState)
-                    store.current.dispatch({
+                    store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState(initialState, config),
                     } as any);
@@ -176,7 +201,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                 // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
                 // so we dispatch in this order
                 if (initialStateFromGSPorGSSR)
-                    store.current.dispatch({
+                    store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState(initialStateFromGSPorGSSR, config),
                     } as any);
@@ -211,7 +236,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             }
 
             return (
-                <Provider store={store.current}>
+                <Provider store={store}>
                     <Component {...initialProps} {...resultProps} />
                 </Provider>
             );
