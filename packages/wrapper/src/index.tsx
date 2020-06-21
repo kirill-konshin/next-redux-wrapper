@@ -19,19 +19,23 @@ const getSerializedState = (state: any, {serializeState}: Config = {}) =>
 
 const getStoreKey = ({storeKey}: Config = {}) => storeKey || STOREKEY;
 
-export declare type MakeStore<S = any, A extends Action = AnyAction> = (context: Context) => Store<S, A>;
+export declare type MakeStore<ST extends Store = Store<any, AnyAction>> = (context: Context) => ST;
 
-export interface InitStoreOptions<S = any, A extends Action = AnyAction> {
-    makeStore: MakeStore<S, A>;
+type ExtractStoreFromMakeStore<MS extends MakeStore> = MS extends MakeStore<infer ST> ? ST : Store<any, AnyAction>;
+
+type ExtractStateFromStore<ST extends Store> = ReturnType<ST['getState']>;
+
+export interface InitStoreOptions<ST extends Store = Store<any, AnyAction>> {
+    makeStore: MakeStore<ST>;
     context: Context;
-    config: Config<S>;
+    config: Config<ExtractStateFromStore<ST>>;
 }
 
-const initStore = <S extends {} = any, A extends Action = AnyAction>({
+const initStore = <ST extends Store = Store<any, AnyAction>>({
     makeStore,
     context,
     config,
-}: InitStoreOptions<S, A>): Store<S, A> => {
+}: InitStoreOptions<ST>): ST => {
     const storeKey = getStoreKey(config);
 
     const createStore = () => makeStore(context);
@@ -75,10 +79,12 @@ export interface GetStaticPropsContext {
     previewData?: any;
 }
 
-export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
-    makeStore: MakeStore<S, A>,
-    config: Config<S> = {},
+export const createWrapper = <MS extends MakeStore>(
+    makeStore: MS,
+    config: Config<ExtractStateFromStore<ExtractStoreFromMakeStore<MS>>> = {},
 ) => {
+    type _Store = ExtractStoreFromMakeStore<MS>;
+
     const makeProps = async ({
         callback,
         context,
@@ -111,7 +117,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getInitialPageProps = <P extends {} = any>(
-        callback: (context: NextPageContext & {store: Store<S, A>}) => P | void,
+        callback: (context: NextPageContext & {store: _Store}) => P | void,
     ) => async (context: NextPageContext) => {
         if (context.store) {
             console.warn('No need to wrap pages if _app was wrapped');
@@ -121,12 +127,12 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getInitialAppProps = <P extends {} = any>(
-        callback: (context: AppContext & {store: Store<S, A>}) => P | void,
+        callback: (context: AppContext & {store: _Store}) => P | void,
     ) => async (context: AppContext) =>
         (await makeProps({callback, context, isApp: true})) as WrapperProps & AppInitialProps; // this is just to convince TS
 
     const getStaticProps = <P extends {} = any>(
-        callback: (context: GetStaticPropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetStaticPropsContext & {store: _Store}) => P | void,
     ): GetStaticProps<P> => async (context: any) => {
         const {
             initialProps: {props, ...settings},
@@ -143,7 +149,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getServerSideProps = <P extends {} = any>(
-        callback: (context: GetServerSidePropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetServerSidePropsContext & {store: _Store}) => P | void,
     ): GetServerSideProps<P> => async (context: any) => {
         return await getStaticProps(callback as any)(context); // just not to repeat myself
     };
@@ -164,7 +170,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
                     initialStateFromGSPorGSSR,
                 });
 
-            const store = useRef<Store<S, A>>(initStore({makeStore, config, context}));
+            const store = useRef<_Store>(initStore({makeStore, config, context}) as _Store);
 
             const hydrate = useCallback(() => {
                 if (initialState)
@@ -236,7 +242,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
 };
 
 // Legacy
-export default <S extends {} = any, A extends Action = AnyAction>(makeStore: MakeStore<S, A>, config: Config = {}) => {
+export default <MS extends MakeStore = MakeStore>(makeStore: MS, config: Config = {}) => {
     console.warn(
         '/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().',
     );
