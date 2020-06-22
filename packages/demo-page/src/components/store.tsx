@@ -1,9 +1,9 @@
-import {createStore, applyMiddleware} from 'redux';
+import {createStore, applyMiddleware, Store} from 'redux';
 import logger from 'redux-logger';
 import {MakeStore, createWrapper, Context} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 
-export const makeStore: MakeStore<State> = (context: Context) => {
+export const makeStore: MakeStore<Store<State>> = (context: Context) => {
     const store = createStore(reducer, applyMiddleware(logger));
 
     if (module.hot) {
@@ -16,4 +16,4 @@ export const makeStore: MakeStore<State> = (context: Context) => {
     return store;
 };
 
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper(makeStore, {debug: true});
