@@ -925,6 +925,10 @@ export const getServerSideProps = ReduxWrapper.getServerSideProps(
 );
 ```
 
+#### Usage without `getInitialProps` inside `_app`
+
+If you don't want to opt-out of automatic pre-rendering in your Next.js app, you can manage server-called sagas on a per page basis like [the official Next.js "with Redux Saga" example](https://github.com/vercel/next.js/tree/canary/examples/with-redux-saga) does. If you do go with this option, please ensure that you await any and all sagas within any [Next.js page methods](https://nextjs.org/docs/basic-features/data-fetching). If you miss it on one of pages you'll end up with inconsistent sate being sent to client. So, we consider waiting in `_app` to be automatically safer, but obviously the main drawback is opting out of automatic static exports.
+
 ### Usage with Redux Persist
 
 Boilerplate: https://github.com/fazlulkarimweb/with-next-redux-wrapper-redux-persist
