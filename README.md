@@ -510,7 +510,7 @@ const Page:NextPage<State> = ({foo, custom}) => (
 );
 
 // No need to wrap pages if App was wrapped
-Page.getInitialProps = ({store, isServer, pathname, query}: NextPageContext) => {
+Page.getInitialProps = ({store, pathname, query}: NextPageContext) => {
     store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
     return {custom: 'custom'}; // You can pass some custom props to the component from here
 }
@@ -535,7 +535,7 @@ const Page = ({foo, custom}) => (
 );
 
 // No need to wrap pages if App was wrapped
-Page.getInitialProps = ({store, isServer, pathname, query}) => {
+Page.getInitialProps = ({store, pathname, query}) => {
     store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
     return {custom: 'custom'}; // You can pass some custom props to the component from here
 }
@@ -648,7 +648,7 @@ const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
                     ...action.payload.server
                 }
             }
-        case 'CLIENT_SERVER':
+        case 'SERVER_ACTION':
             return {
                 ...state,
                 server: {
@@ -684,7 +684,7 @@ const reducer = (state = {tick: 'init'}, action) => {
                     ...action.payload.server
                 }
             }
-        case 'CLIENT_SERVER':
+        case 'SERVER_ACTION':
             return {
                 ...state,
                 server: {
@@ -725,28 +725,19 @@ So unless you persist the store on the client somehow the resulting previous cli
 
 ### Async actions
 
+You need to install https://github.com/pburtchaell/redux-promise-middleware in order to dispatch Promises as async actions. Follow the installation guide of the library, then you'll be able to handle it like this:
+
 ```js
 function someAsyncAction() {
     return {
         type: 'FOO',
-        payload: new Promise((res) => { res('foo'); })
+        payload: new Promise(resolve => resolve('foo'))
     }
 }
 
-function getInitialProps({store, isServer, pathname, query}) {
-
-    // lets create an action using creator
-    const action = someAsyncAction();
-
-    // now the action has to be dispatched
-    store.dispatch(action);
-
-    // once the payload is available we can resume and render the app
-    return action.payload.then((payload) => {
-        // you can do something with payload now
-        return {custom: 'custom'};
-    });
-
+async function getInitialProps({store}) {
+    await store.dispatch(someAsyncAction());
+    return {custom: 'custom'};
 }
 ```
 
@@ -756,7 +747,7 @@ If you are storing complex types such as Immutable.JS or EJSON objecs in your st
 handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so,
 provide `serializeState` and `deserializeState` as config options to `withRedux`.
 
-The reason is that `initialState` is transferred over the network from server to client as a plain object.
+The reason is that state snapshot is transferred over the network from server to client as a plain object.
 
 Example of a custom serialization of an Immutable.JS state using `json-immutable`:
 
@@ -782,7 +773,7 @@ createWrapper({
 
 ### Usage with Redux Saga
 
-[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs.
+[Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs. Keep in mind that this setup will opt you out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization.
 
 Create your root saga as usual, then implement the store creator:
 
@@ -952,6 +943,7 @@ import {applyMiddleware, createStore} from 'redux';
 const SET_CLIENT_STATE = 'SET_CLIENT_STATE';
 
 export const reducer = (state, {type, payload}) => {
+    // Usual stuff with HYDRATE handler
     if (type === SET_CLIENT_STATE) {
         return {
             ...state,
@@ -964,11 +956,11 @@ export const reducer = (state, {type, payload}) => {
 const makeConfiguredStore = (reducer) =>
     createStore(reducer, undefined, applyMiddleware(logger));
 
-const makeStore = (initialState, {isServer, req, debug, storeKey}) => {
+const makeStore = () => {
+
+    const isServer = typeof window === 'undefined';
 
     if (isServer) {
-
-        initialState = initialState || {fromServer: 'foo'};
 
         return makeConfiguredStore(reducer);
 
