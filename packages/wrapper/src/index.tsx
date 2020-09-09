@@ -6,6 +6,19 @@ import App, {AppContext, AppInitialProps} from 'next/app';
 import {IncomingMessage, ServerResponse} from 'http';
 import {ParsedUrlQuery} from 'querystring';
 
+/**
+ * Those types belongs to next package, but are available only from next@9.5
+ * When next dependency gets updated to 9.5+, those types should be imported from next
+ */
+type GetStaticPropsResult<P> = {
+    props: P;
+    revalidate?: number | boolean;
+};
+
+export type GetServerSidePropsResult<P> = {
+    props: P;
+};
+
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 export const STOREKEY = '__NEXT_REDUX_WRAPPER_STORE__';
 
@@ -126,7 +139,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
         (await makeProps({callback, context, isApp: true})) as WrapperProps & AppInitialProps; // this is just to convince TS
 
     const getStaticProps = <P extends {} = any>(
-        callback: (context: GetStaticPropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetStaticPropsContext & {store: Store<S, A>}) => GetStaticPropsResult<P> | Promise<GetStaticPropsResult<P>> | void,
     ): GetStaticProps<P> => async (context: any) => {
         const {
             initialProps: {props, ...settings},
@@ -143,7 +156,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     };
 
     const getServerSideProps = <P extends {} = any>(
-        callback: (context: GetServerSidePropsContext & {store: Store<S, A>}) => P | void,
+        callback: (context: GetServerSidePropsContext & {store: Store<S, A>}) => GetServerSidePropsResult<P> | Promise<GetServerSidePropsResult<P>> | void,
     ): GetServerSideProps<P> => async (context: any) => {
         return await getStaticProps(callback as any)(context); // just not to repeat myself
     };
