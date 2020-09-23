@@ -462,8 +462,7 @@ import App from 'next/app';
 import {wrapper} from '../components/store';
 
 class MyApp extends App {
-
-    public static getInitialProps = async ({Component, ctx}) => {
+    static getInitialProps = async ({Component, ctx}) => {
 
         ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
@@ -478,7 +477,7 @@ class MyApp extends App {
 
     };
 
-    public render() {
+    render() {
         const {Component, pageProps} = this.props;
 
         return (
