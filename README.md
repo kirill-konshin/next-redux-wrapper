@@ -233,7 +233,7 @@ Let's create a page in `pages/pageName.tsx`:
 ```typescript
 import React from 'react';
 import {NextPage} from 'next';
-import {Provider, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {wrapper, State} from '../store';
 
 export const getStaticProps = wrapper.getStaticProps(
@@ -259,7 +259,7 @@ export default Page;
 
 ```js
 import React from 'react';
-import {Provider, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {wrapper} from '../store';
 
 export const getStaticProps = wrapper.getStaticProps(
@@ -294,7 +294,7 @@ Let's create a page in `pages/pageName.tsx`:
 ```typescript
 import React from 'react';
 import {NextPage} from 'next';
-import {Provider, connect} from 'react-redux';
+import {connect} from 'react-redux';
 import {wrapper, State} from '../store';
 
 export const getServerSideProps = wrapper.getServerSideProps(
@@ -318,7 +318,7 @@ export default connect((state: State) => state)(Page);
 
 ```js
 import React from 'react';
-import {Provider, connect} from 'react-redux';
+import {connect} from 'react-redux';
 import {wrapper} from '../store';
 
 export const getServerSideProps = wrapper.getServerSideProps(
