@@ -66,6 +66,7 @@ export interface GetServerSidePropsContext {
     query: ParsedUrlQuery;
     preview?: boolean;
     previewData?: any;
+    resolvedUrl: string;
 }
 
 //FIXME Use Parameters<GetStaticProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
