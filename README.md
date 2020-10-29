@@ -672,8 +672,9 @@ const makeStore = () =>
         }
     });
 
-export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
+export type AppStore = ReturnType<typeof makeStore>;
+export type AppState = ReturnType<AppStore['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
 export const someAction = (whatever: any): AppThunk => async dispatch => {
     dispatch(
@@ -681,14 +682,15 @@ export const someAction = (whatever: any): AppThunk => async dispatch => {
     );
 };
 
-export const wrapper = createWrapper<ReturnType<typeof makeStore>>(makeStore);
+export const wrapper = createWrapper<AppStore>(makeStore);
 ```
 
 It is recommended to export typed `State` and `ThunkAction`:
 
 ```ts
-export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
+export type AppStore = ReturnType<typeof makeStore>;
+export type AppState = ReturnType<AppStore['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 ```
 
 As you see in this example ``

@@ -36,8 +36,9 @@ const makeStore = () =>
         devTools: true,
     });
 
-export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
+export type AppStore = ReturnType<typeof makeStore>;
+export type AppState = ReturnType<AppStore['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
 export const fetchSubject = (id: any): AppThunk => async dispatch => {
     const timeoutPromise = timeout => new Promise(resolve => setTimeout(resolve, timeout));
@@ -54,6 +55,6 @@ export const fetchSubject = (id: any): AppThunk => async dispatch => {
     );
 };
 
-export const wrapper = createWrapper<ReturnType<typeof makeStore>>(makeStore);
+export const wrapper = createWrapper<AppStore>(makeStore);
 
-export const selectSubject = id => (state: RootState) => state.subject.entities && state.subject.entities[id];
+export const selectSubject = id => (state: AppState) => state.subject.entities && state.subject.entities[id];
