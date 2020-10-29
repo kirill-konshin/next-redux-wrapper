@@ -1,6 +1,8 @@
-import {configureStore, createSlice, ThunkAction, ThunkDispatch} from '@reduxjs/toolkit';
-import {AnyAction, combineReducers} from 'redux';
+import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+
+const hydrate = createAction(HYDRATE);
 
 export const subjectSlice = createSlice({
     name: 'subject',
@@ -10,19 +12,32 @@ export const subjectSlice = createSlice({
     },
 
     reducers: {
-        setEnt: (state, action) => {
-            state.entities = action.payload;
+        setEnt(state, action) {
+            state[subjectSlice.name] = action.payload;
         },
+    },
+
+    extraReducers(builder) {
+        builder.addCase(hydrate, (state, action) => {
+            console.log('HYDRATE', state[subjectSlice.name], action.payload);
+            return {
+                ...state[subjectSlice.name],
+                ...(action.payload as any)[subjectSlice.name],
+            };
+        });
     },
 });
 
-const rootReducer = combineReducers({
-    [subjectSlice.name]: subjectSlice.reducer,
-});
+const makeStore = () =>
+    configureStore({
+        reducer: {
+            [subjectSlice.name]: subjectSlice.reducer,
+        },
+        devTools: true,
+    });
 
-export type RootState = ReturnType<typeof rootReducer>;
-export type AppDispatch = ThunkDispatch<RootState, void, AnyAction>;
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, AnyAction>;
+export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
 
 export const fetchSubject = (id: any): AppThunk => async dispatch => {
     const timeoutPromise = timeout => new Promise(resolve => setTimeout(resolve, timeout));
@@ -39,25 +54,6 @@ export const fetchSubject = (id: any): AppThunk => async dispatch => {
     );
 };
 
-const reducer = (state, action) => {
-    console.log('Action', action);
-    if (action.type === HYDRATE) {
-        console.log('HYDRATE');
-        return {
-            ...state,
-            ...action.payload,
-        };
-    }
-
-    return rootReducer(state, action);
-};
-
-const makeStore = () =>
-    configureStore({
-        reducer,
-        devTools: true,
-    });
-
-export const wrapper = createWrapper<RootState>(makeStore);
+export const wrapper = createWrapper<ReturnType<typeof makeStore>>(makeStore);
 
 export const selectSubject = id => (state: RootState) => state.subject.entities && state.subject.entities[id];

@@ -1,7 +1,7 @@
 import React from 'react';
 import {useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
-import {AppDispatch, fetchSubject, selectSubject, wrapper} from '../../store';
+import {fetchSubject, selectSubject, wrapper} from '../../store';
 
 const Page = props => {
     console.log('State on render', useStore().getState(), {props});
@@ -30,7 +30,7 @@ const Page = props => {
 export const getServerSideProps = wrapper.getServerSideProps(async ({store, params}) => {
     const {id} = params;
 
-    await (store.dispatch as AppDispatch)(fetchSubject(id));
+    await store.dispatch(fetchSubject(id));
 
     console.log('State on server', store.getState());
 

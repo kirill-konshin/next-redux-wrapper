@@ -22,6 +22,7 @@ Contents:
   - [App and getServerSideProps or getStaticProps at page level](#app-and-getserversideprops-or-getstaticprops-at-page-level)
 - [How it works](#how-it-works)
 - [Tips and Tricks](#tips-and-tricks)
+  - [Redux Toolkit](#redux-toolkit)
   - [Server and Client state separation](#server-and-client-state-separation)
   - [Document](#document)
   - [Error Pages](#error-pages)
@@ -47,6 +48,8 @@ Moreover it allows to properly handle complex cases like `App.getInitialProps` (
 
 Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
 
+In Next.js example https://github.com/vercel/next.js/blob/canary/examples/with-redux/store.js#L55 store is being replaced on navigation. Redux will re-render components even with memoized selectors (`createSelector` from `recompose`) if `store` is replaced: https://codesandbox.io/s/redux-store-change-kzs8q, which may affect performance of the app by causing a huge re-render of everything, even what did not change. This library makes sure `store` remains the same.
+
 # Installation
 
 ```bash
@@ -59,7 +62,7 @@ Note that `next-redux-wrapper` requires `react-redux` as peer dependency.
 
 Live example: https://codesandbox.io/s/next-redux-wrapper-demo-7n2t5.
 
-All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations.
+All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations. These examples use vanilla Redux, if you're using Redux Toolkit, please refer to [dedicated example](#redux-toolkit).
 
 Next.js has several data fetching mechanisms, this library can attach to any of them. But first you have to write some common code.
 
@@ -70,7 +73,7 @@ Create a file named `store.ts`:
 ```typescript
 // store.ts
 
-import {createStore, AnyAction} from 'redux';
+import {createStore, AnyAction, Store} from 'redux';
 import {MakeStore, createWrapper, Context, HYDRATE} from 'next-redux-wrapper';
 
 export interface State {
@@ -91,10 +94,10 @@ const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
 };
 
 // create a makeStore function
-const makeStore: MakeStore<State> = (context: Context) => createStore(reducer);
+const makeStore = (context: Context) => createStore(reducer);
 
 // export an assembled wrapper
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 ```
 
 <details>
@@ -625,6 +628,71 @@ Consider using [Redux persist](#usage-with-redux-persist) if you want to persist
 
 ## Tips and Tricks
 
+### Redux Toolkit
+
+Since version `7.0` first-class support of `@reduxjs/toolkit` has been added.
+
+Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/packages/demo/package.json.
+
+```ts
+import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import {Action} from 'redux';
+import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+
+const hydrate = createAction(HYDRATE);
+
+export const slice = createSlice({
+    name: 'some',
+
+    initialState: {
+        whatever: null,
+    },
+
+    reducers: {
+        setWhatever(state, action) {
+            state[slice.name] = action.payload;
+        },
+    },
+
+    extraReducers(builder) {
+        builder.addCase(hydrate, (state, action) => {
+            console.log('HYDRATE', state[slice.name], action.payload);
+            return {
+                ...state[slice.name],
+                ...(action.payload as any)[slice.name],
+            };
+        });
+    },
+});
+
+const makeStore = () =>
+    configureStore({
+        reducer: {
+            [slice.name]: slice.reducer,
+        }
+    });
+
+export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
+
+export const someAction = (whatever: any): AppThunk => async dispatch => {
+    dispatch(
+        subjectSlice.actions.setWhatever({ whatever }),
+    );
+};
+
+export const wrapper = createWrapper<ReturnType<typeof makeStore>>(makeStore);
+```
+
+It is recommended to export typed `State` and `ThunkAction`:
+
+```ts
+export type RootState = ReturnType<ReturnType<typeof makeStore>['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action>;
+```
+
+As you see in this example ``
+
 ### Server and Client state separation
 
 Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
@@ -787,7 +855,7 @@ export interface SagaStore extends Store {
     sagaTask?: Task;
 }
 
-export const makeStore: MakeStore<State> = (context: Context) => {
+export const makeStore = (context: Context) => {
     // 1: Create the middleware
     const sagaMiddleware = createSagaMiddleware();
 
@@ -801,7 +869,7 @@ export const makeStore: MakeStore<State> = (context: Context) => {
     return store;
 };
 
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 ```
 
 <details>
@@ -1063,7 +1131,9 @@ export default connect(
 
 ## Upgrade from 6.x to 7.x
 
-1. `GetServerSidePropsContext` and `GetStaticPropsContext` are no longer exported from `next-redux-wrapper`, you should use `GetServerSideProps`, `GetServerSidePropsContext`, `GetStaticProps` and `GetStaticPropsContext` directly from `next`.
+1. Signature of `createWrapper` has changed: instead of `createWrapper<State>` you should use `createWrapper<Store<State>>`, all types will be automatically inferred from `Store`.
+
+2. `GetServerSidePropsContext` and `GetStaticPropsContext` are no longer exported from `next-redux-wrapper`, you should use `GetServerSideProps`, `GetServerSidePropsContext`, `GetStaticProps` and `GetStaticPropsContext` directly from `next`.
 
 ## Upgrade from 5.x to 6.x
 

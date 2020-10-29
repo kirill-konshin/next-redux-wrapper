@@ -1,15 +1,15 @@
 import {createStore, applyMiddleware, Store} from 'redux';
 import logger from 'redux-logger';
 import createSagaMiddleware, {Task} from 'redux-saga';
-import {MakeStore, Context} from 'next-redux-wrapper';
-import reducer, {State} from './reducer';
+import {Context} from 'next-redux-wrapper';
+import reducer from './reducer';
 import rootSaga from './saga';
 
 export interface SagaStore extends Store {
     sagaTask: Task;
 }
 
-export const makeStore: MakeStore<State> = (context: Context) => {
+export const makeStore = (context: Context) => {
     // 1: Create the middleware
     const sagaMiddleware = createSagaMiddleware();
 
