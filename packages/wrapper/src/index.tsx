@@ -1,10 +1,16 @@
-import React, {useCallback, useEffect, useRef} from 'react';
-import {Store, AnyAction, Action} from 'redux';
-import {Provider} from 'react-redux';
-import {GetServerSideProps, GetStaticProps, NextComponentType, NextPage, NextPageContext} from 'next';
 import App, {AppContext, AppInitialProps} from 'next/app';
-import {IncomingMessage, ServerResponse} from 'http';
-import {ParsedUrlQuery} from 'querystring';
+import React, {useCallback, useEffect, useRef} from 'react';
+import {Provider} from 'react-redux';
+import {Store, AnyAction, Action} from 'redux';
+import {
+    GetServerSideProps,
+    GetServerSidePropsContext,
+    GetStaticProps,
+    GetStaticPropsContext,
+    NextComponentType,
+    NextPage,
+    NextPageContext,
+} from 'next';
 
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 export const STOREKEY = '__NEXT_REDUX_WRAPPER_STORE__';
@@ -59,22 +65,21 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
 };
 
 //FIXME Use Parameters<GetServerSideProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
-export interface GetServerSidePropsContext {
-    req: IncomingMessage;
-    res: ServerResponse;
-    params?: ParsedUrlQuery;
-    query: ParsedUrlQuery;
-    preview?: boolean;
-    previewData?: any;
-    resolvedUrl: string;
-}
+// export interface GetServerSidePropsContext {
+//     req: IncomingMessage;
+//     res: ServerResponse;
+//     params?: ParsedUrlQuery;
+//     query: ParsedUrlQuery;
+//     preview?: boolean;
+//     previewData?: any;
+// }
 
 //FIXME Use Parameters<GetStaticProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
-export interface GetStaticPropsContext {
-    params?: ParsedUrlQuery;
-    preview?: boolean;
-    previewData?: any;
-}
+// export interface GetStaticPropsContext {
+//     params?: ParsedUrlQuery;
+//     preview?: boolean;
+//     previewData?: any;
+// }
 
 export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     makeStore: MakeStore<S, A>,
