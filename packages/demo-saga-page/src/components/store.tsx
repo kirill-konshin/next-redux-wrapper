@@ -5,7 +5,7 @@ import {Context, createWrapper} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 import rootSaga from './saga';
 
-export interface SagaStore extends Store {
+export interface SagaStore extends Store<State> {
     sagaTask: Task;
 }
 
@@ -23,4 +23,4 @@ const makeStore = (context: Context) => {
     return store;
 };
 
-export const wrapper = createWrapper<Store<State>>(makeStore);
+export const wrapper = createWrapper<SagaStore>(makeStore as any);
