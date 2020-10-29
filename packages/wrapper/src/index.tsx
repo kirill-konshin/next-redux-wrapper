@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useLayoutEffect} from 'react';
 import {Provider} from 'react-redux';
 import {Store, AnyAction, Action} from 'redux';
 import {
@@ -33,6 +33,8 @@ export interface InitStoreOptions<S = any, A extends Action = AnyAction> {
     config: Config<S>;
 }
 
+const useIsomorphicLayoutEffect = getIsServer() ? useEffect : useLayoutEffect;
+
 const initStore = <S extends {} = any, A extends Action = AnyAction>({
     makeStore,
     context,
@@ -63,23 +65,6 @@ const initStore = <S extends {} = any, A extends Action = AnyAction>({
 
     return (window as any)[storeKey];
 };
-
-//FIXME Use Parameters<GetServerSideProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
-// export interface GetServerSidePropsContext {
-//     req: IncomingMessage;
-//     res: ServerResponse;
-//     params?: ParsedUrlQuery;
-//     query: ParsedUrlQuery;
-//     preview?: boolean;
-//     previewData?: any;
-// }
-
-//FIXME Use Parameters<GetStaticProps>, see https://www.typescriptlang.org/docs/handbook/utility-types.html#parameterst
-// export interface GetStaticPropsContext {
-//     params?: ParsedUrlQuery;
-//     preview?: boolean;
-//     previewData?: any;
-// }
 
 export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
     makeStore: MakeStore<S, A>,
@@ -192,7 +177,7 @@ export const createWrapper = <S extends {} = any, A extends Action = AnyAction>(
             if (isFirstRender.current) hydrate();
 
             // apply async in case props have changed, on navigation for example
-            useEffect(() => {
+            useIsomorphicLayoutEffect(() => {
                 if (isFirstRender.current) {
                     isFirstRender.current = false;
                     return;

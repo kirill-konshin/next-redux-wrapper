@@ -1061,6 +1061,10 @@ export default connect(
 ));
 ```
 
+## Upgrade from 6.x to 7.x
+
+1. `GetServerSidePropsContext` and `GetStaticPropsContext` are no longer exported from `next-redux-wrapper`, you should use `GetServerSideProps`, `GetServerSidePropsContext`, `GetStaticProps` and `GetStaticPropsContext` directly from `next`.
+
 ## Upgrade from 5.x to 6.x
 
 Major change in the way how things are wrapped in version 6.
