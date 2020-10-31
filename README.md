@@ -742,7 +742,7 @@ async function getInitialProps({store}) {
 
 ### Custom serialization and deserialization
 
-If you are storing complex types such as Immutable.JS or EJSON objecs in your state, a custom serialize and deserialize
+If you are storing complex types such as Immutable.JS or EJSON objects in your state, a custom serialize and deserialize
 handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so,
 provide `serializeState` and `deserializeState` as config options to `withRedux`.
 
