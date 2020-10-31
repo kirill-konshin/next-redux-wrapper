@@ -3,6 +3,7 @@ import {useSelector} from 'react-redux';
 import {NextPage} from 'next';
 import {State} from '../components/reducer';
 import {SAGA_ACTION} from '../components/saga';
+import {wrapper} from 'demo-dynamic/store';
 
 export interface ConnectedPageProps {
     custom: string;
@@ -18,9 +19,9 @@ const Page: NextPage<ConnectedPageProps> = ({custom}: ConnectedPageProps) => {
     );
 };
 
-Page.getInitialProps = ({store}) => {
+Page.getInitialProps = wrapper.getInitialPageProps<ConnectedPageProps>(store => async () => {
     store.dispatch({type: SAGA_ACTION});
     return {custom: 'custom'};
-};
+});
 
 export default Page;

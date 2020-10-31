@@ -13,7 +13,7 @@ export const subjectSlice = createSlice({
 
     reducers: {
         setEnt(state, action) {
-            state[subjectSlice.name] = action.payload;
+            state.entities = action.payload;
         },
     },
 

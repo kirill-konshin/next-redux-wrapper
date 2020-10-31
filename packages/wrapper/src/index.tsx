@@ -8,7 +8,6 @@ import {
     GetStaticProps,
     GetStaticPropsContext,
     NextComponentType,
-    NextPage,
     NextPageContext,
 } from 'next';
 
@@ -66,23 +65,16 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const makeProps = async ({
         callback,
         context,
-        isApp = false,
     }: {
-        callback: any;
-        context: Context;
-        isApp?: boolean;
+        callback: Callback<S, any>;
+        context: any;
     }): Promise<WrapperProps> => {
         const store = initStore({context, makeStore, config});
 
         if (config.debug) console.log(`1. getProps created store with state`, store.getState());
 
-        const initialProps =
-            (callback &&
-                (await callback(
-                    // merging store into context instead of just passing as another argument because it's impossible to override getInitialProps signature
-                    isApp ? {...context, ctx: {...(context as AppContext).ctx, store}} : {...context, store},
-                ))) ||
-            {};
+        const nextCallback = callback && callback(store);
+        const initialProps = (nextCallback && (await nextCallback(context))) || {};
 
         if (config.debug) console.log(`3. getProps after dispatches has store state`, store.getState());
 
@@ -94,23 +86,22 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         };
     };
 
-    const getInitialPageProps = <P extends {} = any>(
-        callback: (context: NextPageContext & {store: S}) => P | void,
-    ) => async (context: NextPageContext) => {
-        if (context.store) {
-            console.warn('No need to wrap pages if _app was wrapped');
-            return callback(context as any);
+    const getInitialPageProps = <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> => async (
+        context: NextPageContext | any, // legacy
+    ) => {
+        if ('getState' in context) {
+            return callback && callback(context as any);
         }
         return makeProps({callback, context});
     };
 
-    const getInitialAppProps = <P extends {} = any>(callback: (context: AppContext & {store: S}) => P | void) => async (
+    const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
         context: AppContext,
-    ) => (await makeProps({callback, context, isApp: true})) as WrapperProps & AppInitialProps; // this is just to convince TS
+    ) => (await makeProps({callback, context})) as WrapperProps & AppInitialProps; // this is just to convince TS
 
     const getStaticProps = <P extends {} = any>(
-        callback: (context: GetStaticPropsContext & {store: S}) => P | void,
-    ): GetStaticProps<P> => async (context: any) => {
+        callback: GetStaticPropsCallback<S, P>,
+    ): GetStaticProps<P> => async context => {
         const {
             initialProps: {props, ...settings},
             ...wrapperProps
@@ -126,16 +117,14 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const getServerSideProps = <P extends {} = any>(
-        callback: (context: GetServerSidePropsContext & {store: S}) => P | void,
-    ): GetServerSideProps<P> => async (context: any) => {
-        return await getStaticProps(callback as any)(context); // just not to repeat myself
-    };
+        callback: GetServerSidePropsCallback<S, P>,
+    ): GetServerSideProps<P> => async context => await getStaticProps(callback as any)(context); // just not to repeat myself
 
     const withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
-        const Wrapper: NextPage<WrapperProps> = ({initialState, initialProps, ...props}, context) => {
+        const Wrapper = ({initialState, initialProps, ...props}: any, context: any) => {
             const isFirstRender = useRef<boolean>(true);
 
             // this happens when App has page with getServerSideProps/getStaticProps
@@ -202,11 +191,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         Wrapper.displayName = displayName;
 
-        if ('getInitialProps' in Component)
-            Wrapper.getInitialProps = async (context: any) => {
-                const callback = Component.getInitialProps; // bind?
-                return (context.ctx ? getInitialAppProps(callback) : getInitialPageProps(callback))(context);
-            };
+        //TODO Hoist non-react statics
+        if ('getInitialProps' in Component) Wrapper.getInitialProps = async (context: any) => Component.getInitialProps;
 
         return Wrapper;
     };
@@ -214,6 +200,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     return {
         getServerSideProps,
         getStaticProps,
+        getInitialAppProps,
+        getInitialPageProps,
         withRedux,
     };
 };
@@ -241,11 +229,15 @@ export interface WrapperProps {
     pageProps?: any; // stuff from page's getServerSideProps or getInitialProps when used with App
 }
 
-declare module 'next/dist/next-server/lib/utils' {
-    export interface NextPageContext<S extends Store = Store> {
-        /**
-         * Provided by next-redux-wrapper: The redux store
-         */
-        store: S;
-    }
-}
+type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
+type GetInitialAppProps<P> = typeof App['getInitialProps']; //FIXME P
+
+export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
+export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
+export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
+export type Callback<S extends Store, P> =
+    | GetStaticPropsCallback<S, P>
+    | GetServerSidePropsCallback<S, P>
+    | PageCallback<S, P>
+    | AppCallback<S, P>;

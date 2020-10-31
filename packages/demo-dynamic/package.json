@@ -2,9 +2,9 @@
   "name": "demo-dynamic",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next",
+    "dev": "next --port=5060",
     "build": "next build",
-    "start": "next start"
+    "start": "next start --port=5060"
   },
   "dependencies": {
     "@reduxjs/toolkit": "1.4.0",

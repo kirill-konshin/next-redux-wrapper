@@ -7,7 +7,7 @@ const Page = props => {
     console.log('State on render', useStore().getState(), {props});
     const content = useSelector(selectSubject(props.id));
 
-    console.log('Rendered content: ', content);
+    console[content ? 'info' : 'warn']('Rendered content: ', content);
 
     if (!content) {
         return <div>RENDERED WITHOUT CONTENT FROM STORE!!!???</div>;
@@ -27,7 +27,7 @@ const Page = props => {
     );
 };
 
-export const getServerSideProps = wrapper.getServerSideProps(async ({store, params}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store => async ({params}) => {
     const {id} = params;
 
     await store.dispatch(fetchSubject(id));
