@@ -30,7 +30,7 @@ Contents:
   - [Custom serialization and deserialization](#custom-serialization-and-deserialization)
   - [Usage with Redux Saga](#usage-with-redux-saga)
   - [Usage with Redux Persist](#usage-with-redux-persist)
-- [Upgrade from 6.x to 6.x](#upgrade-from-6x-to-7x)
+- [Upgrade from 6.x to 7.x](#upgrade-from-6x-to-7x)
 - [Upgrade from 5.x to 6.x](#upgrade-from-5x-to-6x)
 - [Upgrade from 1.x to 2.x](#upgrade-from-1x-to-2x)
 - [Resources](#resources)
