@@ -590,7 +590,7 @@ const reducer = (state = {app: 'init', page: 'init'}, action) => {
 ```
 </details>
 
-Assume page only dispatches `PAGE` actiona and App only `APP`, this makes state merging safe.
+Assume page only dispatches `PAGE` action and App only `APP`, this makes state merging safe.
 
 More about that in [Server and Client state separation](#server-and-client-state-separation).
 
@@ -742,8 +742,8 @@ async function getInitialProps({store}) {
 
 ### Custom serialization and deserialization
 
-If you are storing complex types such as Immutable.JS or EJSON objects in your state, a custom serialize and deserialize
-handler might be handy to serialize the redux state on the server and derserialize it again on the client. To do so,
+If you are storing complex types such as Immutable.JS or JSON objects in your state, a custom serialize and deserialize
+handler might be handy to serialize the redux state on the server and deserialize it again on the client. To do so,
 provide `serializeState` and `deserializeState` as config options to `withRedux`.
 
 The reason is that state snapshot is transferred over the network from server to client as a plain object.
