@@ -7,21 +7,19 @@ const hydrate = createAction(HYDRATE);
 export const subjectSlice = createSlice({
     name: 'subject',
 
-    initialState: {
-        entities: null,
-    },
+    initialState: {} as any,
 
     reducers: {
         setEnt(state, action) {
-            state.entities = action.payload;
+            return action.payload;
         },
     },
 
     extraReducers(builder) {
         builder.addCase(hydrate, (state, action) => {
-            console.log('HYDRATE', state[subjectSlice.name], action.payload);
+            console.log('HYDRATE', state, action.payload);
             return {
-                ...state[subjectSlice.name],
+                ...state,
                 ...(action.payload as any)[subjectSlice.name],
             };
         });
@@ -41,7 +39,7 @@ export type AppState = ReturnType<AppStore['getState']>;
 export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
 export const fetchSubject = (id: any): AppThunk => async dispatch => {
-    const timeoutPromise = timeout => new Promise(resolve => setTimeout(resolve, timeout));
+    const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
 
     await timeoutPromise(200);
 
@@ -57,4 +55,4 @@ export const fetchSubject = (id: any): AppThunk => async dispatch => {
 
 export const wrapper = createWrapper<AppStore>(makeStore);
 
-export const selectSubject = id => (state: AppState) => state.subject.entities && state.subject.entities[id];
+export const selectSubject = (id: any) => (state: AppState) => state?.[subjectSlice.name]?.[id];

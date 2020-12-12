@@ -1,7 +1,7 @@
 import {createStore, applyMiddleware, Store} from 'redux';
 import logger from 'redux-logger';
 import createSagaMiddleware, {Task} from 'redux-saga';
-import {Context} from 'next-redux-wrapper';
+import {Context, createWrapper} from 'next-redux-wrapper';
 import reducer from './reducer';
 import rootSaga from './saga';
 
@@ -22,3 +22,5 @@ export const makeStore = (context: Context) => {
     // 4: now return the store:
     return store;
 };
+
+export const wrapper = createWrapper<SagaStore>(makeStore as any);

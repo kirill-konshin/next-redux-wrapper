@@ -435,13 +435,14 @@ declare module 'next/dist/next-server/lib/utils' {
 
 class MyApp extends App<AppInitialProps> {
 
-    public static getInitialProps = wrapper.getInitialAppProps(async ({Component, ctx}) => {
+    public static getInitialProps = wrapper.getInitialAppProps(store => async ({Component, ctx}) => {
 
         store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
         return {
             pageProps: {
                 // Call page-level getInitialProps
+                // DON'T FORGET TO PROVIDE STORE TO PAGE
                 ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
@@ -480,6 +481,7 @@ class MyApp extends App {
         return {
             pageProps: {
                 // Call page-level getInitialProps
+                // DON'T FORGET TO PROVIDE STORE TO PAGE
                 ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
@@ -664,9 +666,9 @@ export const slice = createSlice({
 
     extraReducers(builder) {
         builder.addCase(hydrate, (state, action) => {
-            console.log('HYDRATE', state[slice.name], action.payload);
+            console.log('HYDRATE', state, action.payload);
             return {
-                ...state[slice.name],
+                ...state,
                 ...(action.payload as any)[slice.name],
             };
         });

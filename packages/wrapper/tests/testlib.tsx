@@ -31,4 +31,4 @@ export const DummyComponent = (props: any) => {
     return <div>{JSON.stringify({props, state})}</div>;
 };
 
-export const child = (cmp: any) => create(cmp)?.toJSON()?.children?.[0];
+export const child = (cmp: any) => (create(cmp)?.toJSON() as any)?.children?.[0];

@@ -1,7 +1,8 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React, {useCallback, useEffect, useRef, useLayoutEffect} from 'react';
+import React from 'react';
+import hoistNonReactStatics from 'hoist-non-react-statics';
 import {Provider} from 'react-redux';
-import {Store} from 'redux';
+import {Store, Action, AnyAction} from 'redux';
 import {
     GetServerSideProps,
     GetServerSidePropsContext,
@@ -31,8 +32,6 @@ export interface InitStoreOptions<S extends Store> {
     context: Context;
     config: Config<S>;
 }
-
-const useIsomorphicLayoutEffect = getIsServer() ? useEffect : useLayoutEffect;
 
 const initStore = <S extends Store>({makeStore, context, config}: InitStoreOptions<S>): S => {
     const storeKey = getStoreKey(config);
@@ -123,24 +122,37 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
 
+        const hasInitialProps = 'getInitialProps' in Component;
+
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
-        const Wrapper = ({initialState, initialProps, ...props}: any, context: any) => {
-            const isFirstRender = useRef<boolean>(true);
+        return class Wrapper extends React.Component<any, any> {
+            static displayName = displayName;
 
-            // this happens when App has page with getServerSideProps/getStaticProps
-            const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+            static getInitialProps = hasInitialProps ? Component.getInitialProps : undefined;
 
-            if (config.debug)
-                console.log('4. WrappedApp created new store with', displayName, {
-                    initialState,
-                    initialStateFromGSPorGSSR,
-                });
+            public store: S = null as any;
 
-            const store = useRef<S>(initStore({makeStore, config, context}));
+            constructor(props: any, context: any) {
+                super(props, context);
+                this.hydrate(props, context);
+            }
 
-            const hydrate = useCallback(() => {
+            hydrate({initialState, initialProps, ...props}: any, context: any) {
+                // this happens when App has page with getServerSideProps/getStaticProps
+                const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+
+                if (!this.store) {
+                    this.store = initStore({makeStore, config, context});
+
+                    if (config.debug)
+                        console.log('4. WrappedApp created new store with', displayName, {
+                            initialState,
+                            initialStateFromGSPorGSSR,
+                        });
+                }
+
                 if (initialState)
-                    store.current.dispatch({
+                    this.store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState<S>(initialState, config),
                     } as any);
@@ -148,53 +160,55 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
                 // so we dispatch in this order
                 if (initialStateFromGSPorGSSR)
-                    store.current.dispatch({
+                    this.store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState<S>(initialStateFromGSPorGSSR, config),
                     } as any);
-            }, [initialStateFromGSPorGSSR, initialState]);
-
-            // apply synchronously on first render (both server side and client side)
-            if (isFirstRender.current) hydrate();
-
-            // apply async in case props have changed, on navigation for example
-            useIsomorphicLayoutEffect(() => {
-                if (isFirstRender.current) {
-                    isFirstRender.current = false;
-                    return;
-                }
-                hydrate();
-            }, [hydrate]);
-
-            // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
-            // @see https://github.com/zeit/next.js/issues/11648
-            if (initialProps && initialProps.pageProps)
-                props.pageProps = {
-                    ...initialProps.pageProps, // this comes from wrapper in _app mode
-                    ...props.pageProps, // this comes from gssp/gsp in _app mode
-                };
-
-            let resultProps = props;
-
-            // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
-            if (initialStateFromGSPorGSSR) {
-                resultProps = {...props, pageProps: {...props.pageProps}};
-                delete resultProps.pageProps.initialState;
             }
 
-            return (
-                <Provider store={store.current}>
-                    <Component {...initialProps} {...resultProps} />
-                </Provider>
-            );
+            /**
+             * If someone knows a better way to replace this with sync hook that can dispatch before render let me know
+             * @param nextProps
+             * @param nextContext
+             * @constructor
+             */
+            UNSAFE_componentWillReceiveProps(nextProps: any, nextContext: any) {
+                if (
+                    nextProps?.pageProps?.initialState !== this.props?.pageProps?.initialState ||
+                    nextProps?.initialState !== this.props?.initialState
+                ) {
+                    this.hydrate(nextProps, nextContext);
+                }
+            }
+
+            render() {
+                const {initialState, initialProps, ...props} = this.props;
+
+                let resultProps: any = props;
+
+                // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
+                // @see https://github.com/zeit/next.js/issues/11648
+                if (initialProps && initialProps.pageProps)
+                    resultProps.pageProps = {
+                        ...initialProps.pageProps, // this comes from wrapper in _app mode
+                        ...props.pageProps, // this comes from gssp/gsp in _app mode
+                    };
+
+                const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+
+                // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
+                if (initialStateFromGSPorGSSR) {
+                    resultProps = {...props, pageProps: {...props.pageProps}};
+                    delete resultProps.pageProps.initialState;
+                }
+
+                return (
+                    <Provider store={this.store}>
+                        <Component {...initialProps} {...resultProps} />
+                    </Provider>
+                );
+            }
         };
-
-        Wrapper.displayName = displayName;
-
-        //TODO Hoist non-react statics
-        if ('getInitialProps' in Component) Wrapper.getInitialProps = async (context: any) => Component.getInitialProps;
-
-        return Wrapper;
     };
 
     return {
@@ -241,3 +255,13 @@ export type Callback<S extends Store, P> =
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>
     | AppCallback<S, P>;
+
+declare module 'next/dist/next-server/lib/utils' {
+    export interface NextPageContext<S extends Store = any> {
+        //<S = any, A extends Action = AnyAction>
+        /**
+         * Provided by next-redux-wrapper: The redux store
+         */
+        store: S;
+    }
+}
