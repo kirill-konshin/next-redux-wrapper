@@ -1,8 +1,7 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
 import React from 'react';
-import hoistNonReactStatics from 'hoist-non-react-statics';
 import {Provider} from 'react-redux';
-import {Store, Action, AnyAction} from 'redux';
+import {Store} from 'redux';
 import {
     GetServerSideProps,
     GetServerSidePropsContext,

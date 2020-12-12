@@ -3,7 +3,6 @@ import {useSelector} from 'react-redux';
 import {NextPage} from 'next';
 import {State} from '../components/reducer';
 import {SAGA_ACTION} from '../components/saga';
-import {wrapper} from '../components/store';
 
 export interface ConnectedPageProps {
     custom: string;

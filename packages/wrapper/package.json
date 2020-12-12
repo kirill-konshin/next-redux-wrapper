@@ -53,8 +53,5 @@
     "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
   },
   "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
-  "license": "MIT",
-  "dependencies": {
-    "hoist-non-react-statics": "3.3.2"
-  }
+  "license": "MIT"
 }
