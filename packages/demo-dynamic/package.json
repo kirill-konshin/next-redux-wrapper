@@ -1,6 +1,7 @@
 {
   "name": "demo-dynamic",
   "version": "7.0.0",
+  "private": true,
   "scripts": {
     "start": "next --port=6060",
     "build": "next build",
