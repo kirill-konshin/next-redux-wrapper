@@ -40,12 +40,12 @@ jobs:
     - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
     - run: yarn publish:release ${TAG} --yes
-      if: ${{ env.TAG != '' && !contains(env.TAG, '-') }}
+      if: ${{ env.TAG != '' && !contains(env.TAG, '/') && !contains(env.TAG, '-') }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     - run: yarn publish:release ${TAG} --yes --dist-tag next
-      if: ${{ env.TAG != '' && contains(env.TAG, '-') }}
+      if: ${{ env.TAG != '' && !contains(env.TAG, '/') && contains(env.TAG, '-') }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

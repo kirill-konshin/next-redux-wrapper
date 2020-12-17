@@ -2,7 +2,7 @@ import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/t
 import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
-const hydrate = createAction(HYDRATE);
+const hydrate = createAction<AppState>(HYDRATE);
 
 export const subjectSlice = createSlice({
     name: 'subject',
@@ -20,7 +20,7 @@ export const subjectSlice = createSlice({
             console.log('HYDRATE', state, action.payload);
             return {
                 ...state,
-                ...(action.payload as any)[subjectSlice.name],
+                ...action.payload[subjectSlice.name],
             };
         });
     },

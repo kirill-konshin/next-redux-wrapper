@@ -649,7 +649,7 @@ import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/t
 import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
-const hydrate = createAction(HYDRATE);
+const hydrate = createAction<AppState>(HYDRATE);
 
 export const slice = createSlice({
     name: 'some',

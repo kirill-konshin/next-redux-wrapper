@@ -16,11 +16,11 @@ const Page = props => {
     return (
         <div>
             <h3>{content.name}</h3>
-            <Link href="/subject/[id]" as="/subject/1">
+            <Link href="/subject/1">
                 <a>Subject id 1</a>
             </Link>
             &nbsp;&nbsp;&nbsp;&nbsp;
-            <Link href="/subject/[id]" as="/subject/2">
+            <Link href="/subject/2">
                 <a>Subject id 2</a>
             </Link>
         </div>

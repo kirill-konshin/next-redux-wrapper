@@ -1,5 +1,5 @@
 {
-  "name": "demo-dynamic",
+  "name": "demo-redux-toolkit",
   "version": "7.0.0",
   "private": true,
   "scripts": {
