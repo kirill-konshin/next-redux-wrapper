@@ -101,6 +101,8 @@ export const wrapper = createWrapper<State>(makeStore, {debug: true});
 <summary>Same code in JavaScript (without types)</summary>
 
 ```js
+// store.js
+
 import {createStore} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
