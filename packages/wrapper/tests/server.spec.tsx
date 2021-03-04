@@ -21,13 +21,13 @@ describe('function API', () => {
 
     test('getServerSideProps', async () => {
         expect(
-            await createWrapper(makeStore).getStaticProps(store => async context => {
+            await createWrapper(makeStore).getServerSideProps(store => async context => {
                 store.dispatch({type: 'FOO', payload: 'val'});
-                return {props: pageProps, revalidate: true};
+                return {props: pageProps, fromSSP: true};
             })(ctx),
         ).toEqual({
             props: {...pageProps, initialState},
-            revalidate: true,
+            fromSSP: true,
         });
     });
 
