@@ -521,7 +521,7 @@ export default connect((state: State) => state)(Page);
 <summary>Same code in JavaScript (without types)</summary>
 
 ```js
-// pages/xxx.tsx
+// pages/xxx.js
 
 import React from "react";
 import {connect} from "react-redux";
@@ -539,7 +539,7 @@ Page.getInitialProps = ({store, pathname, query}) => {
     return {custom: 'custom'}; // You can pass some custom props to the component from here
 }
 
-export default connect((state: State) => state)(Page);
+export default connect(state => state)(Page);
 ```
 </details>
 
