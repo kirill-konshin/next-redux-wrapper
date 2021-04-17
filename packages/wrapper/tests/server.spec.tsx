@@ -152,7 +152,7 @@ describe('custom serialization', () => {
             },
         });
 
-        const WrappedApp = wrapper.withRedux(DummyComponent);
+        const WrappedApp: any = wrapper.withRedux(DummyComponent);
 
         expect(child(<WrappedApp {...props} />)).toEqual(
             '{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}',

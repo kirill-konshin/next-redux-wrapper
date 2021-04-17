@@ -12,7 +12,6 @@ import {
 } from 'next';
 
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
-export const STOREKEY = '__NEXT_REDUX_WRAPPER_STORE__';
 
 const getIsServer = () => typeof window === 'undefined';
 
@@ -22,19 +21,16 @@ const getDeserializedState = <S extends Store>(initialState: any, {deserializeSt
 const getSerializedState = <S extends Store>(state: any, {serializeState}: Config<S> = {}) =>
     serializeState ? serializeState(state) : state;
 
-const getStoreKey = <S extends Store>({storeKey}: Config<S> = {}) => storeKey || STOREKEY;
-
 export declare type MakeStore<S extends Store> = (context: Context) => S;
 
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
     context: Context;
-    config: Config<S>;
 }
 
-const initStore = <S extends Store>({makeStore, context, config}: InitStoreOptions<S>): S => {
-    const storeKey = getStoreKey(config);
+let store: any;
 
+const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
@@ -48,15 +44,16 @@ const initStore = <S extends Store>({makeStore, context, config}: InitStoreOptio
             if (!req.__nextReduxWrapperStore) req.__nextReduxWrapperStore = createStore();
             return req.__nextReduxWrapperStore;
         }
+
         return createStore();
     }
 
     // Memoize store if client
-    if (!(storeKey in window)) {
-        (window as any)[storeKey] = createStore();
+    if (!store) {
+        store = createStore();
     }
 
-    return (window as any)[storeKey];
+    return store;
 };
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
@@ -67,7 +64,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         callback: Callback<S, any>;
         context: any;
     }): Promise<WrapperProps> => {
-        const store = initStore({context, makeStore, config});
+        const store = initStore({context, makeStore});
 
         if (config.debug) console.log(`1. getProps created store with state`, store.getState());
 
@@ -141,7 +138,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
 
                 if (!this.store) {
-                    this.store = initStore({makeStore, config, context});
+                    this.store = initStore({makeStore, context});
 
                     if (config.debug)
                         console.log('4. WrappedApp created new store with', displayName, {
@@ -232,7 +229,6 @@ export type Context = NextPageContext | AppContext | GetStaticPropsContext | Get
 export interface Config<S extends Store> {
     serializeState?: (state: ReturnType<S['getState']>) => any;
     deserializeState?: (state: any) => ReturnType<S['getState']>;
-    storeKey?: string;
     debug?: boolean;
 }
 

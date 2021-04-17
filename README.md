@@ -214,7 +214,6 @@ The `createWrapper` function accepts `makeStore` as its first argument. The `mak
 
 `createWrapper` also optionally accepts a config object as a second parameter:
 
-- `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
 - `serializeState` and `deserializeState`: custom functions for serializing and deserializing the redux state, see
     [Custom serialization and deserialization](#custom-serialization-and-deserialization).
