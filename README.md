@@ -22,6 +22,7 @@ Contents:
   - [App and getServerSideProps or getStaticProps at page level](#app-and-getserversideprops-or-getstaticprops-at-page-level)
 - [How it works](#how-it-works)
 - [Tips and Tricks](#tips-and-tricks)
+  - [Redux Toolkit](#redux-toolkit)
   - [Server and Client state separation](#server-and-client-state-separation)
   - [Document](#document)
   - [Error Pages](#error-pages)
@@ -29,6 +30,7 @@ Contents:
   - [Custom serialization and deserialization](#custom-serialization-and-deserialization)
   - [Usage with Redux Saga](#usage-with-redux-saga)
   - [Usage with Redux Persist](#usage-with-redux-persist)
+- [Upgrade from 6.x to 7.x](#upgrade-from-6x-to-7x)
 - [Upgrade from 5.x to 6.x](#upgrade-from-5x-to-6x)
 - [Upgrade from 1.x to 2.x](#upgrade-from-1x-to-2x)
 - [Resources](#resources)
@@ -47,6 +49,8 @@ Moreover it allows to properly handle complex cases like `App.getInitialProps` (
 
 Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
 
+In Next.js example https://github.com/vercel/next.js/blob/canary/examples/with-redux/store.js#L55 store is being replaced on navigation. Redux will re-render components even with memoized selectors (`createSelector` from `recompose`) if `store` is replaced: https://codesandbox.io/s/redux-store-change-kzs8q, which may affect performance of the app by causing a huge re-render of everything, even what did not change. This library makes sure `store` remains the same.
+
 # Installation
 
 ```bash
@@ -59,7 +63,7 @@ Note that `next-redux-wrapper` requires `react-redux` as peer dependency.
 
 Live example: https://codesandbox.io/s/next-redux-wrapper-demo-7n2t5.
 
-All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations.
+All examples are written in TypeScript. If you're using plain JavaScript just omit type declarations. These examples use vanilla Redux, if you're using Redux Toolkit, please refer to [dedicated example](#redux-toolkit).
 
 Next.js has several data fetching mechanisms, this library can attach to any of them. But first you have to write some common code.
 
@@ -70,8 +74,8 @@ Create a file named `store.ts`:
 ```typescript
 // store.ts
 
-import {createStore, AnyAction} from 'redux';
-import {MakeStore, createWrapper, Context, HYDRATE} from 'next-redux-wrapper';
+import {createStore, AnyAction, Store} from 'redux';
+import {createWrapper, Context, HYDRATE} from 'next-redux-wrapper';
 
 export interface State {
     tick: string;
@@ -91,10 +95,10 @@ const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
 };
 
 // create a makeStore function
-const makeStore: MakeStore<State> = (context: Context) => createStore(reducer);
+const makeStore = (context: Context) => createStore(reducer);
 
 // export an assembled wrapper
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 ```
 
 <details>
@@ -210,7 +214,6 @@ The `createWrapper` function accepts `makeStore` as its first argument. The `mak
 
 `createWrapper` also optionally accepts a config object as a second parameter:
 
-- `storeKey` (optional, string) : the key used on `window` to persist the store on the client
 - `debug` (optional, boolean) : enable debug logging
 - `serializeState` and `deserializeState`: custom functions for serializing and deserializing the redux state, see
     [Custom serialization and deserialization](#custom-serialization-and-deserialization).
@@ -236,8 +239,8 @@ import {NextPage} from 'next';
 import {useSelector} from 'react-redux';
 import {wrapper, State} from '../store';
 
-export const getStaticProps = wrapper.getStaticProps(
-    ({store, preview}) => {
+export const getStaticProps = wrapper.getStaticProps(store =>
+    ({preview}) => {
         console.log('2. Page.getStaticProps uses the store to dispatch things');
         store.dispatch({type: 'TICK', payload: 'was set in other page ' + preview});
     }
@@ -262,8 +265,8 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 import {wrapper} from '../store';
 
-export const getStaticProps = wrapper.getStaticProps(
-    ({store, preview}) => {
+export const getStaticProps = wrapper.getStaticProps(store =>
+    ({preview}) => {
         console.log('2. Page.getStaticProps uses the store to dispatch things');
         store.dispatch({type: 'TICK', payload: 'was set in other page ' + preview});
     }
@@ -297,8 +300,8 @@ import {NextPage} from 'next';
 import {connect} from 'react-redux';
 import {wrapper, State} from '../store';
 
-export const getServerSideProps = wrapper.getServerSideProps(
-    ({store, req, res, ...etc}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store =>
+    ({req, res, ...etc}) => {
         console.log('2. Page.getServerSideProps uses the store to dispatch things');
         store.dispatch({type: 'TICK', payload: 'was set in other page'});
     }
@@ -321,8 +324,8 @@ import React from 'react';
 import {connect} from 'react-redux';
 import {wrapper} from '../store';
 
-export const getServerSideProps = wrapper.getServerSideProps(
-    ({store, req, res, ...etc}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store =>
+    ({req, res, ...etc}) => {
         console.log('2. Page.getServerSideProps uses the store to dispatch things');
         store.dispatch({type: 'TICK', payload: 'was set in other page'});
     }
@@ -357,10 +360,10 @@ const Page: NextPage = () => {
     );
 };
 
-Page.getInitialProps = ({store, pathname, req, res}) => {
+Page.getInitialProps = wrapper.getInitialPageProps(store => ({pathname, req, res}) => {
     console.log('2. Page.getInitialProps uses the store to dispatch things');
     store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
-};
+});
 
 export default Page;
 ```
@@ -380,10 +383,10 @@ const Page = () => {
     );
 };
 
-Page.getInitialProps = ({store, pathname, req, res}) => {
+Page.getInitialProps = wrapper.getInitialPageProps(store => ({pathname, req, res}) => {
     console.log('2. Page.getInitialProps uses the store to dispatch things');
     store.dispatch({type: 'TICK', payload: 'was set in error page ' + pathname});
-};
+});
 
 export default Page;
 ```
@@ -396,7 +399,7 @@ Stateless function component also can be replaced with class:
 ```js
 class Page extends Component {
 
-    public static getInitialProps = () => { ... };
+    public static getInitialProps = wrapper.getInitialPageProps(store => () => { ... });
 
     render() {
         // stuff
@@ -422,22 +425,30 @@ import App, {AppInitialProps, AppContext} from 'next/app';
 import {wrapper} from '../components/store';
 import {State} from '../components/reducer';
 
+// Since you'll be passing more stuff to Page
+declare module 'next/dist/next-server/lib/utils' {
+    export interface NextPageContext {
+        store: Store<State>;
+    }
+}
+
 class MyApp extends App<AppInitialProps> {
 
-    public static getInitialProps = async ({Component, ctx}: AppContext) => {
+    public static getInitialProps = wrapper.getInitialAppProps(store => async ({Component, ctx}) => {
 
-        ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
+        store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
         return {
             pageProps: {
                 // Call page-level getInitialProps
-                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                // DON'T FORGET TO PROVIDE STORE TO PAGE
+                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },
         };
 
-    };
+    });
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -462,20 +473,21 @@ import App from 'next/app';
 import {wrapper} from '../components/store';
 
 class MyApp extends App {
-    static getInitialProps = async ({Component, ctx}) => {
+    static getInitialProps = wrapper.getInitialAppProps(store => async ({Component, ctx}) => {
 
-        ctx.store.dispatch({type: 'TOE', payload: 'was set in _app'});
+        store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
         return {
             pageProps: {
                 // Call page-level getInitialProps
-                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+                // DON'T FORGET TO PROVIDE STORE TO PAGE
+                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },
         };
 
-    };
+    });
 
     render() {
         const {Component, pageProps} = this.props;
@@ -490,7 +502,7 @@ export default wrapper.withRedux(MyApp);
 ```
 </details>
 
-And then all pages can simply be connected (the example considers page components):
+Then all pages can simply be connected (the example considers page components):
 
 ```typescript
 // pages/xxx.tsx
@@ -625,6 +637,71 @@ Consider using [Redux persist](#usage-with-redux-persist) if you want to persist
 
 ## Tips and Tricks
 
+### Redux Toolkit
+
+Since version `7.0` first-class support of `@reduxjs/toolkit` has been added.
+
+Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/packages/demo/package.json.
+
+```ts
+import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import {Action} from 'redux';
+import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+
+const hydrate = createAction<AppState>(HYDRATE);
+
+export const slice = createSlice({
+    name: 'some',
+
+    initialState: {
+        whatever: null,
+    },
+
+    reducers: {
+        setWhatever(state, action) {
+            state.whatever = action.payload;
+        },
+    },
+
+    extraReducers(builder) {
+        builder.addCase(hydrate, (state, action) => {
+            console.log('HYDRATE', state, action.payload);
+            return {
+                ...state,
+                ...(action.payload as any)[slice.name],
+            };
+        });
+    },
+});
+
+const makeStore = () =>
+    configureStore({
+        reducer: {
+            [slice.name]: slice.reducer,
+        }
+    });
+
+export type AppStore = ReturnType<typeof makeStore>;
+export type AppState = ReturnType<AppStore['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
+
+export const someAction = (whatever: any): AppThunk => async dispatch => {
+    dispatch(
+        subjectSlice.actions.setWhatever({ whatever }),
+    );
+};
+
+export const wrapper = createWrapper<AppStore>(makeStore);
+```
+
+It is recommended to export typed `State` and `ThunkAction`:
+
+```ts
+export type AppStore = ReturnType<typeof makeStore>;
+export type AppState = ReturnType<AppStore['getState']>;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
+```
+
 ### Server and Client state separation
 
 Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
@@ -724,7 +801,26 @@ So unless you persist the store on the client somehow the resulting previous cli
 
 ### Async actions
 
-You need to install https://github.com/pburtchaell/redux-promise-middleware in order to dispatch Promises as async actions. Follow the installation guide of the library, then you'll be able to handle it like this:
+You can use https://github.com/reduxjs/redux-thunk to dispatch async actions:
+
+```js
+function someAsyncAction(id) {
+    return async function(dispatch, getState) {
+        return someApiCall(id).then(res => {
+            dispatch({
+                type: 'FOO',
+                payload: res
+            });
+        });
+    }
+}
+
+// usage
+await store.dispatch(someAsyncAction());
+```
+
+
+You can also install https://github.com/pburtchaell/redux-promise-middleware in order to dispatch Promises as async actions. Follow the installation guide of the library, then you'll be able to handle it like this:
 
 ```js
 function someAsyncAction() {
@@ -734,10 +830,8 @@ function someAsyncAction() {
     }
 }
 
-async function getInitialProps({store}) {
-    await store.dispatch(someAsyncAction());
-    return {custom: 'custom'};
-}
+// usage
+await store.dispatch(someAsyncAction());
 ```
 
 ### Custom serialization and deserialization
@@ -778,7 +872,7 @@ Create your root saga as usual, then implement the store creator:
 
 ```typescript
 import {createStore, applyMiddleware, Store} from 'redux';
-import {MakeStore, createWrapper, Context} from 'next-redux-wrapper';
+import {createWrapper, Context} from 'next-redux-wrapper';
 import createSagaMiddleware, {Task} from 'redux-saga';
 import reducer, {State} from './reducer';
 import rootSaga from './saga';
@@ -787,7 +881,7 @@ export interface SagaStore extends Store {
     sagaTask?: Task;
 }
 
-export const makeStore: MakeStore<State> = (context: Context) => {
+export const makeStore = (context: Context) => {
     // 1: Create the middleware
     const sagaMiddleware = createSagaMiddleware();
 
@@ -801,7 +895,7 @@ export const makeStore: MakeStore<State> = (context: Context) => {
     return store;
 };
 
-export const wrapper = createWrapper<State>(makeStore, {debug: true});
+export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 ```
 
 <details>
@@ -1060,6 +1154,16 @@ export default connect(
     </div>
 ));
 ```
+
+## Upgrade from 6.x to 7.x
+
+1. Signature of `createWrapper` has changed: instead of `createWrapper<State>` you should use `createWrapper<Store<State>>`, all types will be automatically inferred from `Store`.
+
+2. `GetServerSidePropsContext` and `GetStaticPropsContext` are no longer exported from `next-redux-wrapper`, you should use `GetServerSideProps`, `GetServerSidePropsContext`, `GetStaticProps` and `GetStaticPropsContext` directly from `next`.
+
+3. All signatures like `({store, req, res, ...}) => { ... }` were changed to `store => ({req, res, ...}) => { ... }` in order to keep Next.js internals free of modifications and for better typings support.
+
+4. In version `7.x` you have to manually wrap all `getInitialProps` with proper wrappers: `wrapper.getInitialPageProps` and `wrapper.getInitialAppProps`.
 
 ## Upgrade from 5.x to 6.x
 

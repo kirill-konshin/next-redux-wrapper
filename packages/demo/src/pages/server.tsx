@@ -27,7 +27,7 @@ const Server: NextPage<OtherProps> = ({appProp, getServerSideProp}) => {
     );
 };
 
-export const getServerSideProps = wrapper.getServerSideProps(({store}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store => async () => {
     store.dispatch({type: 'PAGE', payload: 'server'});
     return {props: {getServerSideProp: 'bar'}};
 });

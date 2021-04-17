@@ -1,0 +1,59 @@
+name: Publish
+
+on: push
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '15.x'
+        registry-url: 'https://registry.npmjs.org'
+
+    - id: yarn-cache-dir-path
+      run: echo "::set-output name=dir::$(yarn cache dir)"
+
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          packages/*/.next/cache
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - run: yarn install --prefer-offline
+
+    - run: DEBUG=eslint:cli-engine yarn lint:all
+
+    - run: yarn build
+
+    - run: yarn test
+      env:
+        CI: true
+
+    - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+    - run: yarn publish:release ${TAG} --yes
+      if: ${{ env.TAG != '' && !contains(env.TAG, '/') && !contains(env.TAG, '-') }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - run: yarn publish:release ${TAG} --yes --dist-tag next
+      if: ${{ env.TAG != '' && !contains(env.TAG, '/') && contains(env.TAG, '-') }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+#    - run: yarn test:coverage
+#      env:
+#        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#    - uses: coverallsapp/github-action@master
+#      if: success()
+#      with:
+#        github-token: ${{ secrets.GITHUB_TOKEN }}
+#        path-to-lcov: 'packages/*/coverage/lcov.info'

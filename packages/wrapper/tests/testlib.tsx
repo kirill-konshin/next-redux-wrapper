@@ -17,6 +17,8 @@ export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction)
         case 'FOO': // sync
         case 'FOO_FULFILLED': // async
             return {reduxStatus: action.payload};
+        case 'MODIFY_STATE':
+            return {...state, modified: true};
         default:
             return state;
     }
@@ -24,11 +26,11 @@ export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction)
 
 export const makeStore = () => createStore(reducer, undefined, applyMiddleware(promiseMiddleware));
 
-export const wrapper = createWrapper(makeStore, {storeKey: 'testStoreKey'});
+export const wrapper = createWrapper(makeStore);
 
-export const DummyComponent = (props: any) => {
+export const DummyComponent: React.ComponentType<any> = (props: any) => {
     const state = useSelector((state: State) => state);
     return <div>{JSON.stringify({props, state})}</div>;
 };
 
-export const child = (cmp: any) => create(cmp)?.toJSON()?.children?.[0];
+export const child = (cmp: any) => (create(cmp)?.toJSON() as any)?.children?.[0];

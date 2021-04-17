@@ -20,7 +20,7 @@ const Page: NextPage<ConnectedPageProps> = ({custom}: ConnectedPageProps) => {
     );
 };
 
-export const getServerSideProps = wrapper.getServerSideProps(async ({store}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store => async () => {
     store.dispatch({type: SAGA_ACTION});
     store.dispatch(END);
     await (store as SagaStore).sagaTask.toPromise();

@@ -18,7 +18,7 @@ const Page: NextPage<ConnectedPageProps> = ({custom}: ConnectedPageProps) => {
     );
 };
 
-Page.getInitialProps = ({store}) => {
+Page.getInitialProps = async ({store}) => {
     store.dispatch({type: SAGA_ACTION});
     return {custom: 'custom'};
 };

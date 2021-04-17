@@ -1,7 +1,7 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "6.0.0",
+  "version": "7.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
@@ -18,17 +18,18 @@
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
+    "@types/webpack": "^4.41.25",
     "coveralls": "3.1.0",
     "eslint": "7.0.0",
     "eslint-config-ringcentral-typescript": "3.0.0",
-    "husky": "4.2.5",
-    "lerna": "3.20.2",
-    "lint-staged": "10.2.2",
+    "husky": "4.3.5",
+    "lerna": "3.22.1",
+    "lint-staged": "10.5.3",
     "rimraf": "3.0.2",
-    "typescript": "3.8.3"
+    "typescript": "4.1.2"
   },
   "resolutions": {
-    "@types/react": "16.9.31"
+    "@types/react": "17.0.0"
   },
   "workspaces": [
     "packages/*"
