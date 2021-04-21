@@ -115,7 +115,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         callback: GetServerSidePropsCallback<S, P>,
     ): GetServerSideProps<P> => async context => await getStaticProps(callback as any)(context); // just not to repeat myself
 
-    const withRedux = (Component: NextComponentType | App | any) => {
+    const _withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
 
         const hasInitialProps = 'getInitialProps' in Component;
@@ -205,6 +205,36 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 );
             }
         };
+    };
+
+    const withRedux = (Component: NextComponentType | App | any, hoc?: (C: typeof Component) => typeof Component) => {
+        if (!hoc) {
+            return _withRedux(Component);
+        } else if (!('getInitialProps' in Component)) {
+            return _withRedux(hoc(Component));
+        }
+
+        // unwrap and re-wrap `initialProps` to be usable with other hocs expecting `pageProps` from gIP
+        const getInitialProps0 = Component.getInitialProps;
+        let restProps: Record<string, any> | undefined;
+        Component.getInitialProps = async (ctx: any) => {
+            const {initialProps, ...rest} = await getInitialProps0(ctx);
+            if (!initialProps) {
+                return rest;
+            }
+            restProps = rest;
+            return initialProps;
+        };
+
+        Component = hoc(Component);
+
+        const getInitialProps1 = Component.getInitialProps;
+        Component.getInitialProps = async (ctx: any) => {
+            const initialProps = await getInitialProps1(ctx);
+            return restProps ? {initialProps, ...restProps} : initialProps;
+        };
+
+        return _withRedux(Component);
     };
 
     return {
