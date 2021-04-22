@@ -41,7 +41,7 @@ describe('function API', () => {
             });
 
             expect(await wrapper.withRedux(App)?.getInitialProps({ctx})).toEqual({
-                initialProps: {pageProps},
+                pageProps,
                 initialState,
             });
         });
@@ -61,7 +61,7 @@ describe('function API', () => {
             const initialAppProps = await wrapper.withRedux(App)?.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
-                initialProps: {pageProps: {fromApp: true}},
+                pageProps: {fromApp: true},
                 initialState: {reduxStatus: 'app'},
             });
 
@@ -84,7 +84,11 @@ describe('function API', () => {
 
             const resultingProps = {
                 ...initialAppProps,
-                pageProps: (serverSideProps as any).props, // NextJS will wrap it like this
+                pageProps: {
+                    // NextJS will wrap it like this
+                    ...initialAppProps.pageProps,
+                    ...(serverSideProps as any).props,
+                },
             };
 
             const WrappedPage: any = wrapper.withRedux(DummyComponent);
