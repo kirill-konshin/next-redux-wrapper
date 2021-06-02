@@ -781,6 +781,9 @@ const reducer = (state = {tick: 'init'}, action) => {
 ```
 </details>
 
+If you prefer an isomorphic approach for some (preferably small) portions of your state, you can share them between client and server on server-rendered pages using [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper), an extension to next-redux-wrapper.
+In this case, for selected substates, the server is aware of the client's state (unless in `getStaticProps`) and there is no need to separate server and client state.
+
 Also you can use a library like https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly.
 
 ### Document
@@ -1022,6 +1025,8 @@ If you don't want to opt-out of automatic pre-rendering in your Next.js app, you
 
 ### Usage with Redux Persist
 
+> If you only need to persist small portions of your state, [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper) might be an easy alternative to Redux Persist that supports SSR.
+
 Boilerplate: https://github.com/fazlulkarimweb/with-next-redux-wrapper-redux-persist
 
 Honestly, I think that putting a persistence gate is not necessary because the server can already send *some* HTML with
@@ -1241,3 +1246,4 @@ That's it. Your project should now work the same as before.
 * [next-redux-saga](https://github.com/bmealhouse/next-redux-saga)
 * [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
 * Redux Saga Example: https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e.
+* [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper)
