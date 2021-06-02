@@ -46,6 +46,11 @@ describe('function API', () => {
             });
         });
 
+        /**
+         * Next.js executes wrappers in following order:
+         * 1. App.getInitialProps
+         * 2. getStaticProps or getServerSideProps
+         */
         test('with and getServerSideProps at page level', async () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
