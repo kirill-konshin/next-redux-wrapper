@@ -641,14 +641,12 @@ Consider using [Redux persist](#usage-with-redux-persist) if you want to persist
 
 Since version `7.0` first-class support of `@reduxjs/toolkit` has been added.
 
-Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/packages/demo/package.json.
+Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/packages/demo-redux-toolkit.
 
 ```ts
-import {configureStore, createAction, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import {configureStore, createSlice, ThunkAction} from '@reduxjs/toolkit';
 import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
-
-const hydrate = createAction<AppState>(HYDRATE);
 
 export const slice = createSlice({
     name: 'some',
@@ -663,14 +661,14 @@ export const slice = createSlice({
         },
     },
 
-    extraReducers(builder) {
-        builder.addCase(hydrate, (state, action) => {
+    extraReducers: {
+        [HYDRATE]: (state, action) => {
             console.log('HYDRATE', state, action.payload);
             return {
                 ...state,
-                ...(action.payload as any)[slice.name],
+                ...action.payload.some,
             };
-        });
+        },
     },
 });
 
