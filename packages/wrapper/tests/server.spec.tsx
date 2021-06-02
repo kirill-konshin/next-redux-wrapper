@@ -41,11 +41,16 @@ describe('function API', () => {
             });
 
             expect(await wrapper.withRedux(App)?.getInitialProps({ctx})).toEqual({
-                initialProps: {pageProps},
+                pageProps,
                 initialState,
             });
         });
 
+        /**
+         * Next.js executes wrappers in following order:
+         * 1. App.getInitialProps
+         * 2. getStaticProps or getServerSideProps
+         */
         test('with and getServerSideProps at page level', async () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
@@ -61,7 +66,7 @@ describe('function API', () => {
             const initialAppProps = await wrapper.withRedux(App)?.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
-                initialProps: {pageProps: {fromApp: true}},
+                pageProps: {fromApp: true},
                 initialState: {reduxStatus: 'app'},
             });
 
@@ -84,7 +89,11 @@ describe('function API', () => {
 
             const resultingProps = {
                 ...initialAppProps,
-                pageProps: (serverSideProps as any).props, // NextJS will wrap it like this
+                pageProps: {
+                    // NextJS will wrap it like this
+                    ...initialAppProps.pageProps,
+                    ...(serverSideProps as any).props,
+                },
             };
 
             const WrappedPage: any = wrapper.withRedux(DummyComponent);

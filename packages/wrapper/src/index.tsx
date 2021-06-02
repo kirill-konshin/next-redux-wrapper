@@ -1,4 +1,4 @@
-import App, {AppContext, AppInitialProps} from 'next/app';
+import App, {AppContext} from 'next/app';
 import React from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -10,6 +10,22 @@ import {
     NextComponentType,
     NextPageContext,
 } from 'next';
+
+/**
+ * Quick note on Next.js return types:
+ *
+ * Page.getInitialProps https://nextjs.org/docs/api-reference/data-fetching/getInitialProps
+ * as-is
+ *
+ * App.getInitialProps: AppInitialProps https://nextjs.org/docs/advanced-features/custom-app
+ * {pageProps: any}
+ *
+ * getStaticProps https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation
+ * {props: any}
+ *
+ * getServerSideProps https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering
+ * {props: any}
+ */
 
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 
@@ -92,21 +108,23 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
         context: AppContext,
-    ) => (await makeProps({callback, context})) as WrapperProps & AppInitialProps; // this is just to convince TS
+    ) => {
+        const {initialProps, initialState} = await makeProps({callback, context});
+        return {
+            ...initialProps,
+            initialState,
+        };
+    };
 
     const getStaticProps = <P extends {} = any>(
         callback: GetStaticPropsCallback<S, P>,
     ): GetStaticProps<P> => async context => {
-        const {
-            initialProps: {props, ...settings},
-            ...wrapperProps
-        } = await makeProps({callback, context});
-
+        const {initialProps, initialState} = await makeProps({callback, context});
         return {
-            ...settings,
+            ...initialProps,
             props: {
-                ...wrapperProps,
-                ...props,
+                ...initialProps.props,
+                initialState,
             },
         } as any;
     };
@@ -134,7 +152,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             }
 
             hydrate({initialState, initialProps, ...props}: any, context: any) {
-                // this happens when App has page with getServerSideProps/getStaticProps
+                // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
+                // one incomplete and one complete
                 const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
 
                 if (!this.store) {
@@ -233,9 +252,8 @@ export interface Config<S extends Store> {
 }
 
 export interface WrapperProps {
-    initialProps: any; // stuff returned from getInitialProps
+    initialProps: any; // stuff returned from getInitialProps or getServerSideProps
     initialState: any; // stuff in the Store state after getInitialProps
-    pageProps?: any; // stuff from page's getServerSideProps or getInitialProps when used with App
 }
 
 type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
