@@ -1,4 +1,4 @@
-import App, {AppContext, AppInitialProps} from 'next/app';
+import App, {AppContext} from 'next/app';
 import React from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -92,7 +92,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
         context: AppContext,
-    ) => (await makeProps({callback, context})) as WrapperProps & AppInitialProps; // this is just to convince TS
+    ) => {
+        const {initialProps, ...props} = await makeProps({callback, context});
+        return {
+            ...initialProps,
+            ...props,
+        };
+    };
 
     const getStaticProps = <P extends {} = any>(
         callback: GetStaticPropsCallback<S, P>,
@@ -233,9 +239,8 @@ export interface Config<S extends Store> {
 }
 
 export interface WrapperProps {
-    initialProps: any; // stuff returned from getInitialProps
+    initialProps: any; // stuff returned from getInitialProps or getServerSideProps
     initialState: any; // stuff in the Store state after getInitialProps
-    pageProps?: any; // stuff from page's getServerSideProps or getInitialProps when used with App
 }
 
 type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
