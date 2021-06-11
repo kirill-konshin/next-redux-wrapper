@@ -1168,6 +1168,8 @@ export default connect(
 
 4. In version `7.x` you have to manually wrap all `getInitialProps` with proper wrappers: `wrapper.getInitialPageProps` and `wrapper.getInitialAppProps`.
 
+5. window.__NEXT_REDUX_WRAPPER_STORE__ has been removed as it was causing [issues with hot reloading](https://github.com/kirill-konshin/next-redux-wrapper/pull/324)
+
 ## Upgrade from 5.x to 6.x
 
 Major change in the way how things are wrapped in version 6.
