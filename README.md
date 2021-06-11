@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kirill-konshin/next-redux-wrapper/badge.svg?branch=master)](https://coveralls.io/github/kirill-konshin/next-redux-wrapper?branch=master)
 
 A HOC that brings Next.js and Redux together
-
+NEXT
 :warning: The current version of this library only works with Next.js 9.3 and newer. If you are required to use Next.js 6-9 you can use version 3-5 of this library, see [branches](https://github.com/kirill-konshin/next-redux-wrapper/branches). Otherwise, consider upgrading Next.js. :warning:
 
 Contents:
@@ -1168,7 +1168,7 @@ export default connect(
 
 4. In version `7.x` you have to manually wrap all `getInitialProps` with proper wrappers: `wrapper.getInitialPageProps` and `wrapper.getInitialAppProps`.
 
-5. window.__NEXT_REDUX_WRAPPER_STORE__ has been removed.
+5. window.__NEXT_REDUX_WRAPPER_STORE__ has been removed as it was causing [issues with hot reloading](https://github.com/kirill-konshin/next-redux-wrapper/pull/324)
 
 ## Upgrade from 5.x to 6.x
 
