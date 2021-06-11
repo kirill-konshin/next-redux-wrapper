@@ -26,4 +26,12 @@ describe('Basic integration', () => {
         await expect(page).toMatch('"page": "was set in index page');
         await expect(page).toMatch('"custom": "custom"');
     });
+
+    it('initial page props', async () => {
+        await openPage('/pageProps');
+
+        await page.waitForSelector('div.pageProps');
+
+        await expect(page).toMatch('{"prop":"foo"}');
+    });
 });

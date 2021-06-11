@@ -134,6 +134,14 @@ describe('withRedux', () => {
                 child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />),
             ).toEqual('{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}');
         });
+        test('for page case (new Next versions)', () => {
+            const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
+            expect(
+                child(<WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />),
+            ).toEqual(
+                '{"props":{"pageProps":{"fromPage":true},"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
+            );
+        });
     });
     test('wrapped component should not have getInitialProps if source component did not have it', () => {
         expect(createWrapper(makeStore).withRedux(DummyComponent).getInitialProps).toBeUndefined();

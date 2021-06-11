@@ -59,4 +59,12 @@ describe('Using App wrapper', () => {
         await expect(page).toMatch('"page": "static"'); // redux
         await expect(page).toMatch('"app": "was set in _app"'); // redux
     });
+
+    it('initial page props', async () => {
+        await openPage('/pageProps');
+
+        await page.waitForSelector('div.pageProps');
+
+        await expect(page).toMatch('{"appProp":"/pageProps","prop":"foo"}');
+    });
 });
