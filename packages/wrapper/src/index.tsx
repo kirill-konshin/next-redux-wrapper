@@ -97,41 +97,44 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         };
     };
 
-    const getInitialPageProps = <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> => async (
-        context: NextPageContext | any, // legacy
-    ) => {
-        if ('getState' in context) {
-            return callback && callback(context as any);
-        }
-        return makeProps({callback, context});
-    };
-
-    const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
-        context: AppContext,
-    ) => {
-        const {initialProps, initialState} = await makeProps({callback, context});
-        return {
-            ...initialProps,
-            initialState,
+    const getInitialPageProps =
+        <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> =>
+        async (
+            context: NextPageContext | any, // legacy
+        ) => {
+            if ('getState' in context) {
+                return callback && callback(context as any);
+            }
+            return makeProps({callback, context});
         };
-    };
 
-    const getStaticProps = <P extends {} = any>(
-        callback: GetStaticPropsCallback<S, P>,
-    ): GetStaticProps<P> => async context => {
-        const {initialProps, initialState} = await makeProps({callback, context});
-        return {
-            ...initialProps,
-            props: {
-                ...initialProps.props,
+    const getInitialAppProps =
+        <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> =>
+        async (context: AppContext) => {
+            const {initialProps, initialState} = await makeProps({callback, context});
+            return {
+                ...initialProps,
                 initialState,
-            },
-        } as any;
-    };
+            };
+        };
 
-    const getServerSideProps = <P extends {} = any>(
-        callback: GetServerSidePropsCallback<S, P>,
-    ): GetServerSideProps<P> => async context => await getStaticProps(callback as any)(context); // just not to repeat myself
+    const getStaticProps =
+        <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): GetStaticProps<P> =>
+        async (context) => {
+            const {initialProps, initialState} = await makeProps({callback, context});
+            return {
+                ...initialProps,
+                props: {
+                    ...initialProps.props,
+                    initialState,
+                },
+            } as any;
+        };
+
+    const getServerSideProps =
+        <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): GetServerSideProps<P> =>
+        async (context) =>
+            await getStaticProps(callback as any)(context); // just not to repeat myself
 
     const withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
@@ -217,15 +220,11 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                     delete resultProps.pageProps.initialState;
                 }
 
-                console.log({initialProps, resultProps});
-
                 // unwrap getInitialPageProps
                 if (resultProps?.pageProps?.initialProps) {
                     resultProps.pageProps = {...resultProps.pageProps, ...resultProps.pageProps.initialProps};
                     delete resultProps.pageProps.initialProps;
                 }
-
-                console.log({initialProps, resultProps});
 
                 return (
                     <Provider store={this.store}>
