@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {connect} from 'react-redux';
 import {NextPageContext} from 'next';
 import {State} from '../components/reducer';
+import {wrapper} from '../components/store';
 
 export interface PageProps extends State {
     pageProp: string;
@@ -11,23 +12,25 @@ export interface PageProps extends State {
 
 class Index extends React.Component<PageProps> {
     // note that since _app is wrapped no need to wrap page
-    public static async getInitialProps({store, pathname, query, req}: NextPageContext) {
-        console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query});
+    public static getInitialProps = wrapper.getInitialPageProps(
+        store => async ({pathname, query, req}: NextPageContext) => {
+            console.log('2. Page.getInitialProps uses the store to dispatch things', {pathname, query});
 
-        if (req) {
-            // All async actions must be await'ed
-            await store.dispatch({type: 'PAGE', payload: 'server'});
+            if (req) {
+                // All async actions must be await'ed
+                await store.dispatch({type: 'PAGE', payload: 'server'});
+
+                // Some custom thing for this particular page
+                return {pageProp: 'server'};
+            }
+
+            // await is not needed if action is synchronous
+            store.dispatch({type: 'PAGE', payload: 'client'});
 
             // Some custom thing for this particular page
-            return {pageProp: 'server'};
-        }
-
-        // await is not needed if action is synchronous
-        store.dispatch({type: 'PAGE', payload: 'client'});
-
-        // Some custom thing for this particular page
-        return {pageProp: 'client'};
-    }
+            return {pageProp: 'client'};
+        },
+    );
 
     public render() {
         // console.log('5. Page.render');

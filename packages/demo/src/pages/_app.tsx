@@ -12,7 +12,7 @@ class WrappedApp extends App<AppInitialProps> {
                 pageProps: {
                     // Call page-level getInitialProps manually, instead of App.getInitialProps
                     // Documentation: https://nextjs.org/docs/advanced-features/custom-app
-                    ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
+                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
                     // Some custom thing for all pages
                     appProp: ctx.pathname,
                 },

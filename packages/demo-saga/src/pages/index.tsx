@@ -3,6 +3,8 @@ import {useSelector} from 'react-redux';
 import {NextPage} from 'next';
 import {State} from '../components/reducer';
 import {SAGA_ACTION} from '../components/saga';
+import {SagaStore, wrapper} from '../components/store';
+import {END} from '@redux-saga/core';
 
 export interface ConnectedPageProps {
     custom: string;
@@ -18,9 +20,17 @@ const Page: NextPage<ConnectedPageProps> = ({custom}: ConnectedPageProps) => {
     );
 };
 
-Page.getInitialProps = async ({store}) => {
+Page.getInitialProps = wrapper.getInitialPageProps(store => async ctx => {
     store.dispatch({type: SAGA_ACTION});
+
+    // Stop the saga if on server
+    if (ctx.req) {
+        console.log('Saga is executing on server, we will wait');
+        store.dispatch(END);
+        await (store as SagaStore).sagaTask.toPromise();
+    }
+
     return {custom: 'custom'};
-};
+});
 
 export default Page;
