@@ -217,15 +217,11 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                     delete resultProps.pageProps.initialState;
                 }
 
-                console.log({initialProps, resultProps});
-
                 // unwrap getInitialPageProps
                 if (resultProps?.pageProps?.initialProps) {
                     resultProps.pageProps = {...resultProps.pageProps, ...resultProps.pageProps.initialProps};
                     delete resultProps.pageProps.initialProps;
                 }
-
-                console.log({initialProps, resultProps});
 
                 return (
                     <Provider store={this.store}>
