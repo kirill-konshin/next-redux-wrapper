@@ -441,8 +441,7 @@ class MyApp extends App<AppInitialProps> {
         return {
             pageProps: {
                 // Call page-level getInitialProps
-                // DON'T FORGET TO PROVIDE STORE TO PAGE
-                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
+                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },
@@ -480,8 +479,7 @@ class MyApp extends App {
         return {
             pageProps: {
                 // Call page-level getInitialProps
-                // DON'T FORGET TO PROVIDE STORE TO PAGE
-                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
+                ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },

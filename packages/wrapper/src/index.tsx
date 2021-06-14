@@ -274,13 +274,3 @@ export type Callback<S extends Store, P> =
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>
     | AppCallback<S, P>;
-
-declare module 'next/dist/next-server/lib/utils' {
-    export interface NextPageContext<S extends Store = any> {
-        //<S = any, A extends Action = AnyAction>
-        /**
-         * Provided by next-redux-wrapper: The redux store
-         */
-        store: S;
-    }
-}
