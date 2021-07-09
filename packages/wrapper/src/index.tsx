@@ -44,35 +44,35 @@ export interface InitStoreOptions<S extends Store> {
     context: Context;
 }
 
-let store: any;
+export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
+    let store: any;
 
-const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): S => {
-    const createStore = () => makeStore(context);
+    const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): S => {
+        const createStore = () => makeStore(context);
 
-    if (getIsServer()) {
-        const c = context as any;
-        let req;
-        if (c.req) req = c.req;
-        if (c.ctx && c.ctx.req) req = c.ctx.req;
-        if (req) {
-            // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
-            // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
-            if (!req.__nextReduxWrapperStore) req.__nextReduxWrapperStore = createStore();
-            return req.__nextReduxWrapperStore;
+        if (getIsServer()) {
+            const c = context as any;
+            let req;
+            if (c.req) req = c.req;
+            if (c.ctx && c.ctx.req) req = c.ctx.req;
+            if (req) {
+                // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
+                // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
+                if (!req.__nextReduxWrapperStore) req.__nextReduxWrapperStore = createStore();
+                return req.__nextReduxWrapperStore;
+            }
+
+            return createStore();
         }
 
-        return createStore();
-    }
+        // Memoize store if client
+        if (!store) {
+            store = createStore();
+        }
 
-    // Memoize store if client
-    if (!store) {
-        store = createStore();
-    }
+        return store;
+    };
 
-    return store;
-};
-
-export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async ({
         callback,
         context,
