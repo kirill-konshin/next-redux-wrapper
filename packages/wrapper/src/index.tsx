@@ -187,7 +187,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
              * @param nextContext
              * @constructor
              */
-            UNSAFE_componentWillReceiveProps(nextProps: any, nextContext: any) {
+            getDerivedStateFromProps(nextProps: any, nextContext: any) {
                 if (
                     nextProps?.pageProps?.initialState !== this.props?.pageProps?.initialState ||
                     nextProps?.initialState !== this.props?.initialState
