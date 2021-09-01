@@ -181,19 +181,15 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                     } as any);
             }
 
-            /**
-             * If someone knows a better way to replace this with sync hook that can dispatch before render let me know
-             * @param nextProps
-             * @param nextContext
-             * @constructor
-             */
-            UNSAFE_componentWillReceiveProps(nextProps: any, nextContext: any) {
+            shouldComponentUpdate(nextProps: Readonly<any>, nextState: Readonly<any>, nextContext: any): boolean {
                 if (
                     nextProps?.pageProps?.initialState !== this.props?.pageProps?.initialState ||
                     nextProps?.initialState !== this.props?.initialState
                 ) {
                     this.hydrate(nextProps, nextContext);
                 }
+
+                return true;
             }
 
             render() {
