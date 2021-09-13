@@ -421,7 +421,7 @@ The wrapper can also be attached to your `_app` component (located in `/pages`).
 # pages/_app.tsx
 
 import React from 'react';
-import App, {AppInitialProps, AppContext} from 'next/app';
+import App, {AppInitialProps} from 'next/app';
 import {wrapper} from '../components/store';
 import {State} from '../components/reducer';
 
@@ -434,15 +434,14 @@ declare module 'next/dist/next-server/lib/utils' {
 
 class MyApp extends App<AppInitialProps> {
 
-    public static getInitialProps = wrapper.getInitialAppProps(store => async ({Component, ctx}) => {
+    public static getInitialProps = wrapper.getInitialAppProps(store => async context => {
 
         store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
         return {
             pageProps: {
-                // Call page-level getInitialProps
-                // DON'T FORGET TO PROVIDE STORE TO PAGE
-                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
+                // https://nextjs.org/docs/advanced-features/custom-app#caveats
+                ...(await App.getInitialProps(context)).pageProps,
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },
@@ -473,15 +472,14 @@ import App from 'next/app';
 import {wrapper} from '../components/store';
 
 class MyApp extends App {
-    static getInitialProps = wrapper.getInitialAppProps(store => async ({Component, ctx}) => {
+    static getInitialProps = wrapper.getInitialAppProps(store => async context => {
 
         store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
         return {
             pageProps: {
-                // Call page-level getInitialProps
-                // DON'T FORGET TO PROVIDE STORE TO PAGE
-                ...(Component.getInitialProps ? await Component.getInitialProps({...ctx, store}) : {}),
+                // https://nextjs.org/docs/advanced-features/custom-app#caveats
+                ...(await App.getInitialProps(context)).pageProps,
                 // Some custom thing for all pages
                 pathname: ctx.pathname,
             },
@@ -784,7 +782,7 @@ const reducer = (state = {tick: 'init'}, action) => {
 If you prefer an isomorphic approach for some (preferably small) portions of your state, you can share them between client and server on server-rendered pages using [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper), an extension to next-redux-wrapper.
 In this case, for selected substates, the server is aware of the client's state (unless in `getStaticProps`) and there is no need to separate server and client state.
 
-Also you can use a library like https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly.
+Also, you can use a library like https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly.
 
 ### Document
 
@@ -917,7 +915,7 @@ export const makeStore = (context) => {
     const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
     // 3: Run your sagas on server
-    (store as SagaStore).sagaTask = sagaMiddleware.run(rootSaga);
+    store.sagaTask = sagaMiddleware.run(rootSaga);
 
     // 4: now return the store:
     return store;
@@ -933,28 +931,27 @@ Then in the `pages/_app` wait stop saga and wait for it to finish when execution
 
 ```typescript
 import React from 'react';
-import App, {AppInitialProps, AppContext} from 'next/app';
+import App, {AppInitialProps} from 'next/app';
 import {END} from 'redux-saga';
 import {SagaStore, wrapper} from '../components/store';
 
 class WrappedApp extends App<AppInitialProps> {
-    public static getInitialProps = async ({Component, ctx}: AppContext) => {
+    public static getInitialProps = wrapper.getInitialAppProps(store => async context => {
         // 1. Wait for all page actions to dispatch
         const pageProps = {
-            ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+            // https://nextjs.org/docs/advanced-features/custom-app#caveats
+            ...(await App.getInitialProps(context)).pageProps,
         };
 
         // 2. Stop the saga if on server
-        if (ctx.req) {
-            ctx.store.dispatch(END);
-            await (ctx.store as SagaStore).sagaTask.toPromise();
+        if (context.ctx.req) {
+            store.dispatch(END);
+            await (store as SagaStore).sagaTask.toPromise();
         }
 
         // 3. Return props
-        return {
-            pageProps,
-        };
-    };
+        return {pageProps};
+    });
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -975,23 +972,22 @@ import {END} from 'redux-saga';
 import {SagaStore, wrapper} from '../components/store';
 
 class WrappedApp extends App {
-    public static getInitialProps = async ({Component, ctx}) => {
+    static getInitialProps = wrapper.getInitialAppProps(store => async context => {
         // 1. Wait for all page actions to dispatch
         const pageProps = {
-            ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
+            // https://nextjs.org/docs/advanced-features/custom-app#caveats
+            ...(await App.getInitialProps(context)).pageProps,
         };
 
         // 2. Stop the saga if on server
-        if (ctx.req) {
-            ctx.store.dispatch(END);
-            await (ctx.store as SagaStore).sagaTask.toPromise();
+        if (context.ctx.req) {
+            store.dispatch(END);
+            await store.sagaTask.toPromise();
         }
 
         // 3. Return props
-        return {
-            pageProps,
-        };
-    };
+        return {pageProps};
+    });
 
     public render() {
         const {Component, pageProps} = this.props;
@@ -1217,14 +1213,12 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
     import {wrapper} from '../store';
 
     class MyApp extends App {
-        static async getInitialProps({Component, ctx}) {
-            return {
-                pageProps: {
-                    // Call page-level getInitialProps
-                    ...(Component.getInitialProps ? await Component.getInitialProps(ctx) : {}),
-                }
-            };
-        }
+        static async getInitialProps = (context) => ({
+            pageProps: {
+                // https://nextjs.org/docs/advanced-features/custom-app#caveats
+                ...(await App.getInitialProps(context)).pageProps,
+            }
+        });
 
         render() {
             const {Component, pageProps} = this.props;

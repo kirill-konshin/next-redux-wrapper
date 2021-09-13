@@ -50,10 +50,7 @@ const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): 
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
-        const c = context as any;
-        let req;
-        if (c.req) req = c.req;
-        if (c.ctx && c.ctx.req) req = c.ctx.req;
+        const req: any = (context as NextPageContext)?.req || (context as AppContext)?.ctx?.req;
         if (req) {
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
@@ -76,13 +73,24 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const makeProps = async ({
         callback,
         context,
+        addStoreToContext = false,
     }: {
         callback: Callback<S, any>;
         context: any;
+        addStoreToContext?: boolean;
     }): Promise<WrapperProps> => {
         const store = initStore({context, makeStore});
 
         if (config.debug) console.log(`1. getProps created store with state`, store.getState());
+
+        // Legacy stuff - put store in context
+        if (addStoreToContext) {
+            if (context.ctx) {
+                context.ctx.store = store;
+            } else {
+                context.store = store;
+            }
+        }
 
         const nextCallback = callback && callback(store);
         const initialProps = (nextCallback && (await nextCallback(context))) || {};
@@ -100,16 +108,17 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getInitialPageProps = <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> => async (
         context: NextPageContext | any, // legacy
     ) => {
+        // context is store — avoid double-wrapping
         if ('getState' in context) {
             return callback && callback(context as any);
         }
-        return makeProps({callback, context});
+        return makeProps({callback, context, addStoreToContext: true});
     };
 
     const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
         context: AppContext,
     ) => {
-        const {initialProps, initialState} = await makeProps({callback, context});
+        const {initialProps, initialState} = await makeProps({callback, context, addStoreToContext: true});
         return {
             ...initialProps,
             initialState,

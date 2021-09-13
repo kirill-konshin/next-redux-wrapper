@@ -39,7 +39,6 @@ describe('client integration', () => {
 
     test('store is available when calling getInitialProps client-side and references the existing store on client', async () => {
         const wrapper = createWrapper(makeStore);
-        let renderer: any = null;
 
         const Page: React.ComponentType<any> & {getInitialProps: any} = () => {
             const dispatch = useDispatch();
@@ -47,7 +46,7 @@ describe('client integration', () => {
             React.useEffect(() => {
                 // modifies the state,
                 dispatch({type: 'MODIFY_STATE'});
-            }, []);
+            }, [dispatch]);
 
             return null;
         };
@@ -59,7 +58,7 @@ describe('client integration', () => {
         const Wrapped: any = wrapper.withRedux(Page);
 
         act(() => {
-            renderer = create(<Wrapped />);
+            create(<Wrapped />);
         });
 
         // expected when invoked above
