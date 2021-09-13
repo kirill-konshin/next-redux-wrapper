@@ -1,4 +1,4 @@
-import App, {AppContext} from 'next/app';
+import App, {AppContext, AppInitialProps} from 'next/app';
 import React from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -259,7 +259,9 @@ export interface WrapperProps {
 }
 
 type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
-type GetInitialAppProps<P> = typeof App['getInitialProps']; //FIXME P
+
+//FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
+type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
 
 export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
 export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
