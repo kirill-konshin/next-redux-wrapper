@@ -6,6 +6,7 @@
     "declarationDir": "lib"
   },
   "include": [
+    "next-env.d.ts",
     "src"
   ]
 }

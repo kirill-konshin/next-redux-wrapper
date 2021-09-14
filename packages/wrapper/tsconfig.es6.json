@@ -6,6 +6,7 @@
     "declarationDir": "es6"
   },
   "include": [
+    "next-env.d.ts",
     "src"
   ]
 }

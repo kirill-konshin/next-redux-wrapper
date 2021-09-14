@@ -6,15 +6,15 @@
     "start": "next --port=6060"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "1.5.0",
-    "next-redux-wrapper": "^7.0.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
-    "react-redux": "7.2.2",
-    "redux": "4.0.5"
+    "@reduxjs/toolkit": "1.6.1",
+    "next-redux-wrapper": "*",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-redux": "7.2.5",
+    "redux": "4.1.1"
   },
   "devDependencies": {
-    "next": "10.0.3"
+    "next": "11.1.0"
   },
   "license": "MIT"
 }

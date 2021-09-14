@@ -16,16 +16,13 @@
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "eslint": "7.0.0",
+    "eslint": "7.32.0",
     "eslint-config-ringcentral-typescript": "3.0.0",
-    "husky": "4.3.5",
-    "lerna": "3.22.1",
-    "lint-staged": "10.5.3",
+    "husky": "7.0.2",
+    "lerna": "4.0.0",
+    "lint-staged": "11.1.2",
     "rimraf": "3.0.2",
-    "typescript": "4.1.2"
-  },
-  "resolutions": {
-    "@types/react": "17.0.0"
+    "typescript": "4.4.3"
   },
   "workspaces": [
     "packages/*"
@@ -39,5 +36,6 @@
     "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
   },
   "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "yarn@3.0.2"
 }
