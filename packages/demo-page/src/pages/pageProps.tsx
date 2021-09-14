@@ -18,11 +18,8 @@ const PropsPage: NextPage<State> = props => {
     );
 };
 
-PropsPage.getInitialProps = wrapper.getInitialPageProps(store => async () => {
-    console.log('!!!', store);
-    return {
-        prop: 'foo',
-    };
-});
+PropsPage.getInitialProps = wrapper.getInitialPageProps(store => async () => ({
+    prop: 'foo',
+}));
 
 export default PropsPage;

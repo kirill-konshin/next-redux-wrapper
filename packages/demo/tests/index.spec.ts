@@ -1,70 +1,68 @@
-import config from '../jest-puppeteer.config';
+import {test, expect, Page} from '@playwright/test';
 
-const openPage = (url = '/') => page.goto(`http://localhost:${config.server.port}${url}`);
+const openPage = (page: Page, url = '/') => page.goto(`http://localhost:3000${url}`);
 
-describe('Using App wrapper', () => {
-    it('shows server values when page is visited directly', async () => {
-        await openPage();
+test('shows server values when page is visited directly', async ({page}) => {
+    await openPage(page);
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"pageProp": "server"'); // props
-        await expect(page).toMatch('"appProp": "/"'); // props
-        await expect(page).toMatch('"app": "was set in _app"'); // redux
-        await expect(page).toMatch('"page": "server"'); // redux
-    });
+    await expect(page.locator('body')).toContainText('"pageProp": "server"'); // props
+    await expect(page.locator('body')).toContainText('"appProp": "/"'); // props
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
+    await expect(page.locator('body')).toContainText('"page": "server"'); // redux
+});
 
-    it('shows client values when page is visited after navigation', async () => {
-        await openPage('/server');
+test('shows client values when page is visited after navigation', async ({page}) => {
+    await openPage(page, '/server');
 
-        await page.waitForSelector('div.server');
+    await page.waitForSelector('div.server');
 
-        await expect(page).toClick('a', {text: 'Navigate to index'});
+    await page.click('text=Navigate to index');
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"app": "was set in _app"');
-        await expect(page).toMatch('"page": "client"');
-    });
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"');
+    await expect(page.locator('body')).toContainText('"page": "client"');
+});
 
-    it("properly combines state from App.getInitialProps and page's getServerSideProps", async () => {
-        await openPage('/server');
+test("properly combines state from App.getInitialProps and page's getServerSideProps", async ({page}) => {
+    await openPage(page, '/server');
 
-        await page.waitForSelector('div.server');
+    await page.waitForSelector('div.server');
 
-        await expect(page).toMatch('"getServerSideProp": "bar"'); // props
-        await expect(page).toMatch('"appProp": "/server"'); // props
-        await expect(page).toMatch('"page": "server"'); // redux
-        await expect(page).toMatch('"app": "was set in _app"'); // redux
-    });
+    await expect(page.locator('body')).toContainText('"getServerSideProp": "bar"'); // props
+    await expect(page.locator('body')).toContainText('"appProp": "/server"'); // props
+    await expect(page.locator('body')).toContainText('"page": "server"'); // redux
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
+});
 
-    it("properly combines state from App.getInitialProps and page's getStaticProps", async () => {
-        await openPage('/static');
+test("properly combines state from App.getInitialProps and page's getStaticProps", async ({page}) => {
+    await openPage(page, '/static');
 
-        await page.waitForSelector('div.static');
+    await page.waitForSelector('div.static');
 
-        await expect(page).toMatch('"getStaticProp": "bar"'); // props
-        await expect(page).toMatch('"appProp": "/static"'); // props
-        await expect(page).toMatch('"page": "static"'); // redux
-        await expect(page).toMatch('"app": "was set in _app"'); // redux
-    });
+    await expect(page.locator('body')).toContainText('"getStaticProp": "bar"'); // props
+    await expect(page.locator('body')).toContainText('"appProp": "/static"'); // props
+    await expect(page.locator('body')).toContainText('"page": "static"'); // redux
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
+});
 
-    it('other page -> static', async () => {
-        await openPage('/');
+test('other page -> static', async ({page}) => {
+    await openPage(page, '/');
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toClick('a', {text: 'Navigate to static'});
+    await page.click('text=Navigate to static');
 
-        await expect(page).toMatch('"page": "static"'); // redux
-        await expect(page).toMatch('"app": "was set in _app"'); // redux
-    });
+    await expect(page.locator('body')).toContainText('"page": "static"'); // redux
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
+});
 
-    it('initial page props', async () => {
-        await openPage('/pageProps');
+test('initial page props', async ({page}) => {
+    await openPage(page, '/pageProps');
 
-        await page.waitForSelector('div.pageProps');
+    await page.waitForSelector('div.pageProps');
 
-        await expect(page).toMatch('{"appProp":"/pageProps","prop":"foo"}');
-    });
+    await expect(page.locator('body')).toContainText('{"appProp":"/pageProps","prop":"foo"}');
 });

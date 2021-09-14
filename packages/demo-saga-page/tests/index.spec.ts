@@ -1,14 +1,12 @@
-import config from '../jest-puppeteer.config';
+import {test, expect, Page} from '@playwright/test';
 
-const openPage = (url = '/') => page.goto(`http://localhost:${config.server.port}${url}`);
+const openPage = (page: Page, url = '/') => page.goto(`http://localhost:5050${url}`);
 
-describe('Basic integration', () => {
-    it('shows the page', async () => {
-        await openPage();
+test('shows the page', async ({page}) => {
+    await openPage(page);
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"page": "async text"');
-        await expect(page).toMatch('"custom": "custom"');
-    });
+    await expect(page.locator('body')).toContainText('"page": "async text"');
+    await expect(page.locator('body')).toContainText('"custom": "custom"');
 });

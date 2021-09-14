@@ -1,37 +1,35 @@
-import config from '../jest-puppeteer.config';
+import {test, expect, Page} from '@playwright/test';
 
-const openPage = (url = '/') => page.goto(`http://localhost:${config.server.port}${url}`);
+const openPage = (page: Page, url = '/') => page.goto(`http://localhost:4000${url}`);
 
-describe('Basic integration', () => {
-    it('shows the page', async () => {
-        await openPage();
+test('shows the page', async ({page}) => {
+    await openPage(page);
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"page": "was set in index page /"');
-        await expect(page).toMatch('"custom": "custom"');
-    });
+    await expect(page.locator('body')).toContainText('"page": "was set in index page /"');
+    await expect(page.locator('body')).toContainText('"custom": "custom"');
+});
 
-    it('clicks the button', async () => {
-        await openPage('/other');
+test('clicks the button', async ({page}) => {
+    await openPage(page, '/other');
 
-        await page.waitForSelector('div.other');
+    await page.waitForSelector('div.other');
 
-        await expect(page).toMatch('"page": "was set in other page {}"');
+    await expect(page.locator('body')).toContainText('"page": "was set in other page {}"');
 
-        await expect(page).toClick('a', {text: 'Navigate to index'});
+    await page.click('text=Navigate to index');
 
-        await page.waitForSelector('div.index');
+    await page.waitForSelector('div.index');
 
-        await expect(page).toMatch('"page": "was set in index page');
-        await expect(page).toMatch('"custom": "custom"');
-    });
+    await expect(page.locator('body')).toContainText('"page": "was set in index page');
+    await expect(page.locator('body')).toContainText('"custom": "custom"');
+});
 
-    it('initial page props', async () => {
-        await openPage('/pageProps');
+test('initial page props', async ({page}) => {
+    await openPage(page, '/pageProps');
 
-        await page.waitForSelector('div.pageProps');
+    await page.waitForSelector('div.pageProps');
 
-        await expect(page).toMatch('{"prop":"foo"}');
-    });
+    await expect(page.locator('body')).toContainText('{"prop":"foo"}');
 });

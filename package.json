@@ -5,21 +5,17 @@
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
-    "start": "yarn build:quick && yarn start:quick",
-    "start:quick": "lerna run start --parallel",
+    "start": "yarn build && yarn start:all",
+    "start:all": "lerna run start --parallel",
     "build": "lerna run build --stream",
-    "build:quick": "yarn build --scope=next-redux-wrapper",
     "test": "lerna run test --parallel",
     "test:quick": "lerna run test:quick --parallel",
-    "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "lint": "eslint --cache --cache-location .eslint/cache --fix",
     "lint:all": "yarn lint '**/*.{ts,tsx,js,jsx}'",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "@types/webpack": "^4.41.25",
-    "coveralls": "3.1.0",
     "eslint": "7.0.0",
     "eslint-config-ringcentral-typescript": "3.0.0",
     "husky": "4.3.5",
