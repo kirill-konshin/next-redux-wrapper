@@ -1,9 +1,9 @@
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppProps} from 'next/app';
 import {END} from 'redux-saga';
 import {SagaStore, wrapper} from '../components/store';
 
-class WrappedApp extends App<AppInitialProps> {
+class MyApp extends React.Component<AppProps> {
     public static getInitialProps = wrapper.getInitialAppProps(store => async context => {
         // 1. Wait for all page actions to dispatch
         const pageProps = {
@@ -27,4 +27,4 @@ class WrappedApp extends App<AppInitialProps> {
     }
 }
 
-export default wrapper.withRedux(WrappedApp);
+export default wrapper.withRedux(MyApp);

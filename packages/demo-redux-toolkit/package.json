@@ -3,6 +3,8 @@
   "version": "7.0.0",
   "private": true,
   "scripts": {
+    "clean": "rimraf .next coverage",
+    "test": "playwright test",
     "start": "next --port=6060"
   },
   "dependencies": {
@@ -14,7 +16,9 @@
     "redux": "4.1.1"
   },
   "devDependencies": {
-    "next": "11.1.0"
+    "@playwright/test": "1.14.1",
+    "next": "11.1.0",
+    "playwright": "1.14.1"
   },
   "license": "MIT"
 }

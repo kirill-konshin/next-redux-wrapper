@@ -159,7 +159,46 @@ export default wrapper.withRedux(MyApp);
 ```
 </details>
 
+You can also use class-based App wrapper.
+
 :warning: Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/pages/_app.tsx#L21) when using `class MyApp extends App` which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component as in the example above.
+
+```typescript
+import React from 'react';
+import {wrapper} from '../components/store';
+import {AppProps} from 'next/app';
+
+class MyApp extends React.Component<AppProps> {
+    render() {
+        const {Component, pageProps} = this.props;
+        return (
+            <Component {...pageProps} />
+        );
+    }
+}
+
+export default wrapper.withRedux(MyApp);
+```
+
+<details>
+<summary>Same code in JavaScript (without types)</summary>
+
+```js
+import React from 'react';
+import {wrapper} from '../components/store';
+
+class MyApp extends React.Component {
+    render() {
+        const {Component, pageProps} = this.props;
+        return (
+            <Component {...pageProps} />
+        );
+    }
+}
+
+export default wrapper.withRedux(MyApp);
+```
+</details>
 
 ## State reconciliation during hydration
 

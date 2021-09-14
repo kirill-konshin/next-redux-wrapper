@@ -1,8 +1,8 @@
 import React from 'react';
-import App, {AppInitialProps} from 'next/app';
+import App, {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
-class WrappedApp extends App<AppInitialProps> {
+class MyApp extends React.Component<AppProps> {
     public static getInitialProps = (context: any) =>
         wrapper.getInitialAppProps(store => async context => {
             // Keep in mind that this will be called twice on server, one for page and second for error page
@@ -24,4 +24,4 @@ class WrappedApp extends App<AppInitialProps> {
     }
 }
 
-export default wrapper.withRedux(WrappedApp);
+export default wrapper.withRedux(MyApp);
