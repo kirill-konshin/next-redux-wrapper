@@ -29,7 +29,7 @@ export const makeStore = () => createStore(reducer, undefined, applyMiddleware(p
 export const wrapper = createWrapper(makeStore);
 
 export const DummyComponent: React.ComponentType<any> = (props: any) => {
-    const state = useSelector((state: State) => state);
+    const state = useSelector((s: State) => s);
     return <div>{JSON.stringify({props, state})}</div>;
 };
 

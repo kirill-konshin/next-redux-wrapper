@@ -5,10 +5,7 @@
     "experimentalDecorators": true,
     "declaration": true,
     "jsx": "react",
-    "lib": [
-      "dom",
-      "es2015"
-    ],
+    "lib": ["dom", "es2015"],
     "module": "commonjs",
     "moduleResolution": "node",
     "strict": true,
@@ -19,11 +16,6 @@
     "outDir": "lib",
     "declarationDir": "lib"
   },
-  "include": [
-    "next-env.d.ts",
-    "src"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "src"],
+  "exclude": ["node_modules"]
 }

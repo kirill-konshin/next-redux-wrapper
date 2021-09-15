@@ -28,7 +28,10 @@ const Page: NextPage<ConnectedPageProps> = ({custom}) => {
 
 export const getServerSideProps = wrapper.getServerSideProps(store => async ({req}) => {
     console.log('2. Page.getServerSideProps uses the store to dispatch things');
-    store.dispatch({type: 'PAGE', payload: 'was set in index page ' + req.url});
+    store.dispatch({
+        type: 'PAGE',
+        payload: 'was set in index page ' + req.url,
+    });
     await new Promise(res => setTimeout(res, 100));
     return {props: {custom: 'custom'}};
 });

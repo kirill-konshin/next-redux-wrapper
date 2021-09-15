@@ -11,7 +11,10 @@ const reducer = (state: State = {page: 'init'}, action: AnyAction) => {
         case HYDRATE:
             const stateDiff = diff(state, action.payload) as any;
             const wasBumpedOnClient = stateDiff?.page?.[0]?.endsWith('X');
-            console.log('HYDRATE action handler', {stateDiff, wasBumpedOnClient});
+            console.log('HYDRATE action handler', {
+                stateDiff,
+                wasBumpedOnClient,
+            });
             return {
                 ...state,
                 ...action.payload,

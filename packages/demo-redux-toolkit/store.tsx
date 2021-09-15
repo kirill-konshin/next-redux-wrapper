@@ -36,20 +36,22 @@ export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
 export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
-export const fetchSubject = (id: any): AppThunk => async dispatch => {
-    const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
+export const fetchSubject =
+    (id: any): AppThunk =>
+    async dispatch => {
+        const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
 
-    await timeoutPromise(200);
+        await timeoutPromise(200);
 
-    dispatch(
-        subjectSlice.actions.setEnt({
-            [id]: {
-                id,
-                name: `Subject ${id}`,
-            },
-        }),
-    );
-};
+        dispatch(
+            subjectSlice.actions.setEnt({
+                [id]: {
+                    id,
+                    name: `Subject ${id}`,
+                },
+            }),
+        );
+    };
 
 export const wrapper = createWrapper<AppStore>(makeStore);
 

@@ -1,6 +1,4 @@
 {
-  "*.{ts,tsx,js,jsx}": [
-    "yarn lint",
-    "git add"
-  ]
+  "*.{js,jsx,ts,tsx,css,scss,sass,less,md,yml,json}": ["yarn prettier", "git add"],
+  "*.{js,jsx,ts,tsx}": ["yarn eslint", "git add"]
 }
