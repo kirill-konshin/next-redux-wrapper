@@ -426,7 +426,7 @@ import {wrapper} from '../components/store';
 import {State} from '../components/reducer';
 
 // Since you'll be passing more stuff to Page
-declare module 'next/dist/next-server/lib/utils' {
+declare module 'next/dist/shared/lib/utils' {
     export interface NextPageContext {
         store: Store<State>;
     }
