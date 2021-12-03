@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React from 'react';
+import React, {useEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
 import {
@@ -41,12 +41,12 @@ export declare type MakeStore<S extends Store> = (context: Context) => S;
 
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
-    context: Context;
+    context?: Context;
 }
 
 let sharedClientStore: any;
 
-const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): S => {
+const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
@@ -126,11 +126,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getInitialAppProps =
         <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> =>
         async (context: AppContext) => {
-            const {initialProps, initialState} = await makeProps({
-                callback,
-                context,
-                addStoreToContext: true,
-            });
+            const {initialProps, initialState} = await makeProps({callback, context, addStoreToContext: true});
             return {
                 ...initialProps,
                 initialState,
@@ -140,10 +136,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getStaticProps =
         <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): GetStaticProps<P> =>
         async context => {
-            const {initialProps, initialState} = await makeProps({
-                callback,
-                context,
-            });
+            const {initialProps, initialState} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
@@ -158,106 +151,104 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         async context =>
             await getStaticProps(callback as any)(context); // just not to repeat myself
 
-    const withRedux = (Component: NextComponentType | App | any) => {
-        const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
+    const hydrate = (store: S, state: any) => {
+        if (!state) {
+            return;
+        }
+        store.dispatch({
+            type: HYDRATE,
+            payload: getDeserializedState<S>(state, config),
+        } as any);
+    };
 
-        const hasInitialProps = 'getInitialProps' in Component;
+    const useHybridHydrate = (store: S, state: any) => {
+        const firstRender = useRef<boolean>(true);
+
+        useEffect(() => {
+            firstRender.current = false;
+        }, []);
+
+        useMemo(() => {
+            // synchronous for server or first time render
+            if (getIsServer() || firstRender.current) {
+                hydrate(store, state);
+            }
+        }, [store, state]);
+
+        useEffect(() => {
+            // asynchronous for client subsequent navigation
+            if (!getIsServer()) {
+                hydrate(store, state);
+            }
+        }, [store, state]);
+    };
+
+    const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
+        // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
+        // one incomplete and one complete
+        const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+
+        if (config.debug) {
+            console.log('4.', displayName, 'created new store with', {
+                initialState,
+                initialStateFromGSPorGSSR,
+            });
+        }
+
+        const store = useMemo<S>(() => initStore<S>({makeStore}), []);
+
+        useHybridHydrate(store, initialState);
+        useHybridHydrate(store, initialStateFromGSPorGSSR);
+
+        let resultProps: any = props;
+
+        // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
+        // @see https://github.com/zeit/next.js/issues/11648
+        if (initialProps && initialProps.pageProps) {
+            resultProps.pageProps = {
+                ...initialProps.pageProps, // this comes from wrapper in _app mode
+                ...props.pageProps, // this comes from gssp/gsp in _app mode
+            };
+        }
+
+        // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
+        if (initialStateFromGSPorGSSR) {
+            resultProps = {...props, pageProps: {...props.pageProps}};
+            delete resultProps.pageProps.initialState;
+        }
+
+        // unwrap getInitialPageProps
+        if (resultProps?.pageProps?.initialProps) {
+            resultProps.pageProps = {...resultProps.pageProps, ...resultProps.pageProps.initialProps};
+            delete resultProps.pageProps.initialProps;
+        }
+
+        return {store, props: {...initialProps, ...resultProps}};
+    };
+
+    const withRedux = (Component: NextComponentType | App | any) => {
+        console.warn(
+            '/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
+        );
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
-        return class Wrapper extends React.Component<any, any> {
-            static displayName = displayName;
+        const WrappedComponent = (props: any) => {
+            const {store, props: combinedProps} = useWrappedStore(props, WrappedComponent.displayName);
 
-            static getInitialProps = hasInitialProps ? Component.getInitialProps : undefined;
-
-            public store: S = null as any;
-
-            constructor(props: any, context: any) {
-                super(props, context);
-                this.hydrate(props, context);
-            }
-
-            hydrate({initialState, initialProps, ...props}: any, context: any) {
-                // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
-                // one incomplete and one complete
-                const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
-
-                if (!this.store) {
-                    this.store = initStore({makeStore, context});
-
-                    if (config.debug) {
-                        console.log('4. WrappedApp created new store with', displayName, {
-                            initialState,
-                            initialStateFromGSPorGSSR,
-                        });
-                    }
-                }
-
-                if (initialState) {
-                    this.store.dispatch({
-                        type: HYDRATE,
-                        payload: getDeserializedState<S>(initialState, config),
-                    } as any);
-                }
-
-                // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
-                // so we dispatch in this order
-                if (initialStateFromGSPorGSSR) {
-                    this.store.dispatch({
-                        type: HYDRATE,
-                        payload: getDeserializedState<S>(initialStateFromGSPorGSSR, config),
-                    } as any);
-                }
-            }
-
-            shouldComponentUpdate(nextProps: Readonly<any>, nextState: Readonly<any>, nextContext: any): boolean {
-                if (
-                    nextProps?.pageProps?.initialState !== this.props?.pageProps?.initialState ||
-                    nextProps?.initialState !== this.props?.initialState
-                ) {
-                    this.hydrate(nextProps, nextContext);
-                }
-
-                return true;
-            }
-
-            render() {
-                const {initialState, initialProps, ...props} = this.props;
-
-                let resultProps: any = props;
-
-                // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
-                // @see https://github.com/zeit/next.js/issues/11648
-                if (initialProps && initialProps.pageProps) {
-                    resultProps.pageProps = {
-                        ...initialProps.pageProps, // this comes from wrapper in _app mode
-                        ...props.pageProps, // this comes from gssp/gsp in _app mode
-                    };
-                }
-
-                const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
-
-                // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
-                if (initialStateFromGSPorGSSR) {
-                    resultProps = {...props, pageProps: {...props.pageProps}};
-                    delete resultProps.pageProps.initialState;
-                }
-
-                // unwrap getInitialPageProps
-                if (resultProps?.pageProps?.initialProps) {
-                    resultProps.pageProps = {
-                        ...resultProps.pageProps,
-                        ...resultProps.pageProps.initialProps,
-                    };
-                    delete resultProps.pageProps.initialProps;
-                }
-
-                return (
-                    <Provider store={this.store}>
-                        <Component {...initialProps} {...resultProps} />
-                    </Provider>
-                );
-            }
+            return (
+                <Provider store={store}>
+                    <Component {...combinedProps} />
+                </Provider>
+            );
         };
+
+        WrappedComponent.displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
+
+        if ('getInitialProps' in Component) {
+            WrappedComponent.getInitialProps = Component.getInitialProps;
+        }
+
+        return WrappedComponent;
     };
 
     return {
@@ -266,6 +257,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         getInitialAppProps,
         getInitialPageProps,
         withRedux,
+        useWrappedStore,
     };
 };
 

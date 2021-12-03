@@ -131,17 +131,36 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 
 </details>
 
+## `wrapper.useWrappedStore`
+
 It is highly recommended to use `pages/_app` to wrap all pages at once, otherwise due to potential race conditions you may get `Cannot update component while rendering another component`:
 
-```typescript
+````typescript
 import React, {FC} from 'react';
+import {Provider} from 'react-redux';
 import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
 const WrappedApp: FC<AppProps> = ({Component, pageProps}) => <Component {...pageProps} />;
 
-export default wrapper.withRedux(WrappedApp);
-```
+Instead of `wrapper.useWrappedStore` you can also use legacy HOC, that can work with class-based components.
+
+:warning: Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/pages/_app.tsx#L21) when using `class MyApp extends App` which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component as in the example above.
+
+```typescript
+import React from 'react';
+import {wrapper} from '../components/store';
+import {AppProps} from 'next/app';
+
+class MyApp extends React.Component<AppProps> {
+  render() {
+    const {Component, pageProps} = this.props;
+    return <Component {...pageProps} />;
+  }
+}
+
+export default wrapper.withRedux(MyApp);
+````
 
 <details>
 <summary>Same code in JavaScript (without types)</summary>
@@ -681,59 +700,60 @@ import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
 export const subjectSlice = createSlice({
-    name: 'subject',
+  name: 'subject',
 
-    initialState: {} as any,
+  initialState: {} as any,
 
-    reducers: {
-        setEnt(state, action) {
-            return action.payload;
-        },
+  reducers: {
+    setEnt(state, action) {
+      return action.payload;
     },
+  },
 
-    extraReducers: {
-        [HYDRATE]: (state, action) => {
-            console.log('HYDRATE', state, action.payload);
-            return {
-                ...state,
-                ...action.payload.subject,
-            };
-        },
+  extraReducers: {
+    [HYDRATE]: (state, action) => {
+      console.log('HYDRATE', state, action.payload);
+      return {
+        ...state,
+        ...action.payload.subject,
+      };
     },
+  },
 });
 
 const makeStore = () =>
-    configureStore({
-        reducer: {
-            [subjectSlice.name]: subjectSlice.reducer,
-        },
-        devTools: true,
-    });
+  configureStore({
+    reducer: {
+      [subjectSlice.name]: subjectSlice.reducer,
+    },
+    devTools: true,
+  });
 
 export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
 export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
-export const fetchSubject = (id: any): AppThunk => async dispatch => {
+export const fetchSubject =
+  (id: any): AppThunk =>
+  async dispatch => {
     const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
 
     await timeoutPromise(200);
 
     dispatch(
-        subjectSlice.actions.setEnt({
-            [id]: {
-                id,
-                name: `Subject ${id}`,
-            },
-        }),
+      subjectSlice.actions.setEnt({
+        [id]: {
+          id,
+          name: `Subject ${id}`,
+        },
+      }),
     );
-};
+  };
 
 export const wrapper = createWrapper<AppStore>(makeStore);
 
 export const selectSubject = (id: any) => (state: AppState) => state?.[subjectSlice.name]?.[id];
 ```
-
 
 It is recommended to export typed `State` and `ThunkAction`:
 
