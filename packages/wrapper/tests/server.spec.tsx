@@ -58,7 +58,7 @@ describe('function API', () => {
             // execute App level
 
             const App = () => null;
-            App.getInitialProps = wrapper.getInitialAppProps(store => async (ctx: any) => {
+            App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
                 store.dispatch({type: 'FOO', payload: 'app'});
                 return {pageProps: {fromApp: true}};
             });
@@ -130,15 +130,13 @@ describe('withRedux', () => {
         });
         test('for app case', () => {
             const WrappedApp: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(
-                child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />),
-            ).toEqual('{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}');
+            expect(child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />)).toEqual(
+                '{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}',
+            );
         });
         test('for page case (new Next versions)', () => {
             const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(
-                child(<WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />),
-            ).toEqual(
+            expect(child(<WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />)).toEqual(
                 '{"props":{"pageProps":{"fromPage":true},"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
             );
         });

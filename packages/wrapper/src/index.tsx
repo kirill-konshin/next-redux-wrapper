@@ -44,20 +44,19 @@ export interface InitStoreOptions<S extends Store> {
     context: Context;
 }
 
-let store: any;
+let sharedClientStore: any;
 
 const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
-        const c = context as any;
-        let req;
-        if (c.req) req = c.req;
-        if (c.ctx && c.ctx.req) req = c.ctx.req;
+        const req: any = (context as NextPageContext)?.req || (context as AppContext)?.ctx?.req;
         if (req) {
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
-            if (!req.__nextReduxWrapperStore) req.__nextReduxWrapperStore = createStore();
+            if (!req.__nextReduxWrapperStore) {
+                req.__nextReduxWrapperStore = createStore();
+            }
             return req.__nextReduxWrapperStore;
         }
 
@@ -65,29 +64,44 @@ const initStore = <S extends Store>({makeStore, context}: InitStoreOptions<S>): 
     }
 
     // Memoize store if client
-    if (!store) {
-        store = createStore();
+    if (!sharedClientStore) {
+        sharedClientStore = createStore();
     }
 
-    return store;
+    return sharedClientStore;
 };
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async ({
         callback,
         context,
+        addStoreToContext = false,
     }: {
         callback: Callback<S, any>;
         context: any;
+        addStoreToContext?: boolean;
     }): Promise<WrapperProps> => {
         const store = initStore({context, makeStore});
 
-        if (config.debug) console.log(`1. getProps created store with state`, store.getState());
+        if (config.debug) {
+            console.log(`1. getProps created store with state`, store.getState());
+        }
+
+        // Legacy stuff - put store in context
+        if (addStoreToContext) {
+            if (context.ctx) {
+                context.ctx.store = store;
+            } else {
+                context.store = store;
+            }
+        }
 
         const nextCallback = callback && callback(store);
         const initialProps = (nextCallback && (await nextCallback(context))) || {};
 
-        if (config.debug) console.log(`3. getProps after dispatches has store state`, store.getState());
+        if (config.debug) {
+            console.log(`3. getProps after dispatches has store state`, store.getState());
+        }
 
         const state = store.getState();
 
@@ -97,41 +111,52 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         };
     };
 
-    const getInitialPageProps = <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> => async (
-        context: NextPageContext | any, // legacy
-    ) => {
-        if ('getState' in context) {
-            return callback && callback(context as any);
-        }
-        return makeProps({callback, context});
-    };
-
-    const getInitialAppProps = <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> => async (
-        context: AppContext,
-    ) => {
-        const {initialProps, initialState} = await makeProps({callback, context});
-        return {
-            ...initialProps,
-            initialState,
+    const getInitialPageProps =
+        <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> =>
+        async (
+            context: NextPageContext | any, // legacy
+        ) => {
+            // context is store — avoid double-wrapping
+            if ('getState' in context) {
+                return callback && callback(context as any);
+            }
+            return makeProps({callback, context, addStoreToContext: true});
         };
-    };
 
-    const getStaticProps = <P extends {} = any>(
-        callback: GetStaticPropsCallback<S, P>,
-    ): GetStaticProps<P> => async context => {
-        const {initialProps, initialState} = await makeProps({callback, context});
-        return {
-            ...initialProps,
-            props: {
-                ...initialProps.props,
+    const getInitialAppProps =
+        <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> =>
+        async (context: AppContext) => {
+            const {initialProps, initialState} = await makeProps({
+                callback,
+                context,
+                addStoreToContext: true,
+            });
+            return {
+                ...initialProps,
                 initialState,
-            },
-        } as any;
-    };
+            };
+        };
 
-    const getServerSideProps = <P extends {} = any>(
-        callback: GetServerSidePropsCallback<S, P>,
-    ): GetServerSideProps<P> => async context => await getStaticProps(callback as any)(context); // just not to repeat myself
+    const getStaticProps =
+        <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): GetStaticProps<P> =>
+        async context => {
+            const {initialProps, initialState} = await makeProps({
+                callback,
+                context,
+            });
+            return {
+                ...initialProps,
+                props: {
+                    ...initialProps.props,
+                    initialState,
+                },
+            } as any;
+        };
+
+    const getServerSideProps =
+        <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): GetServerSideProps<P> =>
+        async context =>
+            await getStaticProps(callback as any)(context); // just not to repeat myself
 
     const withRedux = (Component: NextComponentType | App | any) => {
         const displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
@@ -159,26 +184,29 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 if (!this.store) {
                     this.store = initStore({makeStore, context});
 
-                    if (config.debug)
+                    if (config.debug) {
                         console.log('4. WrappedApp created new store with', displayName, {
                             initialState,
                             initialStateFromGSPorGSSR,
                         });
+                    }
                 }
 
-                if (initialState)
+                if (initialState) {
                     this.store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState<S>(initialState, config),
                     } as any);
+                }
 
                 // ATTENTION! This code assumes that Page's getServerSideProps is executed after App.getInitialProps
                 // so we dispatch in this order
-                if (initialStateFromGSPorGSSR)
+                if (initialStateFromGSPorGSSR) {
                     this.store.dispatch({
                         type: HYDRATE,
                         payload: getDeserializedState<S>(initialStateFromGSPorGSSR, config),
                     } as any);
+                }
             }
 
             shouldComponentUpdate(nextProps: Readonly<any>, nextState: Readonly<any>, nextContext: any): boolean {
@@ -199,11 +227,12 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
                 // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
                 // @see https://github.com/zeit/next.js/issues/11648
-                if (initialProps && initialProps.pageProps)
+                if (initialProps && initialProps.pageProps) {
                     resultProps.pageProps = {
                         ...initialProps.pageProps, // this comes from wrapper in _app mode
                         ...props.pageProps, // this comes from gssp/gsp in _app mode
                     };
+                }
 
                 const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
 
@@ -215,7 +244,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
                 // unwrap getInitialPageProps
                 if (resultProps?.pageProps?.initialProps) {
-                    resultProps.pageProps = {...resultProps.pageProps, ...resultProps.pageProps.initialProps};
+                    resultProps.pageProps = {
+                        ...resultProps.pageProps,
+                        ...resultProps.pageProps.initialProps,
+                    };
                     delete resultProps.pageProps.initialProps;
                 }
 
@@ -239,9 +271,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
 // Legacy
 export default <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    console.warn(
-        '/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().',
-    );
+    console.warn('/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().');
     return createWrapper(makeStore, config).withRedux;
 };
 

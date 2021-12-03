@@ -4,32 +4,29 @@
   "version": "7.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
+    "prepare": "husky install",
     "clean": "lerna run clean && lerna clean --yes && rimraf node_modules",
-    "start": "yarn build:quick && yarn start:quick",
-    "start:quick": "lerna run start --parallel",
+    "start": "yarn build && yarn start:all",
+    "start:all": "lerna run start --parallel",
     "build": "lerna run build --stream",
-    "build:quick": "yarn build --scope=next-redux-wrapper",
-    "test": "lerna run test --parallel",
-    "test:quick": "lerna run test:quick --parallel",
-    "test:coverage": "cat packages/*/coverage/lcov.info | coveralls",
+    "test": "lerna run test --stream --concurrency=1",
+    "test:quick": "lerna run test:quick --stream --concurrency=1",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
+    "prettier": "prettier --write",
+    "eslint": "eslint --cache --cache-location node_modules/.cache/eslint --fix",
     "lint": "eslint --cache --cache-location .eslint/cache --fix",
-    "lint:all": "yarn lint '**/*.{ts,tsx,js,jsx}'",
+    "lint:all": "yarn prettier . && yarn eslint .",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "@types/webpack": "^4.41.25",
-    "coveralls": "3.1.0",
-    "eslint": "7.0.0",
-    "eslint-config-ringcentral-typescript": "3.0.0",
-    "husky": "4.3.5",
-    "lerna": "3.22.1",
-    "lint-staged": "10.5.3",
+    "eslint": "7.32.0",
+    "eslint-config-ringcentral-typescript": "0.0.0-master.212.1",
+    "husky": "7.0.2",
+    "lerna": "4.0.0",
+    "lint-staged": "11.1.2",
+    "prettier": "2.4.0",
     "rimraf": "3.0.2",
-    "typescript": "4.1.2"
-  },
-  "resolutions": {
-    "@types/react": "17.0.0"
+    "typescript": "4.4.3"
   },
   "workspaces": [
     "packages/*"
@@ -43,5 +40,6 @@
     "url": "https://github.com/kirill-konshin/next-redux-wrapper/issues"
   },
   "homepage": "https://github.com/kirill-konshin/next-redux-wrapper",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "yarn@3.0.2"
 }

@@ -1,7 +1,7 @@
 .idea
 .next
 .tscache
-.eslint/cache
+.eslint
 coverage
 es6
 lib
@@ -10,3 +10,12 @@ npm-debug*
 out
 types
 lerna-debug.log
+
+# https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

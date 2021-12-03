@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {fetchSubject, selectSubject, wrapper} from '../../store';
 
 const Page = props => {
-    console.log('State on render', useStore().getState(), {props});
+    console.log('State on render', useStore().getState(), props);
     const content = useSelector(selectSubject(props.id));
 
     console[content ? 'info' : 'warn']('Rendered content: ', content);
@@ -14,14 +14,14 @@ const Page = props => {
     }
 
     return (
-        <div>
+        <div className={`page${content.id}`}>
             <h3>{content.name}</h3>
             <Link href="/subject/1">
-                <a>Subject id 1</a>
+                <a>Go id=1</a>
             </Link>
             &nbsp;&nbsp;&nbsp;&nbsp;
             <Link href="/subject/2">
-                <a>Subject id 2</a>
+                <a>Go id=2</a>
             </Link>
         </div>
     );

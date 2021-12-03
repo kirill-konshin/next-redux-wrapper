@@ -1,8 +1,6 @@
-const config = require('next-redux-wrapper-configs/jest.config');
 module.exports = {
-    ...config,
+    preset: 'ts-jest',
     collectCoverage: true,
-    coveragePathIgnorePatterns: [...config.coveragePathIgnorePatterns, './tests'],
+    coveragePathIgnorePatterns: ['./node_modules', './.next', './tests'],
     testEnvironment: 'node',
-    testPathIgnorePatterns: [...config.testPathIgnorePatterns, './es6', './lib', './types'],
 };

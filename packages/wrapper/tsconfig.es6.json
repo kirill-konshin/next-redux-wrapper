@@ -1,11 +1,8 @@
 {
-  "extends": "../configs/tsconfig.es6.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
+    "module": "es6",
     "outDir": "es6",
     "declarationDir": "es6"
-  },
-  "include": [
-    "src"
-  ]
+  }
 }

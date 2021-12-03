@@ -1,17 +1,11 @@
-const prettierOptions = JSON.parse(
-    require('fs')
-        .readFileSync('./.prettierrc')
-        .toString(),
-);
-
 module.exports = {
     extends: ['ringcentral-typescript'],
     rules: {
         'import/no-default-export': 'off',
+        'import/no-unresolved': 'off',
         'jsx-a11y/anchor-is-valid': 'off', // Next.js use <a>
         'no-console': 'off',
         'no-unused-expressions': 'off', // tests
-        'prettier/prettier': ['warn', Object.assign({}, prettierOptions)],
         'react/sort-comp': 'off',
         'react/prop-types': 'off',
         'ringcentral/specified-comment-with-task-id': 'off',
@@ -26,7 +20,7 @@ module.exports = {
     },
     settings: {
         react: {
-            version: '16.12.0',
+            version: '17.0.2',
         },
     },
     globals: {
