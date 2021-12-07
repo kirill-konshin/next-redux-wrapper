@@ -11,6 +11,8 @@ import {
     NextPageContext,
 } from 'next';
 
+export * from './initSagaMonitorFactory';
+
 /**
  * Quick note on Next.js return types:
  *

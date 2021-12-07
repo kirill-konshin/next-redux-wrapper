@@ -11,7 +11,7 @@ export interface InitSagaMonitor {
     readonly start: () => void;
 }
 
-export default function createInitSagaMonitor(timeout = DEFAULT_TIMEOUT): InitSagaMonitor {
+export function createInitSagaMonitor(timeout = DEFAULT_TIMEOUT): InitSagaMonitor {
     const rootEffects: MonitoredEffect[] = [];
     const effectIdToEffectIndex = new Map<number, MonitoredEffect>();
 
