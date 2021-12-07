@@ -66,6 +66,14 @@ export function createInitSagaMonitor(timeout = DEFAULT_TIMEOUT): InitSagaMonito
         initCompletion,
         monitor,
         start(): void {
+            // Implementation note: While it is possible, in certain situations, to auto-start the monitor at the right moment (a saga triggers an effect that
+            // is a CPS or a CALL to a function that is not a generator and does not resolve in the next tick, i.e. is asynchronous; or all sagas have
+            // terminated), this would not be compatible with all use cases, e.g. a page dispatching an action, that makes sagas do anything meaningful at
+            // all, only in certain conditions.
+            // A tempting alternative is to start the monitor asynchronously in the next tick after it has been created, however, this would not be compatible
+            // with the use case of a page component's getXXXProps asynchronously dispatching a redux action that would start the sagas to do their work.
+            // Ergo, to mitigate any possible confusion caused by this behavior, this is not even an opt-in feature. At least, not yet.
+
             if (isStarted) {
                 throw new Error('This init monitor has already been started. Please create a new one for every redux store.');
             }
