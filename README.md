@@ -916,27 +916,34 @@ Create your root saga as usual, then implement the store creator:
 
 ```typescript
 import {createStore, applyMiddleware, Store} from 'redux';
-import {createWrapper, Context} from 'next-redux-wrapper';
+import {createInitSagaMonitor, createWrapper, InitSagaMonitor, Context} from 'next-redux-wrapper';
 import createSagaMiddleware, {Task} from 'redux-saga';
 import reducer, {State} from './reducer';
 import rootSaga from './saga';
 
-export interface SagaStore extends Store {
-  sagaTask?: Task;
+export interface SagaStore extends Store<State> {
+  initMonitor: InitSagaMonitor;
+  sagaTask: Task;
 }
 
-export const makeStore = (context: Context) => {
+const INITIALIZATION_TIMEOUT = 30_000; // 30 seconds
+
+export const makeStore = (context: Context): SagaStore => {
   // 1: Create the middleware
-  const sagaMiddleware = createSagaMiddleware();
+  const initMonitor = createInitSagaMonitor(INITIALIZATION_TIMEOUT);
+  const sagaMiddleware = createSagaMiddleware({sagaMonitor: initMonitor.monitor});
 
   // 2: Add an extra parameter for applying middleware:
   const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
   // 3: Run your sagas on server
-  (store as SagaStore).sagaTask = sagaMiddleware.run(rootSaga);
+  const sagaTask = sagaMiddleware.run(rootSaga);
 
-  // 4: now return the store:
-  return store;
+  // 4: Now return the store with access to init monitor and root saga task
+  return Object.assign(store, {
+    initMonitor,
+    sagaTask,
+  });
 };
 
 export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
@@ -947,23 +954,29 @@ export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 
 ```js
 import {createStore, applyMiddleware} from 'redux';
-import {createWrapper} from 'next-redux-wrapper';
+import {createInitSagaMonitor, createWrapper} from 'next-redux-wrapper';
 import createSagaMiddleware from 'redux-saga';
 import reducer from './reducer';
 import rootSaga from './saga';
 
+const INITIALIZATION_TIMEOUT = 30_000; // 30 seconds
+
 export const makeStore = context => {
   // 1: Create the middleware
-  const sagaMiddleware = createSagaMiddleware();
+  const initMonitor = createInitSagaMonitor(INITIALIZATION_TIMEOUT);
+  const sagaMiddleware = createSagaMiddleware({sagaMonitor: initMonitor.monitor});
 
   // 2: Add an extra parameter for applying middleware:
   const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
   // 3: Run your sagas on server
-  store.sagaTask = sagaMiddleware.run(rootSaga);
+  const sagaTask = sagaMiddleware.run(rootSaga);
 
-  // 4: now return the store:
-  return store;
+  // 4: Now return the store with access to init monitor and root saga task
+  return Object.assign(store, {
+    initMonitor,
+    sagaTask,
+  });
 };
 
 export const wrapper = createWrapper(makeStore, {debug: true});
@@ -989,10 +1002,13 @@ class WrappedApp extends App<AppInitialProps> {
       ...(await App.getInitialProps(context)).pageProps,
     };
 
-    // 2. Stop the saga if on server
+    // 2. Stop the saga if on server once the initialization is done
     if (context.ctx.req) {
+      const sagaStore = store as SagaStore;
+      sagaStore.initMonitor.start(); // Start the init monitor after sagas started to do their work
+      await sagaStore.initMonitor.initCompletion;
       store.dispatch(END);
-      await (store as SagaStore).sagaTask.toPromise();
+      await sagaStore.sagaTask.toPromise();
     }
 
     // 3. Return props
@@ -1025,8 +1041,10 @@ class WrappedApp extends App {
             ...(await App.getInitialProps(context)).pageProps,
         };
 
-        // 2. Stop the saga if on server
+        // 2. Stop the saga if on server once the initialization is done
         if (context.ctx.req) {
+            store.initMonitor.start(); // Start the init monitor after sagas started to do their work
+            await store.initMonitor.initCompletion;
             store.dispatch(END);
             await store.sagaTask.toPromise();
         }
@@ -1054,6 +1072,8 @@ In order to use it with `getServerSideProps` or `getStaticProps` you need to `aw
 export const getServerSideProps = ReduxWrapper.getServerSideProps(async ({store, req, res, ...etc}) => {
   // regular stuff
   store.dispatch(ApplicationSlice.actions.updateConfiguration());
+  store.initMonitor.start(); // Start the init monitor after sagas started to do their work
+  await store.initMonitor.initCompletion;
   // end the saga
   store.dispatch(END);
   await store.sagaTask.toPromise();
