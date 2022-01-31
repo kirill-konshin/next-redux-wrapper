@@ -1281,6 +1281,7 @@ That's it. Your project should now work the same as before.
 
 ## Resources
 
+- [Next, Redux, Redux-Saga, React Hook Form, Chakra UI](https://github.com/slava-lu/enterprise-react-2022)
 - [next-redux-saga](https://github.com/bmealhouse/next-redux-saga)
 - [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
 - Redux Saga Example: https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e.
