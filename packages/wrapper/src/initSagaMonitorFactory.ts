@@ -124,8 +124,14 @@ export function createInitSagaMonitor(timeout = DEFAULT_TIMEOUT): InitSagaMonito
 
     function checkInitCompletion(): void {
         if (isStarted && !isResolved && isInitCompleted(rootEffects)) {
-            isResolved = true;
-            initCompletionResolver();
+            // We wait a micro tick to ensure that an ongoing init saga waiting for a redux action currently being delivered is not prematurely marked as
+            // completed.
+            Promise.resolve().then(() => {
+                if (!isResolved && isInitCompleted(rootEffects)) {
+                    isResolved = true;
+                    initCompletionResolver();
+                }
+            });
         }
     }
 }
