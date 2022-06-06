@@ -42,11 +42,12 @@ export declare type MakeStore<S extends Store> = (context: Context) => S;
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
     context?: Context;
+    id?: string;
 }
 
-let sharedClientStore: any;
+const sharedClientStore: Record<string, any> = {};
 
-const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<S>): S => {
+const initStore = <S extends Store>({makeStore, context = {}, id = 'default'}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
@@ -64,11 +65,11 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
     }
 
     // Memoize store if client
-    if (!sharedClientStore) {
-        sharedClientStore = createStore();
+    if (!sharedClientStore[id]) {
+        sharedClientStore[id] = createStore();
     }
 
-    return sharedClientStore;
+    return sharedClientStore[id];
 };
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
@@ -81,7 +82,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         context: any;
         addStoreToContext?: boolean;
     }): Promise<WrapperProps> => {
-        const store = initStore({context, makeStore});
+        const store = initStore({context, makeStore, id: config.id });
 
         if (config.debug) {
             console.log(`1. getProps created store with state`, store.getState());
@@ -195,7 +196,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             });
         }
 
-        const store = useMemo<S>(() => initStore<S>({makeStore}), []);
+        const store = useMemo<S>(() => initStore<S>({makeStore, id: config.id}), []);
 
         useHybridHydrate(store, initialState);
         useHybridHydrate(store, initialStateFromGSPorGSSR);
@@ -273,6 +274,7 @@ export interface Config<S extends Store> {
     serializeState?: (state: ReturnType<S['getState']>) => any;
     deserializeState?: (state: any) => ReturnType<S['getState']>;
     debug?: boolean;
+    id?: string;
 }
 
 export interface WrapperProps {
