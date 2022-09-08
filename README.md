@@ -1145,11 +1145,11 @@ export default wrapper.withRedux(
       const {Component, pageProps} = this.props;
       return (
         <ReactReduxContext.Consumer>
-          {({store}) => {
+          {({store}) => (
             <PersistGate persistor={store.__persistor} loading={<div>Loading</div>}>
               <Component {...pageProps} />
             </PersistGate>;
-          }}
+          )}
         </ReactReduxContext.Consumer>
       );
     }
