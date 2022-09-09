@@ -2,6 +2,7 @@ module.exports = {
     extends: ['ringcentral-typescript'],
     rules: {
         'import/no-default-export': 'off',
+        'import/no-unresolved': 'off',
         'jsx-a11y/anchor-is-valid': 'off', // Next.js use <a>
         'no-console': 'off',
         'no-unused-expressions': 'off', // tests
