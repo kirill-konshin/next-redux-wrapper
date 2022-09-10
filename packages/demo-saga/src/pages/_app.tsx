@@ -11,10 +11,13 @@ class MyApp extends React.Component<AppProps> {
             ...(await App.getInitialProps(context)).pageProps,
         };
 
-        // 2. Stop the saga if on server
+        // 2. Stop the saga if on server once the initialization is done
         if (context.ctx.req) {
-            store.dispatch(END);
-            await (store as SagaStore).sagaTask.toPromise();
+            const sagaStore = store as SagaStore;
+            sagaStore.initMonitor.start(); // Start the init monitor after sagas started to do their work
+            await sagaStore.initMonitor.initCompletion;
+            sagaStore.dispatch(END);
+            await sagaStore.sagaTask.toPromise();
         }
 
         // 3. Return props

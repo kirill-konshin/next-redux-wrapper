@@ -21,9 +21,12 @@ const Page: NextPage<ConnectedPageProps> = ({custom}: ConnectedPageProps) => {
 };
 
 export const getServerSideProps = wrapper.getServerSideProps(store => async () => {
-    store.dispatch({type: SAGA_ACTION});
-    store.dispatch(END);
-    await (store as SagaStore).sagaTask.toPromise();
+    const sagaStore = store as SagaStore;
+    sagaStore.dispatch({type: SAGA_ACTION});
+    sagaStore.initMonitor.start(); // Start the init monitor after sagas started to do their work
+    await sagaStore.initMonitor.initCompletion;
+    sagaStore.dispatch(END);
+    await sagaStore.sagaTask.toPromise();
 
     return {props: {custom: 'custom'}};
 });
