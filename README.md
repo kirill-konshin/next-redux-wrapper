@@ -49,7 +49,7 @@ Moreover it allows to properly handle complex cases like `App.getInitialProps` (
 
 Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
 
-In Next.js example https://github.com/vercel/next.js/blob/canary/examples/with-redux/store.js#L55 store is being replaced on navigation. Redux will re-render components even with memoized selectors (`createSelector` from `recompose`) if `store` is replaced: https://codesandbox.io/s/redux-store-change-kzs8q, which may affect performance of the app by causing a huge re-render of everything, even what did not change. This library makes sure `store` remains the same.
+In Next.js example https://github.com/vercel/next.js/blob/canary/examples/with-redux-thunk/store.js#L23 store is being replaced on navigation. Redux will re-render components even with memoized selectors (`createSelector` from `recompose`) if `store` is replaced: https://codesandbox.io/s/redux-store-change-kzs8q, which may affect performance of the app by causing a huge re-render of everything, even what did not change. This library makes sure `store` remains the same.
 
 # Installation
 
