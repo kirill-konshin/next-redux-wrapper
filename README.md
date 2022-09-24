@@ -135,13 +135,14 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 
 It is highly recommended to use `pages/_app` to wrap all pages at once, otherwise due to potential race conditions you may get `Cannot update component while rendering another component`:
 
-````typescript
+```typescript
 import React, {FC} from 'react';
 import {Provider} from 'react-redux';
 import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
 const WrappedApp: FC<AppProps> = ({Component, pageProps}) => <Component {...pageProps} />;
+```
 
 Instead of `wrapper.useWrappedStore` you can also use legacy HOC, that can work with class-based components.
 
