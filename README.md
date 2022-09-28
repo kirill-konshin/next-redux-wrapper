@@ -135,52 +135,27 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 
 It is highly recommended to use `pages/_app` to wrap all pages at once, otherwise due to potential race conditions you may get `Cannot update component while rendering another component`:
 
-````typescript
+```tsx
 import React, {FC} from 'react';
 import {Provider} from 'react-redux';
 import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
-const WrappedApp: FC<AppProps> = ({Component, pageProps}) => <Component {...pageProps} />;
+const MyApp: FC<AppProps> = ({Component, ...rest}) => {
+    const {store, props} = wrapper.useWrappedStore(rest);
+    return (
+        <Provider store={store}>
+            <Component {...props.pageProps} />
+        </Provider>
+    );
+};
+```
 
 Instead of `wrapper.useWrappedStore` you can also use legacy HOC, that can work with class-based components.
 
 :warning: Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/pages/_app.tsx#L21) when using `class MyApp extends App` which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component as in the example above.
 
-```typescript
-import React from 'react';
-import {wrapper} from '../components/store';
-import {AppProps} from 'next/app';
-
-class MyApp extends React.Component<AppProps> {
-  render() {
-    const {Component, pageProps} = this.props;
-    return <Component {...pageProps} />;
-  }
-}
-
-export default wrapper.withRedux(MyApp);
-````
-
-<details>
-<summary>Same code in JavaScript (without types)</summary>
-
-```js
-import React from 'react';
-import {wrapper} from '../components/store';
-
-const MyApp = ({Component, pageProps}) => <Component {...pageProps} />;
-
-export default wrapper.withRedux(MyApp);
-```
-
-</details>
-
-You can also use class-based App wrapper.
-
-:warning: Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/pages/_app.tsx#L21) when using `class MyApp extends App` which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component as in the example above.
-
-```typescript
+```tsx
 import React from 'react';
 import {wrapper} from '../components/store';
 import {AppProps} from 'next/app';
@@ -194,25 +169,6 @@ class MyApp extends React.Component<AppProps> {
 
 export default wrapper.withRedux(MyApp);
 ```
-
-<details>
-<summary>Same code in JavaScript (without types)</summary>
-
-```js
-import React from 'react';
-import {wrapper} from '../components/store';
-
-class MyApp extends React.Component {
-  render() {
-    const {Component, pageProps} = this.props;
-    return <Component {...pageProps} />;
-  }
-}
-
-export default wrapper.withRedux(MyApp);
-```
-
-</details>
 
 ## State reconciliation during hydration
 
@@ -222,7 +178,7 @@ Simplest way is to use [server and client state separation](#server-and-client-s
 
 Another way is to use https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly:
 
-```js
+```tsx
 import {HYDRATE} from 'next-redux-wrapper';
 
 // create your reducer
@@ -447,7 +403,7 @@ Stateless function component also can be replaced with class:
 ```js
 class Page extends Component {
 
-    public static getInitialProps = wrapper.getInitialPageProps(store => () => { ... });
+    public static getInitialProps = wrapper.getInitialPageProps(store => () => ({ ... }));
 
     render() {
         // stuff
@@ -465,8 +421,8 @@ Although you can wrap individual pages (and not wrap the `pages/_app`) it is not
 
 The wrapper can also be attached to your `_app` component (located in `/pages`). All other components can use the `connect` function of `react-redux`.
 
-```typescript
-# pages/_app.tsx
+```tsx
+// pages/_app.tsx
 
 import React from 'react';
 import App, {AppInitialProps} from 'next/app';
@@ -512,8 +468,8 @@ export default wrapper.withRedux(MyApp);
 <details>
 <summary>Same code in JavaScript (without types)</summary>
 
-```js
-# pages/_app.tsx
+```jsx
+// pages/_app.tsx
 
 import React from 'react';
 import App from 'next/app';
@@ -551,7 +507,7 @@ export default wrapper.withRedux(MyApp);
 
 Then all pages can simply be connected (the example considers page components):
 
-```typescript
+```tsx
 // pages/xxx.tsx
 
 import React from 'react';
@@ -579,7 +535,7 @@ export default connect((state: State) => state)(Page);
 <details>
 <summary>Same code in JavaScript (without types)</summary>
 
-```js
+```jsx
 // pages/xxx.js
 
 import React from 'react';
@@ -995,7 +951,7 @@ export const wrapper = createWrapper(makeStore, {debug: true});
 
 Then in the `pages/_app` wait stop saga and wait for it to finish when execution is on server:
 
-```typescript
+```tsx
 import React from 'react';
 import App, {AppInitialProps} from 'next/app';
 import {END} from 'redux-saga';
@@ -1225,7 +1181,7 @@ export default connect(state => state, {setClientState})(({fromServer, fromClien
 
 4. In version `7.x` you have to manually wrap all `getInitialProps` with proper wrappers: `wrapper.getInitialPageProps` and `wrapper.getInitialAppProps`.
 
-5. window.**NEXT_REDUX_WRAPPER_STORE** has been removed as it was causing [issues with hot reloading](https://github.com/kirill-konshin/next-redux-wrapper/pull/324)
+5. **window.NEXT_REDUX_WRAPPER_STORE** has been removed as it was causing [issues with hot reloading](https://github.com/kirill-konshin/next-redux-wrapper/pull/324)
 
 ## Upgrade from 5.x to 6.x
 
