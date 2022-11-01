@@ -1,6 +1,6 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
 import { useRouter } from 'next/router';
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useLayoutEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
 import {
@@ -162,16 +162,14 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useHybridHydrate = (store: S, state: any, Component: any) => {
+    const useHybridHydrate = (store: S, state: any) => {
         const prevRoute = useRef<string>('');
-        const prevComponent = useRef<string>('');
 
         const { asPath } = useRouter();
 
-        const newPage = prevRoute.current !== asPath || prevComponent !== Component;
+        const newPage = prevRoute.current !== asPath;
 
         prevRoute.current = asPath;
-        prevComponent.current = Component;
 
         // synchronous for server or first time render
         useMemo(() => {
@@ -181,7 +179,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         }, [store, state, newPage]);
 
         // asynchronous for client subsequent navigation
-        useEffect(() => {
+        useLayoutEffect(() => {
             // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
             if (!newPage) {
                 hydrate(store, state);
@@ -189,7 +187,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         }, [store, state, newPage]);
     };
 
-    const useWrappedStore = ({Component, initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
+    const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
         // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
         // one incomplete and one complete
         const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
@@ -203,8 +201,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState, Component);
-        useHybridHydrate(store, initialStateFromGSPorGSSR, Component);
+        useHybridHydrate(store, initialState);
+        useHybridHydrate(store, initialStateFromGSPorGSSR);
 
         let resultProps: any = props;
 
@@ -229,7 +227,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             delete resultProps.pageProps.initialProps;
         }
 
-        return {store, props: {...initialProps, ...resultProps, Component}};
+        return {store, props: {...initialProps, ...resultProps}};
     };
 
     const withRedux = (Component: NextComponentType | App | any) => {
@@ -239,7 +237,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
         const WrappedComponent = (props: any) => {
-            const {store, props: combinedProps} = useWrappedStore({Component, ...props}, WrappedComponent.displayName); // Component goes first for _app which has props.component
+            const {store, props: combinedProps} = useWrappedStore(props, WrappedComponent.displayName); // Component goes first for _app which has props.component
 
             return (
                 <Provider store={store}>
