@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {useDispatch} from 'react-redux';
 import {create, act} from 'react-test-renderer';
-import {DummyComponent, wrapper, child, makeStore} from './testlib';
+import {DummyComponent, wrapper, child, makeStore, Router} from './testlib';
 import {createWrapper} from '../src';
 import {Store} from 'redux';
 
@@ -22,7 +22,7 @@ describe('client integration', () => {
 
         test('withRedux', async () => {
             const WrappedPage: any = wrapper.withRedux(DummyComponent);
-            expect(child(<WrappedPage initialState={store.getState()} />)).toEqual('{"props":{},"state":{"reduxStatus":"init"}}');
+            expect(child(<Router><WrappedPage initialState={store.getState()} /></Router>)).toEqual('{"props":{},"state":{"reduxStatus":"init"}}');
         });
 
         test('API functions', async () => {
@@ -57,7 +57,7 @@ describe('client integration', () => {
         const Wrapped: any = w.withRedux(Page);
 
         act(() => {
-            create(<Wrapped />);
+            create(<Router><Wrapped /></Router>);
         });
 
         // expected when invoked above

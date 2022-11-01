@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {createWrapper} from '../src';
-import {child, DummyComponent, makeStore} from './testlib';
+import {child, DummyComponent, makeStore, Router} from './testlib';
 
 describe('function API', () => {
     const ctx: any = {req: {request: true}};
@@ -98,7 +98,7 @@ describe('function API', () => {
 
             const WrappedPage: any = wrapper.withRedux(DummyComponent);
 
-            expect(child(<WrappedPage {...resultingProps} />)).toEqual(
+            expect(child(<Router><WrappedPage {...resultingProps} /></Router>)).toEqual(
                 '{"props":{"pageProps":{"fromApp":true,"fromSSP":true}},"state":{"reduxStatus":"ssp"}}',
             );
         });
@@ -124,19 +124,19 @@ describe('withRedux', () => {
     describe('merges props', () => {
         test('for page case', () => {
             const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} />)).toEqual(
+            expect(child(<Router><WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} /></Router>)).toEqual(
                 '{"props":{"fromPage":true,"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
             );
         });
         test('for app case', () => {
             const WrappedApp: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />)).toEqual(
+            expect(child(<Router><WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} /></Router>)).toEqual(
                 '{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}',
             );
         });
         test('for page case (new Next versions)', () => {
             const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />)).toEqual(
+            expect(child(<Router><WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} /></Router>)).toEqual(
                 '{"props":{"pageProps":{"fromPage":true},"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
             );
         });
@@ -169,7 +169,7 @@ describe('custom serialization', () => {
 
         const WrappedApp: any = wrapper.withRedux(DummyComponent);
 
-        expect(child(<WrappedApp {...props} />)).toEqual(
+        expect(child(<Router><WrappedApp {...props} /></Router>)).toEqual(
             '{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}',
         );
     });
