@@ -229,7 +229,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             delete resultProps.pageProps.initialProps;
         }
 
-        return {store, props: {...initialProps, ...resultProps}};
+        return {store, props: {...initialProps, ...resultProps, Component}};
     };
 
     const withRedux = (Component: NextComponentType | App | any) => {
@@ -239,7 +239,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
         const WrappedComponent = (props: any) => {
-            const {store, props: combinedProps} = useWrappedStore({Component, ...props}, WrappedComponent.displayName);
+            const {store, props: combinedProps} = useWrappedStore({Component, ...props}, WrappedComponent.displayName); // Component goes first for _app which has props.component
 
             return (
                 <Provider store={store}>
