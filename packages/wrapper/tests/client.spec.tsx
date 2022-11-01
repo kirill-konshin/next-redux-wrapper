@@ -3,9 +3,9 @@
  **/
 
 import * as React from 'react';
-import {useDispatch} from 'react-redux';
-import {create, act} from 'react-test-renderer';
-import {DummyComponent, wrapper, child, makeStore, Router} from './testlib';
+import {useDispatch, useSelector} from 'react-redux';
+import {create, act, ReactTestRenderer} from 'react-test-renderer';
+import {DummyComponent, wrapper, child, makeStore, Router, State} from './testlib';
 import {createWrapper} from '../src';
 import {Store} from 'redux';
 
@@ -62,5 +62,56 @@ describe('client integration', () => {
 
         // expected when invoked above
         await w.withRedux(Page)?.getInitialProps({} as any);
+    });
+
+    test('client side action on first render override state from server', () => {
+        const stateFromClient = 'state from client';
+        const w = createWrapper(makeStore);
+
+        const Page: React.ComponentType<any> = () => {
+            const dispatch = useDispatch();
+            const reduxStatus = useSelector<State, string | undefined>(state => state.reduxStatus);
+            React.useEffect(() => {
+                // modifies the state,
+                dispatch({type: 'FOO', payload: stateFromClient});
+            }, [dispatch]);
+
+            return <>{reduxStatus}</>;
+        };
+
+        const Wrapped: any = w.withRedux(Page);
+
+        let renderer: ReactTestRenderer;
+        act(() => {
+            renderer = create(<Router><Wrapped initialState={{reduxStatus: 'state from server'}} /></Router>);
+        });
+        expect(renderer!.toJSON()).toEqual(stateFromClient);
+    });
+
+    test('client side action on page transition override state from server', () => {
+        const stateFromClient = 'state from client';
+        const w = createWrapper(makeStore);
+
+        const Page: React.ComponentType<{id: string}> = ({id}) => {
+            const dispatch = useDispatch();
+            const reduxStatus = useSelector<State, string | undefined>(state => state.reduxStatus);
+            React.useEffect(() => {
+                // modifies the state,
+                dispatch({type: 'FOO', payload: `${stateFromClient} ${id}`});
+            }, [dispatch, id]);
+
+            return <>{reduxStatus}</>;
+        };
+
+        const Wrapped: any = w.withRedux(Page);
+
+        let renderer: ReactTestRenderer;
+        act(() => {
+            renderer = create(<Router><Wrapped id="1" /></Router>);
+        });
+        act(() => {
+            renderer.update(<Router><Wrapped id="2" initialState={{reduxStatus: 'state from server'}} /></Router>);
+        });
+        expect(renderer!.toJSON()).toEqual(`${stateFromClient} 2`);
     });
 });
