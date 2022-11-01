@@ -162,25 +162,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useHybridHydrate = (store: S, state: any) => {
-        const firstRender = useRef<boolean>(true);
+        const lastState = useRef<any>();
 
-        useEffect(() => {
-            firstRender.current = false;
-        }, []);
-
-        useMemo(() => {
-            // synchronous for server or first time render
-            if (getIsServer() || firstRender.current) {
-                hydrate(store, state);
-            }
-        }, [store, state]);
-
-        useEffect(() => {
-            // asynchronous for client subsequent navigation
-            if (!getIsServer()) {
-                hydrate(store, state);
-            }
-        }, [store, state]);
+        // synchronous for server and client render
+        if (lastState.current !== state) {
+            lastState.current = state;
+            hydrate(store, state);
+        }
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
