@@ -164,7 +164,6 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const useHybridHydrate = (store: S, state: any) => {
         const prevRoute = useRef<string>('');
-        const prevState = useRef<any>();
 
         const { asPath } = useRouter();
 
@@ -174,7 +173,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         // synchronous for server or first time render
         useMemo(() => {
-            if (newPath && prevState.current !== state) {
+            if (newPath) {
                 hydrate(store, state);
             }
         }, [store, state, newPath]);
@@ -182,7 +181,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         // asynchronous for client subsequent navigation
         useEffect(() => {
             // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
-            if (!newPath && prevState.current !== state) {
+            if (!newPath) {
                 hydrate(store, state);
             }
         }, [store, state, newPath]);
