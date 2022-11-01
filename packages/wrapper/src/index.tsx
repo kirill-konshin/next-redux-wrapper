@@ -1,4 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
+import { useRouter } from 'next/router';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -162,25 +163,29 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useHybridHydrate = (store: S, state: any) => {
-        const firstRender = useRef<boolean>(true);
+        const prevRoute = useRef<string>('');
+        const prevState = useRef<any>();
 
-        useEffect(() => {
-            firstRender.current = false;
-        }, []);
+        const { asPath } = useRouter();
 
+        const newPath = prevRoute.current !== asPath;
+
+        prevRoute.current = asPath;
+
+        // synchronous for server or first time render
         useMemo(() => {
-            // synchronous for server or first time render
-            if (getIsServer() || firstRender.current) {
+            if (newPath && prevState.current !== state) {
                 hydrate(store, state);
             }
-        }, [store, state]);
+        }, [store, state, newPath]);
 
+        // asynchronous for client subsequent navigation
         useEffect(() => {
-            // asynchronous for client subsequent navigation
-            if (!getIsServer()) {
+            // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
+            if (!newPath && prevState.current !== state) {
                 hydrate(store, state);
             }
-        }, [store, state]);
+        }, [store, state, newPath]);
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {

@@ -1,7 +1,9 @@
 import {configureStore, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {Action} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
+// Slice approach
 export const subjectSlice = createSlice({
     name: 'subject',
 
@@ -24,12 +26,36 @@ export const subjectSlice = createSlice({
     },
 });
 
+export type Pokemon = {
+  name: string;
+};
+
+// API approach
+export const pokemonApi = createApi({
+  reducerPath: "pokemonApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "https://pokeapi.co/api/v2" }),
+  extractRehydrationInfo(action, { reducerPath }) {
+    if (action.type === HYDRATE) {
+      return action.payload[reducerPath];
+    }
+  },
+  endpoints: (builder) => ({
+    getPokemonByName: builder.query<Pokemon, string>({
+      query: (name) => `/pokemon/${name}`,
+    }),
+  }),
+});
+
+export const { useGetPokemonByNameQuery } = pokemonApi;
+
 const makeStore = () =>
     configureStore({
         reducer: {
             [subjectSlice.name]: subjectSlice.reducer,
+            [pokemonApi.reducerPath]: pokemonApi.reducer,
         },
         devTools: true,
+        middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(pokemonApi.middleware),
     });
 
 export type AppStore = ReturnType<typeof makeStore>;
@@ -48,6 +74,7 @@ export const fetchSubject =
                 [id]: {
                     id,
                     name: `Subject ${id}`,
+                    random: Math.random()
                 },
             }),
         );

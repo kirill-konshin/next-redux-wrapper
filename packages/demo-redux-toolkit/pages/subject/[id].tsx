@@ -10,7 +10,7 @@ const Page = props => {
     console[content ? 'info' : 'warn']('Rendered content: ', content);
 
     if (!content) {
-        return <div>RENDERED WITHOUT CONTENT FROM STORE!!!???</div>;
+        throw new Error("Data is undefined when page is opened by client routing");
     }
 
     return (
