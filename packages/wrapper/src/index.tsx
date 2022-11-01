@@ -162,32 +162,34 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useHybridHydrate = (store: S, state: any) => {
+    const useHybridHydrate = (store: S, state: any, Component: any) => {
         const prevRoute = useRef<string>('');
+        const prevComponent = useRef<string>('');
 
         const { asPath } = useRouter();
 
-        const newPath = prevRoute.current !== asPath;
+        const newPage = prevRoute.current !== asPath || prevComponent !== Component;
 
         prevRoute.current = asPath;
+        prevComponent.current = Component;
 
         // synchronous for server or first time render
         useMemo(() => {
-            if (newPath) {
+            if (newPage) {
                 hydrate(store, state);
             }
-        }, [store, state, newPath]);
+        }, [store, state, newPage]);
 
         // asynchronous for client subsequent navigation
         useEffect(() => {
             // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
-            if (!newPath) {
+            if (!newPage) {
                 hydrate(store, state);
             }
-        }, [store, state, newPath]);
+        }, [store, state, newPage]);
     };
 
-    const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
+    const useWrappedStore = ({Component, initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
         // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
         // one incomplete and one complete
         const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
@@ -201,8 +203,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState);
-        useHybridHydrate(store, initialStateFromGSPorGSSR);
+        useHybridHydrate(store, initialState, Component);
+        useHybridHydrate(store, initialStateFromGSPorGSSR, Component);
 
         let resultProps: any = props;
 
@@ -237,7 +239,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
         const WrappedComponent = (props: any) => {
-            const {store, props: combinedProps} = useWrappedStore(props, WrappedComponent.displayName);
+            const {store, props: combinedProps} = useWrappedStore({Component, ...props}, WrappedComponent.displayName);
 
             return (
                 <Provider store={store}>

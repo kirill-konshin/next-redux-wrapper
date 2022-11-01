@@ -4,7 +4,7 @@ import {AppProps} from 'next/app';
 import {wrapper} from '../store';
 
 const MyApp: FC<AppProps> = ({Component, ...rest}) => {
-    const {store, props} = wrapper.useWrappedStore(rest);
+    const {store, props} = wrapper.useWrappedStore({Component, ...rest});
     return (
         <Provider store={store}>
             <Component {...props.pageProps} />
