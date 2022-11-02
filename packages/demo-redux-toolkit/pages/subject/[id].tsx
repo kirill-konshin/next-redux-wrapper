@@ -16,13 +16,9 @@ const Page = props => {
     return (
         <div className={`page${content.id}`}>
             <h3>{content.name}</h3>
-            <Link href="/subject/1">
-                <a>Go id=1</a>
-            </Link>
+            <Link href="/subject/1">Go id=1</Link>
             &nbsp;&nbsp;&nbsp;&nbsp;
-            <Link href="/subject/2">
-                <a>Go id=2</a>
-            </Link>
+            <Link href="/subject/2">Go id=2</Link>
         </div>
     );
 };

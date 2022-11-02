@@ -262,6 +262,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 };
 
 // Legacy
+// eslint-disable-next-line import/no-anonymous-default-export
 export default <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     console.warn('/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().');
     return createWrapper(makeStore, config).withRedux;
@@ -285,11 +286,11 @@ type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getIni
 //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
 type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
 
-export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
-export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
+export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
 export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
 export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
-export type Callback<S extends Store, P> =
+export type Callback<S extends Store, P extends {[key: string]: any}> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>

@@ -12,9 +12,7 @@ const Error: NextPage = () => {
                 This is an error page, it also has access to store: <code>{app}</code>
             </p>
             <nav>
-                <Link href="/">
-                    <a>Navigate to index</a>
-                </Link>
+                <Link href="/">Navigate to index</Link>
             </nav>
         </>
     );

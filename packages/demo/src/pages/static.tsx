@@ -19,9 +19,7 @@ const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
             <pre>{JSON.stringify({app, page, getStaticProp, appProp}, null, 2)}</pre>
 
             <nav>
-                <Link href="/">
-                    <a>Navigate to index</a>
-                </Link>
+                <Link href="/">Navigate to index</Link>
             </nav>
         </div>
     );
