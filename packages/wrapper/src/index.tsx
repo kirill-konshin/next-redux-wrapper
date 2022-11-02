@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import { useRouter } from 'next/router';
+import {useRouter} from 'next/router';
 import React, {useLayoutEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -31,6 +31,8 @@ import {
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 
 const getIsServer = () => typeof window === 'undefined';
+
+const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
@@ -163,9 +165,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useHybridHydrate = (store: S, state: any) => {
+        const firstHydrate = useRef(true);
         const prevRoute = useRef<string>('');
 
-        const { asPath } = useRouter();
+        const {asPath} = useRouter();
 
         const newPage = prevRoute.current !== asPath;
 
@@ -173,15 +176,17 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         // synchronous for server or first time render
         useMemo(() => {
-            if (newPage) {
+            if (newPage && firstHydrate) {
                 hydrate(store, state);
             }
         }, [store, state, newPage]);
 
         // asynchronous for client subsequent navigation
-        useLayoutEffect(() => {
+        useBrowserLayoutEffect(() => {
             // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
-            if (!newPage) {
+            if (firstHydrate) {
+                firstHydrate.current = false;
+            } else if (!newPage) {
                 hydrate(store, state);
             }
         }, [store, state, newPage]);
@@ -201,8 +206,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState);
-        useHybridHydrate(store, initialStateFromGSPorGSSR);
+        useHybridHydrate(store, initialStateFromGSPorGSSR ?? initialState ?? null);
 
         let resultProps: any = props;
 
@@ -266,6 +270,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 };
 
 // Legacy
+// eslint-disable-next-line import/no-anonymous-default-export
 export default <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     console.warn('/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().');
     return createWrapper(makeStore, config).withRedux;
@@ -289,11 +294,11 @@ type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getIni
 //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
 type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
 
-export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
-export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
+export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
 export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
 export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
-export type Callback<S extends Store, P> =
+export type Callback<S extends Store, P extends {[key: string]: any}> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>
