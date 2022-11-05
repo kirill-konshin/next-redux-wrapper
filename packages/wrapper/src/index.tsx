@@ -183,7 +183,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         }, [store, state]);
     };
 
-    const useWrappedStore = <P extends {} = any>({initialState, initialProps, ...props}: P, displayName = 'useWrappedStore'): {store: S; props: P} => {
+    const useWrappedStore = <P extends {initialState: any, initialProps: any}>({initialState, initialProps, ...props}: P, displayName = 'useWrappedStore'): {store: S; props: P} => {
         // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
         // one incomplete and one complete
         const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
