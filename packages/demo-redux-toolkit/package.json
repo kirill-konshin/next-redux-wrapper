@@ -1,6 +1,6 @@
 {
   "name": "demo-redux-toolkit",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "private": true,
   "scripts": {
     "clean": "rimraf .next coverage",

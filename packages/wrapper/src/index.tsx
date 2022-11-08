@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useLayoutEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
 import {
@@ -10,6 +10,7 @@ import {
     NextComponentType,
     NextPageContext,
 } from 'next';
+import {useRouter} from 'next/router';
 
 /**
  * Quick note on Next.js return types:
@@ -31,6 +32,9 @@ export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 
 const getIsServer = () => typeof window === 'undefined';
 
+// useLayoutEffect runs on the server, so this is to avoid warnings on each server render
+const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
+
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
 
@@ -45,6 +49,7 @@ export interface InitStoreOptions<S extends Store> {
 }
 
 let sharedClientStore: any;
+let serverStore: any;
 
 const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
@@ -55,12 +60,16 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
             if (!req.__nextReduxWrapperStore) {
-                req.__nextReduxWrapperStore = createStore();
+                // Create one reference to the store and pass that same reference to both the req store and the local store
+                const newStore = createStore();
+                req.__nextReduxWrapperStore = newStore; // Used in GIP/GSSP/GSP
+                serverStore = newStore; // Used in the useWrappedStore useMemo call, aka in the App component, but still server side
             }
             return req.__nextReduxWrapperStore;
         }
 
-        return createStore();
+        // This allows us to have the same store that we modified in the GIP/GSSP/GSP dispatches without having context available
+        return serverStore || createStore();
     }
 
     // Memoize store if client
@@ -161,26 +170,40 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useHybridHydrate = (store: S, state: any) => {
-        const firstRender = useRef<boolean>(true);
+    const useHydrate = (store: S, state: any) => {
+        const firstHydrate = useRef(true);
+        const prevRoute = useRef('');
 
-        useEffect(() => {
-            firstRender.current = false;
-        }, []);
+        const {asPath} = useRouter();
+        // Cannot use basepath from useRouter because we lose the params
+        // We remove the query params to prevent rerenders caused by query param manipulation
+        const basePath = asPath.split('?')[0];
+        const newPage = prevRoute.current !== basePath;
 
+        prevRoute.current = basePath;
+
+        // useMemo so that the very first hydration runs synchronously, before any child renders
         useMemo(() => {
-            // synchronous for server or first time render
-            if (getIsServer() || firstRender.current) {
+            // useMemo runs on the server, but we should not hydrate on the server...
+            if (getIsServer()) {
+                if (config.serializeState) {
+                    // ...unless the state needs to be serialized
+                    hydrate(store, state);
+                }
+            } else if (firstHydrate.current) {
                 hydrate(store, state);
             }
         }, [store, state]);
 
-        useEffect(() => {
-            // asynchronous for client subsequent navigation
-            if (!getIsServer()) {
+        // useLayoutEffect so that it runs before useEffects in children that might change the store
+        useBrowserLayoutEffect(() => {
+            if (firstHydrate.current) {
+                // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
+                firstHydrate.current = false;
+            } else if (newPage) {
                 hydrate(store, state);
             }
-        }, [store, state]);
+        }, [state, store]);
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
@@ -197,8 +220,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState);
-        useHybridHydrate(store, initialStateFromGSPorGSSR);
+        // If GSSP/GSP/GIP has run, then pageProps.initialState contains the most complete data
+        // If it hasn't, then we use the initial state (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499/files#r1014500941)
+        useHydrate(store, initialStateFromGSPorGSSR ?? initialState ?? null);
 
         let resultProps: any = props;
 
@@ -228,7 +252,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const withRedux = (Component: NextComponentType | App | any) => {
         console.warn(
-            '/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
+            '/!\\ You are using legacy implementation. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
         );
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
@@ -251,6 +275,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         return WrappedComponent;
     };
 
+    // Reset the stores when creating a new wrapper
+    sharedClientStore = undefined;
+    serverStore = undefined;
+
     return {
         getServerSideProps,
         getStaticProps,
@@ -262,8 +290,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 };
 
 // Legacy
+// eslint-disable-next-line import/no-anonymous-default-export
 export default <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    console.warn('/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().');
+    console.warn('/!\\ You are using legacy implementation. Please update your code: use createWrapper() and wrapper.withRedux().');
     return createWrapper(makeStore, config).withRedux;
 };
 
@@ -285,11 +314,11 @@ type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getIni
 //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
 type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
 
-export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
-export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
+export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
 export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
 export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
-export type Callback<S extends Store, P> =
+export type Callback<S extends Store, P extends {[key: string]: any}> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>

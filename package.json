@@ -1,7 +1,7 @@
 {
   "name": "next-redux-wrapper-mono",
   "private": true,
-  "version": "7.0.0",
+  "version": "8.0.0",
   "description": "Redux wrapper for Next.js",
   "scripts": {
     "prepare": "husky install",

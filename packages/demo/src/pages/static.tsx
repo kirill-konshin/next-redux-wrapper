@@ -28,7 +28,6 @@ const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
 };
 
 export const getStaticProps = wrapper.getStaticProps(store => async () => {
-    store.dispatch({type: 'PAGE', payload: 'static'});
     return {props: {getStaticProp: 'bar'}};
 });
 

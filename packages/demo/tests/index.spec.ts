@@ -44,8 +44,8 @@ test("properly combines state from App.getInitialProps and page's getStaticProps
 
     await expect(page.locator('body')).toContainText('"getStaticProp": "bar"'); // props
     await expect(page.locator('body')).toContainText('"appProp": "/static"'); // props
-    await expect(page.locator('body')).toContainText('"page": "static"'); // redux
-    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
+    await expect(page.locator('body')).toContainText('"page": "init"'); // cannot do dispatches in getStaticProps --> initial state
+    await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux initial props
 });
 
 test('other page -> static', async ({page}) => {
@@ -55,7 +55,7 @@ test('other page -> static', async ({page}) => {
 
     await page.click('text=Navigate to static');
 
-    await expect(page.locator('body')).toContainText('"page": "static"'); // redux
+    await expect(page.locator('body')).toContainText('"page": "server"'); // cannot do dispatches in getStaticProps -> previous state
     await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
 });
 

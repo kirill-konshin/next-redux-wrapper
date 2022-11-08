@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {createWrapper} from '../src';
-import {child, DummyComponent, makeStore} from './testlib';
+import {child, DummyComponent, makeStore, Router} from './testlib';
 
 describe('function API', () => {
     const ctx: any = {req: {request: true}};
@@ -51,56 +51,56 @@ describe('function API', () => {
          * 1. App.getInitialProps
          * 2. getStaticProps or getServerSideProps
          */
-        test('with and getServerSideProps at page level', async () => {
-            const wrapper = createWrapper(makeStore);
-            const context = {ctx: {req: {}}} as any;
+        describe('with and getServerSideProps at page level', () => {
+            test('execute App level', async () => {
+                const context = {ctx: {req: {}}} as any;
+                const wrapper = createWrapper(makeStore);
 
-            // execute App level
+                const App = () => null;
+                App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
+                    store.dispatch({type: 'FOO', payload: 'app'});
+                    return {pageProps: {fromApp: true}};
+                });
 
-            const App = () => null;
-            App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
-                store.dispatch({type: 'FOO', payload: 'app'});
-                return {pageProps: {fromApp: true}};
+                const initialAppProps = await wrapper.withRedux(App)?.getInitialProps(context);
+
+                expect(initialAppProps).toEqual({
+                    pageProps: {fromApp: true},
+                    initialState: {reduxStatus: 'app'},
+                });
+
+                const serverSideProps = await wrapper.getServerSideProps(store => async () => {
+                    expect(store.getState()).toEqual({reduxStatus: 'app'});
+                    store.dispatch({type: 'FOO', payload: 'ssp'});
+                    return {props: {fromSSP: true}};
+                })(context.ctx);
+
+                expect(serverSideProps).toEqual({
+                    props: {
+                        fromSSP: true,
+                        initialState: {reduxStatus: 'ssp'},
+                    },
+                });
+
+                const resultingProps = {
+                    ...initialAppProps,
+                    pageProps: {
+                        // NextJS will wrap it like this
+                        ...initialAppProps.pageProps,
+                        ...(serverSideProps as any).props,
+                    },
+                };
+
+                const WrappedPage: any = wrapper.withRedux(DummyComponent);
+
+                expect(
+                    child(
+                        <Router>
+                            <WrappedPage {...resultingProps} />
+                        </Router>,
+                    ),
+                ).toEqual('{"props":{"pageProps":{"fromApp":true,"fromSSP":true}},"state":{"reduxStatus":"ssp"}}');
             });
-
-            const initialAppProps = await wrapper.withRedux(App)?.getInitialProps(context);
-
-            expect(initialAppProps).toEqual({
-                pageProps: {fromApp: true},
-                initialState: {reduxStatus: 'app'},
-            });
-
-            // execute Page level
-
-            const serverSideProps = await wrapper.getServerSideProps(store => async () => {
-                expect(store.getState()).toEqual({reduxStatus: 'app'});
-                store.dispatch({type: 'FOO', payload: 'ssp'});
-                return {props: {fromSSP: true}};
-            })(context.ctx);
-
-            expect(serverSideProps).toEqual({
-                props: {
-                    fromSSP: true,
-                    initialState: {reduxStatus: 'ssp'},
-                },
-            });
-
-            // merge props and verify
-
-            const resultingProps = {
-                ...initialAppProps,
-                pageProps: {
-                    // NextJS will wrap it like this
-                    ...initialAppProps.pageProps,
-                    ...(serverSideProps as any).props,
-                },
-            };
-
-            const WrappedPage: any = wrapper.withRedux(DummyComponent);
-
-            expect(child(<WrappedPage {...resultingProps} />)).toEqual(
-                '{"props":{"pageProps":{"fromApp":true,"fromSSP":true}},"state":{"reduxStatus":"ssp"}}',
-            );
         });
     });
 
@@ -122,26 +122,38 @@ describe('function API', () => {
 
 describe('withRedux', () => {
     describe('merges props', () => {
-        test('for page case', () => {
+        test('for page case', async () => {
             const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} />)).toEqual(
-                '{"props":{"fromPage":true,"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
-            );
+            expect(
+                child(
+                    <Router>
+                        <WrappedPage initialProps={{fromPage: true}} somePropFromNextJs={true} />
+                    </Router>,
+                ),
+            ).toEqual('{"props":{"fromPage":true,"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}');
         });
-        test('for app case', () => {
+        test('for app case', async () => {
             const WrappedApp: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />)).toEqual(
-                '{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}',
-            );
+            expect(
+                child(
+                    <Router>
+                        <WrappedApp initialProps={{pageProps: {fromApp: true}}} pageProps={{getStaticProp: true}} />
+                    </Router>,
+                ),
+            ).toEqual('{"props":{"pageProps":{"fromApp":true,"getStaticProp":true}},"state":{"reduxStatus":"init"}}');
         });
-        test('for page case (new Next versions)', () => {
+        test('for page case (new Next versions)', async () => {
             const WrappedPage: any = createWrapper(makeStore).withRedux(DummyComponent);
-            expect(child(<WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />)).toEqual(
-                '{"props":{"pageProps":{"fromPage":true},"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}',
-            );
+            expect(
+                child(
+                    <Router>
+                        <WrappedPage pageProps={{initialProps: {fromPage: true}}} somePropFromNextJs={true} />
+                    </Router>,
+                ),
+            ).toEqual('{"props":{"pageProps":{"fromPage":true},"somePropFromNextJs":true},"state":{"reduxStatus":"init"}}');
         });
     });
-    test('wrapped component should not have getInitialProps if source component did not have it', () => {
+    test('wrapped component should not have getInitialProps if source component did not have it', async () => {
         expect(createWrapper(makeStore).withRedux(DummyComponent).getInitialProps).toBeUndefined();
     });
 });
@@ -169,8 +181,12 @@ describe('custom serialization', () => {
 
         const WrappedApp: any = wrapper.withRedux(DummyComponent);
 
-        expect(child(<WrappedApp {...props} />)).toEqual(
-            '{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}',
-        );
+        expect(
+            child(
+                <Router>
+                    <WrappedApp {...props} />
+                </Router>,
+            ),
+        ).toEqual('{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}');
     });
 });
