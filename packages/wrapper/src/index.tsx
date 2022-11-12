@@ -55,24 +55,15 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
-        const req: any = (context as NextPageContext)?.req || (context as AppContext)?.ctx?.req;
-        if (req) {
-            // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
-            // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
-            if (!req.__nextReduxWrapperStore) {
-                // Create one reference to the store and pass that same reference to both the req store and the local store
-                const newStore = createStore();
-                req.__nextReduxWrapperStore = newStore; // Used in GIP/GSSP/GSP
-                serverStore = newStore; // Used in the useWrappedStore useMemo call, aka in the App component, but still server side
-            }
-            return req.__nextReduxWrapperStore;
+        // Memoize the store if we're on the server
+        if (!serverStore) {
+            serverStore = createStore();
         }
 
-        // This allows us to have the same store that we modified in the GIP/GSSP/GSP dispatches without having context available
-        return serverStore || createStore();
+        return serverStore;
     }
 
-    // Memoize store if client
+    // Memoize the store if we're on the client
     if (!sharedClientStore) {
         sharedClientStore = createStore();
     }
