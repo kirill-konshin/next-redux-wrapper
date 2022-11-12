@@ -1,22 +1,20 @@
 import React from 'react';
-import {useSelector, useStore} from 'react-redux';
+import {useDispatch, useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
 import {InferGetServerSidePropsType, NextPage} from 'next';
-import {wrapper} from '../../store';
-import {fetchSubject} from '../../store/slices/subjectPage/thunks';
-import {selectSubjectPageId, selectSubjectPageName, selectSubjectPageStateTimestamp} from '../../store/slices/subjectPage/selectors';
+import {fetchSubject, selectSubjectPageId, selectSubjectPageName, selectSubjectPageStateTimestamp, wrapper} from '../../store';
 
 const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({serverTimestamp}) => {
     console.log('State on render', useStore().getState());
     console.log('Timestamp on server: ', serverTimestamp);
-
+    const dispatch = useDispatch();
     const pageId = useSelector(selectSubjectPageId);
     const pageName = useSelector(selectSubjectPageName);
     const stateTimestamp = useSelector(selectSubjectPageStateTimestamp);
 
     console[pageName ? 'info' : 'warn']('Rendered pageName: ', pageName);
 
-    if (!pageName) {
+    if (!pageName || !pageId) {
         // On client side routing from the homepage to this route, the selectors will be undefined because of the
         // optional chaining. Check out the selectors.
         return (
@@ -41,6 +39,7 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                     <a>Go id=2</a>
                 </Link>
             </div>
+            <button onClick={() => dispatch(fetchSubject(pageId))}>Refresh timestamp</button>
         </>
     );
 };
