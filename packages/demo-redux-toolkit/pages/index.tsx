@@ -11,6 +11,10 @@ export default function IndexPage() {
             <Link href="/subject/1">
                 <a>Go to problem pages</a>
             </Link>
+            <br />
+            <Link href="/pokemon/pikachu">
+                <a>Go to Pokemon</a>
+            </Link>
         </div>
     );
 }

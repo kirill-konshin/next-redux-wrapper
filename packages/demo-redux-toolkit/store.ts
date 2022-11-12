@@ -1,4 +1,5 @@
 import {configureStore, createSelector, createSlice, PayloadAction, ThunkAction} from '@reduxjs/toolkit';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 import {Action, combineReducers} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
@@ -13,12 +14,12 @@ interface SubjectPageState {
     data: SubjectPageData | null;
 }
 
-// Slice
+// Slice approach
 const initialState: SubjectPageState = {
     data: null,
 };
 
-const slice = createSlice({
+const subjectPageSlice = createSlice({
     name: 'subjectPage',
     initialState,
     reducers: {
@@ -38,12 +39,42 @@ const slice = createSlice({
     },
 });
 
+interface Pokemon {
+    name: string;
+}
+
+// API approach
+export const pokemonApi = createApi({
+    reducerPath: 'pokemonApi',
+    baseQuery: fetchBaseQuery({baseUrl: 'https://pokeapi.co/api/v2'}),
+    extractRehydrationInfo(action, {reducerPath}) {
+        if (action.type === HYDRATE) {
+            return action.payload[reducerPath];
+        }
+    },
+    endpoints: builder => ({
+        getPokemonByName: builder.query<Pokemon, string>({
+            query: name => `/pokemon/${name}`,
+        }),
+    }),
+});
+
+export const {useGetPokemonByNameQuery} = pokemonApi;
+
 // Store setup
-const reducers = {subjectPage: slice.reducer};
+const reducers = {
+    [subjectPageSlice.name]: subjectPageSlice.reducer,
+    [pokemonApi.reducerPath]: pokemonApi.reducer,
+};
 
 const reducer = combineReducers(reducers);
 
-const makeStore = () => configureStore({reducer});
+const makeStore = () =>
+    configureStore({
+        reducer,
+        devTools: true,
+        middleware: getDefaultMiddleware => getDefaultMiddleware().concat(pokemonApi.middleware),
+    });
 
 export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
@@ -60,7 +91,7 @@ export const fetchSubject =
         await timeoutPromise(200);
 
         dispatch(
-            slice.actions.subjectPageLoaded({
+            subjectPageSlice.actions.subjectPageLoaded({
                 data: {
                     id,
                     name: `Subject ${id}`,
@@ -71,9 +102,9 @@ export const fetchSubject =
     };
 
 // Selectors
-const subjectPageSlice = (state: AppState): SubjectPageState => state.subjectPage;
+const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.subjectPage;
 
-const selectSubjectPageData = createSelector(subjectPageSlice, s => s.data);
+const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s.data);
 
 // If your state for a page has nested properties, then you need optional chaining here, otherwise you'll get a null
 // pointer exception when you do client side routing to a page whose slice state wasn't present before the routing.
