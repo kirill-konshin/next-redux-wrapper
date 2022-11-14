@@ -34,6 +34,7 @@ const getIsServer = () => typeof window === 'undefined';
 
 // useLayoutEffect runs on the server, so this is to avoid warnings on each server render
 const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
+const useBrowserMemo = getIsServer() ? () => undefined : useMemo;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
@@ -161,38 +162,34 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useHydrate = (store: S, state: any) => {
-        const firstHydrate = useRef(true);
-        const prevRoute = useRef('');
+    const useBrowserHydrate = getIsServer()
+        ? () => undefined
+        : (store: S, state: any) => {
+              const firstHydrate = useRef(true);
+              const prevRoute = useRef('');
 
-        const {asPath} = useRouter();
-        const newPage = prevRoute.current !== asPath;
+              const {asPath} = useRouter();
+              const newPage = prevRoute.current !== asPath;
 
-        prevRoute.current = asPath;
+              prevRoute.current = asPath;
 
-        // useMemo so that the very first hydration runs synchronously, before any child renders
-        useMemo(() => {
-            // useMemo runs on the server, but we should not hydrate on the server...
-            if (getIsServer()) {
-                if (config.serializeState) {
-                    // ...unless the state needs to be serialized
-                    hydrate(store, state);
-                }
-            } else if (firstHydrate.current) {
-                hydrate(store, state);
-            }
-        }, [store, state]);
+              // useMemo so that the very first hydration runs synchronously, before any child renders
+              useBrowserMemo(() => {
+                  if (firstHydrate.current) {
+                      hydrate(store, state);
+                  }
+              }, [store, state]);
 
-        // useLayoutEffect so that it runs before useEffects in children that might change the store
-        useBrowserLayoutEffect(() => {
-            if (firstHydrate.current) {
-                // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
-                firstHydrate.current = false;
-            } else if (newPage) {
-                hydrate(store, state);
-            }
-        }, [state, store]);
-    };
+              // useLayoutEffect so that it runs before useEffects in children that might change the store
+              useBrowserLayoutEffect(() => {
+                  if (firstHydrate.current) {
+                      // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
+                      firstHydrate.current = false;
+                  } else if (newPage) {
+                      hydrate(store, state);
+                  }
+              }, [state, store]);
+          };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
         // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
@@ -210,7 +207,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         // If GSSP/GSP/GIP has run, then pageProps.initialState contains the most complete data
         // If it hasn't, then we use the initial state (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499/files#r1014500941)
-        useHydrate(store, initialStateFromGSPorGSSR ?? initialState ?? null);
+        useBrowserHydrate(store, initialStateFromGSPorGSSR ?? initialState ?? null);
 
         let resultProps: any = props;
 
