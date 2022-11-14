@@ -166,12 +166,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         const prevRoute = useRef('');
 
         const {asPath} = useRouter();
-        // Cannot use basepath from useRouter because we lose the params
-        // We remove the query params to prevent rerenders caused by query param manipulation
-        const basePath = asPath.split('?')[0];
-        const newPage = prevRoute.current !== basePath;
+        const newPage = prevRoute.current !== asPath;
 
-        prevRoute.current = basePath;
+        prevRoute.current = asPath;
 
         // useMemo so that the very first hydration runs synchronously, before any child renders
         useMemo(() => {
