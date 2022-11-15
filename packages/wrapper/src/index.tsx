@@ -34,6 +34,7 @@ const getIsServer = () => typeof window === 'undefined';
 
 // useLayoutEffect runs on the server, so this is to avoid warnings on each server render
 const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
+// useMemo also runs on the server, so this is to avoid running it there
 const useBrowserMemo = getIsServer() ? () => undefined : useMemo;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
@@ -163,7 +164,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useBrowserHydrate = getIsServer()
-        ? () => undefined
+        ? () => undefined // Avoid running the hook altogether on the server for performance
         : (store: S, state: any) => {
               const firstHydrate = useRef(true);
               const prevRoute = useRef('');
