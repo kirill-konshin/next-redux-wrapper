@@ -31,13 +31,9 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             <div style={{backgroundColor: 'lavender', padding: '20px'}}>Timestamp in state: {stateTimestamp}</div>
             <div className={`page${pageId}`}>
                 <h3>{pageName}</h3>
-                <Link href="/subject/1">
-                    <a>Go id=1</a>
-                </Link>
+                <Link href="/subject/1">Go id=1</Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <Link href="/subject/2">
-                    <a>Go id=2</a>
-                </Link>
+                <Link href="/subject/2">Go id=2</Link>
             </div>
             <button onClick={() => dispatch(fetchSubject(pageId))}>Refresh timestamp</button>
         </>
