@@ -44,17 +44,11 @@ class Index extends React.Component<PageProps> {
 
                 <pre>{JSON.stringify({pageProp, appProp, app, page}, null, 2)}</pre>
 
-                <Link href="/server">
-                    <a>Navigate</a>
-                </Link>
+                <Link href="/server">Navigate</Link>
                 {' | '}
-                <Link href="/static">
-                    <a>Navigate to static</a>
-                </Link>
+                <Link href="/static">Navigate to static</Link>
                 {' | '}
-                <Link href="/error">
-                    <a>Navigate to error</a>
-                </Link>
+                <Link href="/error">Navigate to error</Link>
             </div>
         );
     }

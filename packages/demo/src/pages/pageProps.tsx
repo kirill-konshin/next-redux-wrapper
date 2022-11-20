@@ -10,9 +10,7 @@ const PropsPage: NextPage<State> = props => {
             <p>Using Next.js default prop in a wrapped component.</p>
             <pre>{JSON.stringify(props)}</pre>
             <nav>
-                <Link href="/">
-                    <a>Navigate to index</a>
-                </Link>
+                <Link href="/">Navigate to index</Link>
             </nav>
         </div>
     );
