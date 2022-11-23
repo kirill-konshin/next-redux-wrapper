@@ -15,8 +15,14 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     console[pageName ? 'info' : 'warn']('Rendered pageName: ', pageName);
 
     if (!pageName || !pageId) {
-        // On client side routing from the homepage to this route, the selectors will be undefined because of the
-        // optional chaining. Check out the selectors.
+        // TODO: Remove below comments
+        // If we use the useMemo solution (solution B), then this error will throw if you navigate to a page that triggers a hydrate (e.g. a subject page),
+        // and if there is no data reconciliation in the HYDRATE reducer.
+        // The reason is useMemo causes the hydration to occur before the new page component is mounted, which means this component is still mounted
+        // while the new data is hydrated. That leads to the above selectors resolving to undefined, because the hydrate for the new page
+        // puts the slice state back to its initial state (because we don't use data reconciliation).
+
+        // throw new Error('Whoops! pageName or pageId are falsy!'); // <-- uncomment this and uncomment the SOLUTION B code in /packages/wrapper/src/index.tsx (and comment out SOLUTION A) to see for yourself
         return (
             <div style={{backgroundColor: 'coral', padding: '20px', height: '500px'}}>
                 <br />
@@ -31,9 +37,25 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             <div style={{backgroundColor: 'lavender', padding: '20px'}}>Timestamp in state: {stateTimestamp}</div>
             <div className={`page${pageId}`}>
                 <h3>{pageName}</h3>
-                <Link href="/subject/1">Go id=1</Link>
+                <Link href="/subject/1" prefetch={false}>
+                    Go id=1
+                </Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <Link href="/subject/2">Go id=2</Link>
+                <Link href="/subject/2" prefetch={false}>
+                    Go id=2
+                </Link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <Link href="/detail/1" prefetch={false}>
+                    Go to details id=1
+                </Link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <Link href="/detail/2" prefetch={false}>
+                    Go to details id=2
+                </Link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <Link href="/pokemon/pikachu">Go to Pokemon</Link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <Link href="/">Go to homepage</Link>
             </div>
             <button onClick={() => dispatch(fetchSubject(pageId))}>Refresh timestamp</button>
         </>
@@ -47,8 +69,6 @@ export const getServerSideProps = wrapper.getServerSideProps(store => async ({pa
     }
 
     await store.dispatch(fetchSubject(id));
-
-    console.log('State on server', store.getState());
 
     return {
         props: {

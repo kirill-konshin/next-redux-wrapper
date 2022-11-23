@@ -8,9 +8,17 @@ export default function IndexPage() {
             You can see &quot;Rendered content: undefined&quot; in browser console after navigating between these pages:
             <br />
             <br />
-            <Link href="/subject/1">Go to problem pages</Link>
+            <Link href="/subject/1" prefetch={false}>
+                Go to problem pages
+            </Link>
             <br />
-            <Link href="/pokemon/pikachu">Go to Pokemon</Link>
+            <Link href="/detail/1" prefetch={false}>
+                Go to detail pages
+            </Link>
+            <br />
+            <Link href="/pokemon/pikachu" prefetch={false}>
+                Go to Pokemon
+            </Link>
         </div>
     );
 }

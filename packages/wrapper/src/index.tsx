@@ -34,8 +34,6 @@ const getIsServer = () => typeof window === 'undefined';
 
 // useLayoutEffect runs on the server, so this is to avoid warnings on each server render
 const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
-// useMemo also runs on the server, so this is to avoid running it there
-const useBrowserMemo = getIsServer() ? () => undefined : useMemo;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
@@ -51,18 +49,21 @@ export interface InitStoreOptions<S extends Store> {
 }
 
 let sharedClientStore: any;
-let serverStore: any;
 
 const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
-        // Memoize the store if we're on the server
-        if (!serverStore) {
-            serverStore = createStore();
+        const req: any = (context as NextPageContext)?.req || (context as AppContext)?.ctx?.req;
+        if (req) {
+            // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
+            // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
+            if (!req.__nextReduxWrapperStore) {
+                req.__nextReduxWrapperStore = createStore(); // Used in GIP/GSSP/GSP
+            }
+            return req.__nextReduxWrapperStore;
         }
-
-        return serverStore;
+        return createStore();
     }
 
     // Memoize the store if we're on the client
@@ -163,52 +164,84 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useBrowserHydrate = getIsServer()
-        ? () => undefined // Avoid running the hook altogether on the server for performance
-        : (store: S, state: any) => {
-              const firstHydrate = useRef(true);
-              const prevRoute = useRef('');
+    const hydrateOrchestrator = (store: S, gipState: any, gspState: any, gsspState: any) => {
+        if (gspState) {
+            // If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
+            // and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
+            hydrate(store, gipState);
+            hydrate(store, gspState);
+        } else if (gsspState || gipState) {
+            // If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
+            // (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
+            // If there is no GSP or GSSP for this page, but there is a GIP, then we use the gipState.
+            hydrate(store, gsspState ?? gipState);
+        }
+    };
 
-              const {asPath} = useRouter();
-              const newPage = prevRoute.current !== asPath;
+    const useHybridHydrate = (store: S, gipState: any, gspState: any, gsspState: any) => {
+        // TODO: Remove below comment section
+        // ===================== UNCOMMENT THIS CODE TO TEST SOLUTION B =====================
+        // const prevRoute = useRef('');
+        // const {asPath} = useRouter();
+        // const basePath = asPath.split('?')[0];
+        // const newPage = prevRoute.current !== basePath;
+        // prevRoute.current = basePath;
+        // useMemo(() => {
+        //     if (newPage) {
+        //         hydrate(store, state);
+        //     }
+        // }, [store, state, newPage]);
+        // useLayoutEffect(() => {
+        //     // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
+        //     if (!newPage) {
+        //         hydrate(store, state); // @Kirill Why would we need to hydrate anything if the path has not changed? I think we should only hydrate if a new page is loaded from the server
+        //     }
+        // }, [store, state, newPage]);
+        // ==========================================================================================
 
-              prevRoute.current = asPath;
+        // ===================== UNCOMMENT THIS CODE TO TEST SOLUTION A =====================
+        const firstHydrate = useRef(true);
+        const prevRoute = useRef('');
 
-              // useMemo so that the very first hydration runs synchronously, before any child renders
-              useBrowserMemo(() => {
-                  if (firstHydrate.current) {
-                      hydrate(store, state);
-                  }
-              }, [store, state]);
+        const {asPath} = useRouter();
+        const newPage = prevRoute.current !== asPath;
 
-              // useLayoutEffect so that it runs before useEffects in children that might change the store
-              useBrowserLayoutEffect(() => {
-                  if (firstHydrate.current) {
-                      // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
-                      firstHydrate.current = false;
-                  } else if (newPage) {
-                      hydrate(store, state);
-                  }
-              }, [state, store]);
-          };
+        prevRoute.current = asPath;
+
+        // useMemo so that the very first hydration runs synchronously, before any child renders
+        useMemo(() => {
+            if (firstHydrate.current) {
+                hydrateOrchestrator(store, gipState, gspState, gsspState);
+            }
+        }, [store, gipState, gspState, gsspState]);
+
+        // useLayoutEffect so that it runs before useEffects in children that might change the store
+        useBrowserLayoutEffect(() => {
+            if (firstHydrate.current) {
+                // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
+                firstHydrate.current = false;
+            } else if (newPage) {
+                hydrateOrchestrator(store, gipState, gspState, gsspState);
+            }
+        }, [gipState, store, gspState, gsspState]);
+        // ==========================================================================================
+    };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
-        // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
-        // one incomplete and one complete
-        const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+        const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
+        const gsspState = props?.__N_SSP ? props?.pageProps?.initialState : null;
 
         if (config.debug) {
             console.log('4.', displayName, 'created new store with', {
                 initialState,
-                initialStateFromGSPorGSSR,
+                gspState,
+                gsspState,
             });
         }
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        // If GSSP/GSP/GIP has run, then pageProps.initialState contains the most complete data
-        // If it hasn't, then we use the initial state (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499/files#r1014500941)
-        useBrowserHydrate(store, initialStateFromGSPorGSSR ?? initialState ?? null);
+        useHybridHydrate(store, initialState, gspState, gsspState);
 
         let resultProps: any = props;
 
@@ -222,7 +255,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         }
 
         // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
-        if (initialStateFromGSPorGSSR) {
+        if (props?.pageProps?.initialState) {
             resultProps = {...props, pageProps: {...props.pageProps}};
             delete resultProps.pageProps.initialState;
         }
@@ -263,7 +296,6 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     // Reset the stores when creating a new wrapper
     sharedClientStore = undefined;
-    serverStore = undefined;
 
     return {
         getServerSideProps,

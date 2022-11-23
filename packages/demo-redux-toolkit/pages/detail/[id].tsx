@@ -9,20 +9,26 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     console.log('Timestamp on server: ', serverTimestamp);
     const dispatch = useDispatch();
     const pageId = useSelector(selectDetailPageId);
-    console.log('pageId: ', pageId);
     const pageSummary = useSelector(selectDetailPageSummary);
-    console.log('pageName: ', pageSummary);
     const stateTimestamp = useSelector(selectDetailPageStateTimestamp);
 
     console[pageSummary ? 'info' : 'warn']('Rendered pageName: ', pageSummary);
 
     if (!pageSummary || !pageId) {
+        // TODO: Remove below comments
         // If we use the useMemo solution (solution B), then this error will throw if you navigate to a page that triggers a hydrate (e.g. a subject page),
         // and if there is no data reconciliation in the HYDRATE reducer.
         // The reason is useMemo causes the hydration to occur before the new page component is mounted, which means this component is still mounted
         // while the new data is hydrated. That leads to the above selectors resolving to undefined, because the hydrate for the new page
         // puts the slice state back to its initial state (because we don't use data reconciliation).
-        throw new Error('Whoops!');
+
+        // throw new Error('Whoops! pageSummary or pageId are falsy!'); // <-- uncomment this and uncomment the SOLUTION B code in /packages/wrapper/src/index.tsx (and comment out SOLUTION A) to see for yourself
+        return (
+            <div style={{backgroundColor: 'coral', padding: '20px', height: '500px'}}>
+                <br />
+                You will never actually see this content, because we use useLayoutEffect to hydrate, which runs before any paints!
+            </div>
+        );
     }
 
     // We use prefetch={false} to make sure that only the slice of this page is hydrated, and not other slices.
@@ -65,8 +71,6 @@ export const getServerSideProps = wrapper.getServerSideProps(store => async ({pa
     }
 
     await store.dispatch(fetchDetail(id));
-
-    console.log('State on server', store.getState());
 
     return {
         props: {

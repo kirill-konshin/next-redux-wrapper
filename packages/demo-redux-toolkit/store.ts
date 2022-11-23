@@ -3,7 +3,7 @@ import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 import {Action, combineReducers} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
-// Model
+// Subject page model
 interface SubjectPageData {
     id: string;
     name: string;
@@ -14,14 +14,14 @@ interface SubjectPageState {
     data: SubjectPageData | null;
 }
 
-// Slice approach
-const initialState: SubjectPageState = {
+const subjectPageInitialState: SubjectPageState = {
     data: null,
 };
 
+// Subject page slice approach
 const subjectPageSlice = createSlice({
     name: 'subjectPage',
-    initialState,
+    initialState: subjectPageInitialState,
     reducers: {
         subjectPageLoaded(state, {payload}: PayloadAction<SubjectPageState>) {
             state.data = payload.data;
@@ -34,6 +34,42 @@ const subjectPageSlice = createSlice({
             return {
                 ...state,
                 ...action.payload.subjectPage,
+            };
+        },
+    },
+});
+
+// Detail page model
+interface DetailPageData {
+    id: string;
+    summary: string;
+    stateTimestamp: number;
+}
+
+interface DetailPageState {
+    data: DetailPageData | null;
+}
+
+const detailPageInitialState: DetailPageState = {
+    data: null,
+};
+
+// Detail page slice approach
+const detailPageSlice = createSlice({
+    name: 'detailPage',
+    initialState: detailPageInitialState,
+    reducers: {
+        detailPageLoaded(state, {payload}: PayloadAction<DetailPageState>) {
+            state.data = payload.data;
+        },
+    },
+    extraReducers: {
+        [HYDRATE]: (state, action) => {
+            console.log('HYDRATE', action.payload);
+
+            return {
+                ...state,
+                ...action.payload.detailPage,
             };
         },
     },
@@ -64,6 +100,7 @@ export const {useGetPokemonByNameQuery} = pokemonApi;
 // Store setup
 const reducers = {
     [subjectPageSlice.name]: subjectPageSlice.reducer,
+    [detailPageSlice.name]: detailPageSlice.reducer,
     [pokemonApi.reducerPath]: pokemonApi.reducer,
 };
 
@@ -76,13 +113,13 @@ const makeStore = () =>
         middleware: getDefaultMiddleware => getDefaultMiddleware().concat(pokemonApi.middleware),
     });
 
-export type AppStore = ReturnType<typeof makeStore>;
+type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
-export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
+type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
 export const wrapper = createWrapper<AppStore>(makeStore);
 
-// Thunk
+// Subject page thunk
 export const fetchSubject =
     (id: string): AppThunk =>
     async dispatch => {
@@ -101,7 +138,26 @@ export const fetchSubject =
         );
     };
 
-// Selectors
+// Detail page thunk
+export const fetchDetail =
+    (id: string): AppThunk =>
+    async dispatch => {
+        const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
+
+        await timeoutPromise(200);
+
+        dispatch(
+            detailPageSlice.actions.detailPageLoaded({
+                data: {
+                    id,
+                    summary: `This is the summary for the page with id ${id}`,
+                    stateTimestamp: new Date().getTime(),
+                },
+            }),
+        );
+    };
+
+// Subject page selectors
 const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.subjectPage;
 
 const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s.data);
@@ -114,3 +170,12 @@ const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s.da
 export const selectSubjectPageId = createSelector(selectSubjectPageData, s => s?.id);
 export const selectSubjectPageName = createSelector(selectSubjectPageData, s => s?.name);
 export const selectSubjectPageStateTimestamp = createSelector(selectSubjectPageData, s => s?.stateTimestamp);
+
+// Detail page selectors
+const detailPageSliceSelector = (state: AppState): DetailPageState => state.detailPage;
+
+const selectDetailPageData = createSelector(detailPageSliceSelector, s => s.data);
+
+export const selectDetailPageId = createSelector(selectDetailPageData, s => s?.id);
+export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s?.summary);
+export const selectDetailPageStateTimestamp = createSelector(selectDetailPageData, s => s?.stateTimestamp);
