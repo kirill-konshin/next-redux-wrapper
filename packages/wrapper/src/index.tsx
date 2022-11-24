@@ -56,7 +56,7 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
             if (!req.__nextReduxWrapperStore) {
-                req.__nextReduxWrapperStore = createStore(); // Used in GIP/GSSP/GSP
+                req.__nextReduxWrapperStore = createStore(); // Used in GIP/GSSP
             }
             return req.__nextReduxWrapperStore;
         }
