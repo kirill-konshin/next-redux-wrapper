@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React, {useLayoutEffect, useMemo, useRef} from 'react';
+import React, {useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
 import {
@@ -31,9 +31,6 @@ import {useRouter} from 'next/router';
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 
 const getIsServer = () => typeof window === 'undefined';
-
-// useLayoutEffect runs on the server, so this is to avoid warnings on each server render
-const useBrowserLayoutEffect = getIsServer() ? () => undefined : useLayoutEffect;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
@@ -179,52 +176,27 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useHybridHydrate = (store: S, gipState: any, gspState: any, gsspState: any) => {
-        // TODO: Remove below comment section
-        // ===================== UNCOMMENT THIS CODE TO TEST SOLUTION B =====================
-        // const prevRoute = useRef('');
-        // const {asPath} = useRouter();
-        // const basePath = asPath.split('?')[0];
-        // const newPage = prevRoute.current !== basePath;
-        // prevRoute.current = basePath;
-        // useMemo(() => {
-        //     if (newPage) {
-        //         hydrate(store, state);
-        //     }
-        // }, [store, state, newPage]);
-        // useLayoutEffect(() => {
-        //     // FIXME Here we assume that if path has not changed, the component used to render the path has not changed either, so we can hydrate asynchronously
-        //     if (!newPage) {
-        //         hydrate(store, state); // @Kirill Why would we need to hydrate anything if the path has not changed? I think we should only hydrate if a new page is loaded from the server
-        //     }
-        // }, [store, state, newPage]);
-        // ==========================================================================================
-
-        // ===================== UNCOMMENT THIS CODE TO TEST SOLUTION A =====================
-        const firstHydrate = useRef(true);
         const prevRoute = useRef('');
-
         const {asPath} = useRouter();
         const newPage = prevRoute.current !== asPath;
-
         prevRoute.current = asPath;
 
-        // useMemo so that the very first hydration runs synchronously, before any child renders
+        // useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
+        // components are mounted. This means we hydrate while the previous page components are still mounted.
+        // You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
+        // contain other data, and maybe even nested properties, causing null reference exceptions.
+        // But that's not the case.
+        // 1. Redux does not rerun selectors when their parent dependency has been dispatched to
+        //     null/undefined, so you won't get null pointer exceptions.
+        // 2. hydrating in useMemo will _not_ trigger a rerender of the still mounted page component. So if your selectors somehow
+        //     did get the initial state values, and you're accessing deeply nested values inside your components, you still
+        //     wouldn't get errors, because there's no rerender.
+        // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
-            if (firstHydrate.current) {
+            if (newPage) {
                 hydrateOrchestrator(store, gipState, gspState, gsspState);
             }
-        }, [store, gipState, gspState, gsspState]);
-
-        // useLayoutEffect so that it runs before useEffects in children that might change the store
-        useBrowserLayoutEffect(() => {
-            if (firstHydrate.current) {
-                // First hydration has already been done in the useMemo above, so we set the flag to false, and do not hydrate
-                firstHydrate.current = false;
-            } else if (newPage) {
-                hydrateOrchestrator(store, gipState, gspState, gsspState);
-            }
-        }, [gipState, store, gspState, gsspState]);
-        // ==========================================================================================
+        }, [store, gipState, gspState, gsspState, newPage]);
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
@@ -293,9 +265,6 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         return WrappedComponent;
     };
-
-    // Reset the stores when creating a new wrapper
-    sharedClientStore = undefined;
 
     return {
         getServerSideProps,

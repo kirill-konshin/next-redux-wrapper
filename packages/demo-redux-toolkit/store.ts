@@ -29,7 +29,7 @@ const subjectPageSlice = createSlice({
     },
     extraReducers: {
         [HYDRATE]: (state, action) => {
-            console.log('HYDRATE', action.payload);
+            console.log('HYDRATE subjectPage', action.payload);
 
             return {
                 ...state,
@@ -65,7 +65,7 @@ const detailPageSlice = createSlice({
     },
     extraReducers: {
         [HYDRATE]: (state, action) => {
-            console.log('HYDRATE', action.payload);
+            console.log('HYDRATE detailPage', action.payload);
 
             return {
                 ...state,
@@ -162,20 +162,29 @@ const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.su
 
 const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s.data);
 
-// If your state for a page has nested properties, then you need optional chaining here, otherwise you'll get a null
-// pointer exception when you do client side routing to a page whose slice state wasn't present before the routing.
-// This happens because the render of the new page occurs before the hydration, as useWrappedStore uses a
-// useLayoutEffect. However, this also means that the hydration will occur before the paint, so the user will never
-// see UI based on the state data suddenly appear or disappear.
+// The correct way with strict typing on
 export const selectSubjectPageId = createSelector(selectSubjectPageData, s => s?.id);
-export const selectSubjectPageName = createSelector(selectSubjectPageData, s => s?.name);
 export const selectSubjectPageStateTimestamp = createSelector(selectSubjectPageData, s => s?.stateTimestamp);
+
+// The incorrect way with strict typing off.
+// We've added this to show that there will be no null pointer exceptions if a developer doesn't use optional chaining.
+// You may expect this to error if a hydration takes place, and this selector's parent dependency becomes null (that is, you get
+// null.name, which should throw). But that doesn't happen. Redux doesn't re-run selectors if the parent dependency is dispatched
+// to undefined/null.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export const selectSubjectPageName = createSelector(selectSubjectPageData, s => s.name);
 
 // Detail page selectors
 const detailPageSliceSelector = (state: AppState): DetailPageState => state.detailPage;
 
-const selectDetailPageData = createSelector(detailPageSliceSelector, s => s.data);
+export const selectDetailPageData = createSelector(detailPageSliceSelector, s => s.data);
 
+// The correct way with strict typing on
 export const selectDetailPageId = createSelector(selectDetailPageData, s => s?.id);
-export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s?.summary);
 export const selectDetailPageStateTimestamp = createSelector(selectDetailPageData, s => s?.stateTimestamp);
+
+// The incorrect way with strict typing off. See comment above.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s.summary);

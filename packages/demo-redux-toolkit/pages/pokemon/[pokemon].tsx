@@ -10,10 +10,7 @@ export default function Pokemon() {
     const {data} = useGetPokemonByNameQuery(query.pokemon as string); // data is undefined for the first render
 
     if (!data) {
-        <div style={{backgroundColor: 'coral', padding: '20px', height: '500px'}}>
-            <br />
-            You will never actually see this content, because we use useLayoutEffect to hydrate, which runs before any paints!
-        </div>;
+        throw new Error('Whoops! We do not have the data selector data!');
     }
 
     return <div>Name: {data?.name}</div>;
