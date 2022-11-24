@@ -186,11 +186,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         // You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
         // contain other data, and maybe even nested properties, causing null reference exceptions.
         // But that's not the case.
-        // 1. Redux does not rerun selectors when their parent dependency has been dispatched to
-        //     null/undefined, so you won't get null pointer exceptions.
-        // 2. hydrating in useMemo will _not_ trigger a rerender of the still mounted page component. So if your selectors somehow
-        //     did get the initial state values, and you're accessing deeply nested values inside your components, you still
-        //     wouldn't get errors, because there's no rerender.
+        // Hydrating in useMemo will not trigger a rerender of the still mounted page component. So if your selectors do have
+        // some initial state values causing them to rereun after hydration, and you're accessing deeply nested values inside your
+        // components, you still wouldn't get errors, because there's no rerender.
         // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
             if (newPage) {
