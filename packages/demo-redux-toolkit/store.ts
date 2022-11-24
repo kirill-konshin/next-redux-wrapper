@@ -41,9 +41,9 @@ const subjectPageSlice = createSlice({
 
 // Detail page model
 interface DetailPageData {
-    id: string;
-    summary: string;
-    stateTimestamp: number;
+    id: string | null;
+    summary: string | null;
+    stateTimestamp: number | null;
 }
 
 interface DetailPageState {
@@ -51,7 +51,14 @@ interface DetailPageState {
 }
 
 const detailPageInitialState: DetailPageState = {
-    data: null,
+    // Different way of doing initial state to show that during client side routing, even though the selector will run with some
+    // data, it will not trigger a rerender for the previous page component.
+    // You can see that because navigating from and to the /detail/1 page won't trigger the throw new Error(..) line in the component.
+    data: {
+        id: null,
+        summary: null,
+        stateTimestamp: null,
+    },
 };
 
 // Detail page slice approach
