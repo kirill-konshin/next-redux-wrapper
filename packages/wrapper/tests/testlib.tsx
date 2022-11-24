@@ -12,8 +12,6 @@ export interface State {
 }
 
 export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction) => {
-    console.log('state: ', state);
-    console.log('action: ', action);
     switch (action.type) {
         case HYDRATE:
             return {...state, ...action.payload};
