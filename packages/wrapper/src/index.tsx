@@ -1,5 +1,5 @@
 import App, {AppContext, AppInitialProps} from 'next/app';
-import React, {useMemo, useRef} from 'react';
+import React, {useEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
 import {
@@ -176,10 +176,21 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     const useHybridHydrate = (store: S, gipState: any, gspState: any, gsspState: any) => {
-        const prevRoute = useRef('');
-        const {asPath} = useRouter();
-        const newPage = prevRoute.current !== asPath;
-        prevRoute.current = asPath;
+        const {events} = useRouter();
+        const shouldHydrate = useRef(true);
+
+        // We should only hydrate when the router has changed routes
+        useEffect(() => {
+            const handleStart = () => {
+                shouldHydrate.current = true;
+            };
+
+            events?.on('routeChangeStart', handleStart);
+
+            return () => {
+                events?.off('routeChangeStart', handleStart);
+            };
+        }, [events]);
 
         // useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
         // components are mounted. This means we hydrate while the previous page components are still mounted.
@@ -187,14 +198,15 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         // contain other data, and maybe even nested properties, causing null reference exceptions.
         // But that's not the case.
         // Hydrating in useMemo will not trigger a rerender of the still mounted page component. So if your selectors do have
-        // some initial state values causing them to rereun after hydration, and you're accessing deeply nested values inside your
+        // some initial state values causing them to rerun after hydration, and you're accessing deeply nested values inside your
         // components, you still wouldn't get errors, because there's no rerender.
         // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
-            if (newPage) {
+            if (shouldHydrate.current) {
                 hydrateOrchestrator(store, gipState, gspState, gsspState);
+                shouldHydrate.current = false;
             }
-        }, [store, gipState, gspState, gsspState, newPage]);
+        }, [store, gipState, gspState, gsspState]);
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
