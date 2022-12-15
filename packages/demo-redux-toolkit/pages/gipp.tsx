@@ -10,7 +10,6 @@ const Page: NextPage = () => {
     const testData = useSelector(selectGippPageTestData);
     const stateTimestamp = useSelector(selectGippPageStateTimestamp);
     const data = useSelector(selectGippPageData);
-    console.log('data: ', data);
 
     console[testData ? 'info' : 'warn']('Rendered testData: ', testData);
 
