@@ -142,12 +142,12 @@ import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
 const MyApp: FC<AppProps> = ({Component, ...rest}) => {
-    const {store, props} = wrapper.useWrappedStore(rest);
-    return (
-        <Provider store={store}>
-            <Component {...props.pageProps} />
-        </Provider>
-    );
+  const {store, props} = wrapper.useWrappedStore(rest);
+  return (
+    <Provider store={store}>
+      <Component {...props.pageProps} />
+    </Provider>
+  );
 };
 ```
 
@@ -183,20 +183,20 @@ import {HYDRATE} from 'next-redux-wrapper';
 
 // create your reducer
 const reducer = (state = {tick: 'init'}, action) => {
-    switch (action.type) {
-        case HYDRATE:
-            const stateDiff = diff(state, action.payload) as any;
-            const wasBumpedOnClient = stateDiff?.page?.[0]?.endsWith('X'); // or any other criteria
-            return {
-                ...state,
-                ...action.payload,
-                page: wasBumpedOnClient ? state.page : action.payload.page, // keep existing state or use hydrated
-            };
-        case 'TICK':
-            return {...state, tick: action.payload};
-        default:
-            return state;
-    }
+  switch (action.type) {
+    case HYDRATE:
+      const stateDiff = diff(state, action.payload) as any;
+      const wasBumpedOnClient = stateDiff?.page?.[0]?.endsWith('X'); // or any other criteria
+      return {
+        ...state,
+        ...action.payload,
+        page: wasBumpedOnClient ? state.page : action.payload.page, // keep existing state or use hydrated
+      };
+    case 'TICK':
+      return {...state, tick: action.payload};
+    default:
+      return state;
+  }
 };
 ```
 
@@ -431,35 +431,30 @@ import {State} from '../components/reducer';
 
 // Since you'll be passing more stuff to Page
 declare module 'next/dist/next-server/lib/utils' {
-    export interface NextPageContext {
-        store: Store<State>;
-    }
+  export interface NextPageContext {
+    store: Store<State>;
+  }
 }
 
 class MyApp extends App<AppInitialProps> {
+  public static getInitialProps = wrapper.getInitialAppProps(store => async context => {
+    store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
-    public static getInitialProps = wrapper.getInitialAppProps(store => async context => {
+    return {
+      pageProps: {
+        // https://nextjs.org/docs/advanced-features/custom-app#caveats
+        ...(await App.getInitialProps(context)).pageProps,
+        // Some custom thing for all pages
+        pathname: ctx.pathname,
+      },
+    };
+  });
 
-        store.dispatch({type: 'TOE', payload: 'was set in _app'});
+  public render() {
+    const {Component, pageProps} = this.props;
 
-        return {
-            pageProps: {
-                // https://nextjs.org/docs/advanced-features/custom-app#caveats
-                ...(await App.getInitialProps(context)).pageProps,
-                // Some custom thing for all pages
-                pathname: ctx.pathname,
-            },
-        };
-
-    });
-
-    public render() {
-        const {Component, pageProps} = this.props;
-
-        return (
-            <Component {...pageProps} />
-        );
-    }
+    return <Component {...pageProps} />;
+  }
 }
 
 export default wrapper.withRedux(MyApp);
@@ -476,28 +471,24 @@ import App from 'next/app';
 import {wrapper} from '../components/store';
 
 class MyApp extends App {
-    static getInitialProps = wrapper.getInitialAppProps(store => async context => {
+  static getInitialProps = wrapper.getInitialAppProps(store => async context => {
+    store.dispatch({type: 'TOE', payload: 'was set in _app'});
 
-        store.dispatch({type: 'TOE', payload: 'was set in _app'});
+    return {
+      pageProps: {
+        // https://nextjs.org/docs/advanced-features/custom-app#caveats
+        ...(await App.getInitialProps(context)).pageProps,
+        // Some custom thing for all pages
+        pathname: ctx.pathname,
+      },
+    };
+  });
 
-        return {
-            pageProps: {
-                // https://nextjs.org/docs/advanced-features/custom-app#caveats
-                ...(await App.getInitialProps(context)).pageProps,
-                // Some custom thing for all pages
-                pathname: ctx.pathname,
-            },
-        };
+  render() {
+    const {Component, pageProps} = this.props;
 
-    });
-
-    render() {
-        const {Component, pageProps} = this.props;
-
-        return (
-            <Component {...pageProps} />
-        );
-    }
+    return <Component {...pageProps} />;
+  }
 }
 
 export default wrapper.withRedux(MyApp);
