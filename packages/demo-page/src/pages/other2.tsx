@@ -24,12 +24,8 @@ const OtherPage: NextPage<State> = () => {
             <pre>{JSON.stringify({page}, null, 2)}</pre>
             <nav>
                 <button onClick={bump}>bump</button>
-                <Link href="/">
-                    <a>Navigate to index</a>
-                </Link>
-                <Link href="/other">
-                    <a>Navigate to other</a>
-                </Link>
+                <Link href="/">Navigate to index</Link>
+                <Link href="/other">Navigate to other</Link>
             </nav>
         </div>
     );

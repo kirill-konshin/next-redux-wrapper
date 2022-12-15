@@ -10,6 +10,7 @@ import {
     NextComponentType,
     NextPageContext,
 } from 'next';
+import {useRouter} from 'next/router';
 
 /**
  * Quick note on Next.js return types:
@@ -55,15 +56,14 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
             if (!req.__nextReduxWrapperStore) {
-                req.__nextReduxWrapperStore = createStore();
+                req.__nextReduxWrapperStore = createStore(); // Used in GIP/GSSP
             }
             return req.__nextReduxWrapperStore;
         }
-
         return createStore();
     }
 
-    // Memoize store if client
+    // Memoize the store if we're on the client
     if (!sharedClientStore) {
         sharedClientStore = createStore();
     }
@@ -161,44 +161,69 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const useHybridHydrate = (store: S, state: any) => {
-        const firstRender = useRef<boolean>(true);
+    const hydrateOrchestrator = (store: S, gipState: any, gspState: any, gsspState: any) => {
+        if (gspState) {
+            // If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
+            // and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
+            hydrate(store, gipState);
+            hydrate(store, gspState);
+        } else if (gsspState || gipState) {
+            // If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
+            // (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
+            // If there is no GSP or GSSP for this page, but there is a GIP, then we use the gipState.
+            hydrate(store, gsspState ?? gipState);
+        }
+    };
 
+    const useHybridHydrate = (store: S, gipState: any, gspState: any, gsspState: any) => {
+        const {events} = useRouter();
+        const shouldHydrate = useRef(true);
+
+        // We should only hydrate when the router has changed routes
         useEffect(() => {
-            firstRender.current = false;
-        }, []);
+            const handleStart = () => {
+                shouldHydrate.current = true;
+            };
 
+            events?.on('routeChangeStart', handleStart);
+
+            return () => {
+                events?.off('routeChangeStart', handleStart);
+            };
+        }, [events]);
+
+        // useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
+        // components are mounted. This means we hydrate while the previous page components are still mounted.
+        // You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
+        // contain other data, and maybe even nested properties, causing null reference exceptions.
+        // But that's not the case.
+        // Hydrating in useMemo will not trigger a rerender of the still mounted page component. So if your selectors do have
+        // some initial state values causing them to rerun after hydration, and you're accessing deeply nested values inside your
+        // components, you still wouldn't get errors, because there's no rerender.
+        // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
-            // synchronous for server or first time render
-            if (getIsServer() || firstRender.current) {
-                hydrate(store, state);
+            if (shouldHydrate.current) {
+                hydrateOrchestrator(store, gipState, gspState, gsspState);
+                shouldHydrate.current = false;
             }
-        }, [store, state]);
-
-        useEffect(() => {
-            // asynchronous for client subsequent navigation
-            if (!getIsServer()) {
-                hydrate(store, state);
-            }
-        }, [store, state]);
+        }, [store, gipState, gspState, gsspState]);
     };
 
     const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
-        // this happens when App has page with getServerSideProps/getStaticProps, initialState will be dumped twice:
-        // one incomplete and one complete
-        const initialStateFromGSPorGSSR = props?.pageProps?.initialState;
+        const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
+        const gsspState = props?.__N_SSP ? props?.pageProps?.initialState : null;
 
         if (config.debug) {
             console.log('4.', displayName, 'created new store with', {
                 initialState,
-                initialStateFromGSPorGSSR,
+                gspState,
+                gsspState,
             });
         }
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState);
-        useHybridHydrate(store, initialStateFromGSPorGSSR);
+        useHybridHydrate(store, initialState, gspState, gsspState);
 
         let resultProps: any = props;
 
@@ -212,7 +237,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         }
 
         // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
-        if (initialStateFromGSPorGSSR) {
+        if (props?.pageProps?.initialState) {
             resultProps = {...props, pageProps: {...props.pageProps}};
             delete resultProps.pageProps.initialState;
         }
@@ -228,7 +253,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const withRedux = (Component: NextComponentType | App | any) => {
         console.warn(
-            '/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
+            '/!\\ You are using legacy implementation. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
         );
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
@@ -262,8 +287,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 };
 
 // Legacy
+// eslint-disable-next-line import/no-anonymous-default-export
 export default <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    console.warn('/!\\ You are using legacy implementaion. Please update your code: use createWrapper() and wrapper.withRedux().');
+    console.warn('/!\\ You are using legacy implementation. Please update your code: use createWrapper() and wrapper.withRedux().');
     return createWrapper(makeStore, config).withRedux;
 };
 
@@ -285,11 +311,11 @@ type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getIni
 //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
 type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
 
-export type GetStaticPropsCallback<S extends Store, P> = (store: S) => GetStaticProps<P>;
-export type GetServerSidePropsCallback<S extends Store, P> = (store: S) => GetServerSideProps<P>;
+export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
 export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
 export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
-export type Callback<S extends Store, P> =
+export type Callback<S extends Store, P extends {[key: string]: any}> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>
