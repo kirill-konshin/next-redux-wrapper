@@ -40,6 +40,8 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <Link href="/detail/2">Go to details id=2</Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
+                <Link href="/gipp">Go to gip page</Link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
                 <Link href="/pokemon/pikachu">Go to Pokemon</Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <Link href="/">Go to homepage</Link>

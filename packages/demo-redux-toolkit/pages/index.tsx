@@ -16,6 +16,10 @@ export default function IndexPage() {
                 Go to detail pages
             </Link>
             <br />
+            <Link href="/gipp" prefetch={false}>
+                Go to gipp page
+            </Link>
+            <br />
             <Link href="/pokemon/pikachu" prefetch={false}>
                 Go to Pokemon
             </Link>

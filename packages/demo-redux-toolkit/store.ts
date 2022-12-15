@@ -82,6 +82,46 @@ const detailPageSlice = createSlice({
     },
 });
 
+// Gipp page model
+interface GippPageData {
+    id: string | null;
+    testData: string | null;
+    stateTimestamp: number | null;
+}
+
+interface GippPageState {
+    data: GippPageData | null;
+}
+
+const gippPageInitialState: GippPageState = {
+    data: {
+        id: null,
+        testData: null,
+        stateTimestamp: null,
+    },
+};
+
+// Gipp page slice approach
+const gippPageSlice = createSlice({
+    name: 'gippPage',
+    initialState: gippPageInitialState,
+    reducers: {
+        gippPageLoaded(state, {payload}: PayloadAction<GippPageState>) {
+            state.data = payload.data;
+        },
+    },
+    extraReducers: {
+        [HYDRATE]: (state, action) => {
+            console.log('HYDRATE gippPage', action.payload);
+
+            return {
+                ...state,
+                ...action.payload.gippPage,
+            };
+        },
+    },
+});
+
 interface Pokemon {
     name: string;
 }
@@ -108,6 +148,7 @@ export const {useGetPokemonByNameQuery} = pokemonApi;
 const reducers = {
     [subjectPageSlice.name]: subjectPageSlice.reducer,
     [detailPageSlice.name]: detailPageSlice.reducer,
+    [gippPageSlice.name]: gippPageSlice.reducer,
     [pokemonApi.reducerPath]: pokemonApi.reducer,
 };
 
@@ -164,6 +205,23 @@ export const fetchDetail =
         );
     };
 
+// Gipp page thunk
+export const fetchGipp = (): AppThunk => async dispatch => {
+    const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
+
+    await timeoutPromise(200);
+
+    dispatch(
+        gippPageSlice.actions.gippPageLoaded({
+            data: {
+                id: 'gippId',
+                testData: 'This is the test data for the gipp page',
+                stateTimestamp: new Date().getTime(),
+            },
+        }),
+    );
+};
+
 // Subject page selectors
 const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.subjectPage;
 
@@ -195,3 +253,17 @@ export const selectDetailPageStateTimestamp = createSelector(selectDetailPageDat
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s.summary);
+
+// Gipp page selectors
+const gippPageSliceSelector = (state: AppState): GippPageState => state.gippPage;
+
+export const selectGippPageData = createSelector(gippPageSliceSelector, s => s.data);
+
+// The correct way with strict typing on
+export const selectGippPageId = createSelector(selectGippPageData, s => s?.id);
+export const selectGippPageStateTimestamp = createSelector(selectGippPageData, s => s?.stateTimestamp);
+
+// The incorrect way with strict typing off. See comment above.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export const selectGippPageTestData = createSelector(selectGippPageData, s => s?.testData);
