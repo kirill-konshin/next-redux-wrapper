@@ -161,21 +161,22 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const hydrateOrchestrator = (store: S, gipState: any, gspState: any, gsspState: any) => {
+    const hydrateOrchestrator = (store: S, giapState: any, gspState: any, gsspState: any, gippState: any) => {
         if (gspState) {
             // If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
             // and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
-            hydrate(store, gipState);
+            hydrate(store, giapState);
             hydrate(store, gspState);
-        } else if (gsspState || gipState) {
+        } else if (gsspState || gippState || giapState) {
             // If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
             // (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
-            // If there is no GSP or GSSP for this page, but there is a GIP, then we use the gipState.
-            hydrate(store, gsspState ?? gipState);
+            // If there is no GSP or GSSP for this page, but there is a GIP on page level (not _app), then we use the gippState.
+            // If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIP on _app level, then we use the giapState.
+            hydrate(store, gsspState ?? gippState ?? giapState);
         }
     };
 
-    const useHybridHydrate = (store: S, gipState: any, gspState: any, gsspState: any) => {
+    const useHybridHydrate = (store: S, giapState: any, gspState: any, gsspState: any, gippState: any) => {
         const {events} = useRouter();
         const shouldHydrate = useRef(true);
 
@@ -203,27 +204,36 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
             if (shouldHydrate.current) {
-                hydrateOrchestrator(store, gipState, gspState, gsspState);
+                hydrateOrchestrator(store, giapState, gspState, gsspState, gippState);
                 shouldHydrate.current = false;
             }
-        }, [store, gipState, gspState, gsspState]);
+        }, [store, giapState, gspState, gsspState, gippState]);
     };
 
-    const useWrappedStore = ({initialState, initialProps, ...props}: any, displayName = 'useWrappedStore'): {store: S; props: any} => {
+    // giapState stands for getInitialAppProps state
+    const useWrappedStore = (
+        {initialState: giapState, initialProps, ...props}: any,
+        displayName = 'useWrappedStore',
+    ): {store: S; props: any} => {
+        // getStaticProps state
         const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
+        // getServerSideProps state
         const gsspState = props?.__N_SSP ? props?.pageProps?.initialState : null;
+        // getInitialPageProps state
+        const gippState = !gspState && !gsspState ? props?.pageProps?.initialState ?? null : null;
 
         if (config.debug) {
             console.log('4.', displayName, 'created new store with', {
-                initialState,
+                giapState,
                 gspState,
                 gsspState,
+                gippState,
             });
         }
 
         const store = useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        useHybridHydrate(store, initialState, gspState, gsspState);
+        useHybridHydrate(store, giapState, gspState, gsspState, gippState);
 
         let resultProps: any = props;
 
