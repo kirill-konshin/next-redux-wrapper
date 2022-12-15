@@ -46,6 +46,10 @@ class Index extends React.Component<PageProps> {
 
                 <Link href="/server">Navigate</Link>
                 {' | '}
+                <Link href="/pageProps">Navigate to pageProps</Link>
+                {' | '}
+                <Link href="/pageProps2">Navigate to pageProps2</Link>
+                {' | '}
                 <Link href="/static">Navigate to static</Link>
                 {' | '}
                 <Link href="/error">Navigate to error</Link>
