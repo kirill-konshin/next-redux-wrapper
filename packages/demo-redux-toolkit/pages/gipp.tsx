@@ -14,7 +14,7 @@ const Page: NextPage = () => {
     console[testData ? 'info' : 'warn']('Rendered testData: ', testData);
 
     if (!testData || !data) {
-        throw new Error('Whoops! We do not have the pageId and testData selector data!');
+        throw new Error('Whoops! We do not have the data and testData selector data!');
     }
 
     return (
