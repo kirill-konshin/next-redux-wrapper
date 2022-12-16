@@ -3,6 +3,40 @@ import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 import {Action, combineReducers} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
 
+// System model
+interface SystemData {
+    source: string;
+}
+
+interface SystemState {
+    data: SystemData | null;
+}
+
+const initialSystemState: SystemState = {
+    data: null,
+};
+
+// Subject page slice approach
+const systemSlice = createSlice({
+    name: 'system',
+    initialState: initialSystemState,
+    reducers: {
+        systemLoaded(state, {payload}: PayloadAction<SystemState>) {
+            state.data = payload.data;
+        },
+    },
+    extraReducers: {
+        [HYDRATE]: (state, action) => {
+            console.log('HYDRATE system', action.payload);
+
+            return {
+                ...state,
+                ...action.payload.system,
+            };
+        },
+    },
+});
+
 // Subject page model
 interface SubjectPageData {
     id: string;
@@ -149,6 +183,7 @@ const reducers = {
     [subjectPageSlice.name]: subjectPageSlice.reducer,
     [detailPageSlice.name]: detailPageSlice.reducer,
     [gippPageSlice.name]: gippPageSlice.reducer,
+    [systemSlice.name]: systemSlice.reducer,
     [pokemonApi.reducerPath]: pokemonApi.reducer,
 };
 
@@ -166,6 +201,21 @@ export type AppState = ReturnType<AppStore['getState']>;
 type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
 export const wrapper = createWrapper<AppStore>(makeStore);
+
+// System thunk
+export const fetchSystem = (): AppThunk => async dispatch => {
+    const timeoutPromise = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout));
+
+    await timeoutPromise(200);
+
+    dispatch(
+        systemSlice.actions.systemLoaded({
+            data: {
+                source: 'GIAP',
+            },
+        }),
+    );
+};
 
 // Subject page thunk
 export const fetchSubject =
@@ -221,6 +271,13 @@ export const fetchGipp = (): AppThunk => async dispatch => {
         }),
     );
 };
+
+// System selectors
+const systemSliceSelector = (state: AppState): SystemState => state.system;
+
+const selectSystemData = createSelector(systemSliceSelector, s => s.data);
+
+export const selectSystemSource = createSelector(selectSystemData, s => s?.source);
 
 // Subject page selectors
 const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.subjectPage;

@@ -8,6 +8,7 @@ import {
     selectDetailPageId,
     selectDetailPageStateTimestamp,
     selectDetailPageSummary,
+    selectSystemSource,
     wrapper,
 } from '../../store';
 
@@ -19,6 +20,7 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     const pageSummary = useSelector(selectDetailPageSummary);
     const stateTimestamp = useSelector(selectDetailPageStateTimestamp);
     const data = useSelector(selectDetailPageData);
+    const source = useSelector(selectSystemSource);
 
     console[pageSummary ? 'info' : 'warn']('Rendered pageName: ', pageSummary);
 
@@ -31,6 +33,7 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             <div style={{backgroundColor: 'pink', padding: '20px'}}>Timestamp on server: {serverTimestamp}</div>
             <div style={{backgroundColor: 'lavender', padding: '20px'}}>Timestamp in state: {stateTimestamp}</div>
             <div className={`page${pageId}`}>
+                <h1>System source: {source}</h1>
                 <h3>{pageSummary}</h3>
                 <Link href="/subject/1">Go id=1</Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
