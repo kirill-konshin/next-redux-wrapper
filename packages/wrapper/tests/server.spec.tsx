@@ -55,8 +55,7 @@ describe('function API', () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
 
-            // execute App level
-
+            // Execute App level
             const App = () => null;
             App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
                 store.dispatch({type: 'FOO', payload: 'app'});
@@ -70,8 +69,7 @@ describe('function API', () => {
                 initialState: {reduxStatus: 'app'},
             });
 
-            // execute Page level
-
+            // Execute Page level
             const serverSideProps = await wrapper.getServerSideProps(store => async () => {
                 expect(store.getState()).toEqual({reduxStatus: 'app'});
                 store.dispatch({type: 'FOO', payload: 'ssp'});
@@ -85,8 +83,7 @@ describe('function API', () => {
                 },
             });
 
-            // merge props and verify
-
+            // Merge props and verify
             const resultingProps = {
                 ...initialAppProps,
                 pageProps: {
@@ -117,8 +114,7 @@ describe('function API', () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
 
-            // execute App level
-
+            // Execute App level
             const App = () => null;
             App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
                 store.dispatch({type: 'FOO', payload: 'app'});
@@ -132,8 +128,7 @@ describe('function API', () => {
                 initialState: {reduxStatus: 'app'},
             });
 
-            // execute Page level
-
+            // Execute Page level
             const serverStaticProps = await wrapper.getStaticProps(store => async () => {
                 expect(store.getState()).toEqual({reduxStatus: 'app'});
                 store.dispatch({type: 'FOO', payload: 'ssg'});
@@ -147,8 +142,7 @@ describe('function API', () => {
                 },
             });
 
-            // merge props and verify
-
+            // Merge props and verify
             const resultingProps = {
                 ...initialAppProps,
                 pageProps: {
@@ -179,8 +173,7 @@ describe('function API', () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
 
-            // execute App level
-
+            // Execute App level
             const App = () => null;
             App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
                 store.dispatch({type: 'FOO', payload: 'app'});
@@ -194,7 +187,7 @@ describe('function API', () => {
                 initialState: {reduxStatus: 'app'},
             });
 
-            // execute Page level
+            // Execute Page level
             const Page = () => null;
             Page.getInitialProps = wrapper.getInitialPageProps(store => async (_ctx: any) => {
                 store.dispatch({type: 'FOO', payload: 'gipp'});
@@ -208,7 +201,7 @@ describe('function API', () => {
                 initialState: {reduxStatus: 'gipp'},
             });
 
-            // merge props and verify
+            // Merge props and verify
             const resultingProps = {
                 ...initialAppProps,
                 pageProps: {
