@@ -49,9 +49,9 @@ describe('function API', () => {
         /**
          * Next.js executes wrappers in following order:
          * 1. App.getInitialProps
-         * 2. getStaticProps or getServerSideProps
+         * 2. getServerSideProps
          */
-        test('with and getServerSideProps at page level', async () => {
+        test('with App.getInitialProps and getServerSideProps at page level', async () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
 
@@ -111,9 +111,9 @@ describe('function API', () => {
         /**
          * Next.js executes wrappers in following order:
          * 1. App.getInitialProps
-         * 2. getStaticProps or getServerSideProps
+         * 2. getStaticProps
          */
-        test('with and getStaticProps at page level', async () => {
+        test('with App.getInitialProps and getStaticProps at page level', async () => {
             const wrapper = createWrapper(makeStore);
             const context = {ctx: {req: {}}} as any;
 
@@ -168,6 +168,66 @@ describe('function API', () => {
                     </Router>,
                 ),
             ).toEqual('{"props":{"pageProps":{"fromApp":true,"fromSP":true},"__N_SSG":true},"state":{"reduxStatus":"ssg"}}');
+        });
+
+        /**
+         * Next.js executes wrappers in following order:
+         * 1. App.getInitialProps
+         * 2. Page.getInitialProps
+         */
+        test('with App.getInitialProps and Page.getInitialProps', async () => {
+            const wrapper = createWrapper(makeStore);
+            const context = {ctx: {req: {}}} as any;
+
+            // execute App level
+
+            const App = () => null;
+            App.getInitialProps = wrapper.getInitialAppProps(store => async (_ctx: any) => {
+                store.dispatch({type: 'FOO', payload: 'app'});
+                return {pageProps: {fromApp: true}};
+            });
+
+            const initialAppProps = await wrapper.withRedux(App)?.getInitialProps(context);
+
+            expect(initialAppProps).toEqual({
+                pageProps: {fromApp: true},
+                initialState: {reduxStatus: 'app'},
+            });
+
+            // execute Page level
+            const Page = () => null;
+            Page.getInitialProps = wrapper.getInitialPageProps(store => async (_ctx: any) => {
+                store.dispatch({type: 'FOO', payload: 'gipp'});
+                return {fromGip: true};
+            });
+
+            const initialPageProps = await wrapper.withRedux(Page).getInitialProps(context);
+
+            expect(initialPageProps).toEqual({
+                initialProps: {fromGip: true},
+                initialState: {reduxStatus: 'gipp'},
+            });
+
+            // merge props and verify
+            const resultingProps = {
+                ...initialAppProps,
+                pageProps: {
+                    // NextJS will wrap it like this
+                    ...initialAppProps.pageProps,
+                    ...initialPageProps,
+                    // Notice there's no __N_SSG or __N_SSP here because this is Page.getInitialProps!
+                },
+            };
+
+            const WrappedPage: any = wrapper.withRedux(DummyComponent);
+
+            expect(
+                child(
+                    <Router>
+                        <WrappedPage {...resultingProps} />
+                    </Router>,
+                ),
+            ).toEqual('{"props":{"pageProps":{"fromApp":true,"fromGip":true}},"state":{"reduxStatus":"gipp"}}');
         });
     });
 
