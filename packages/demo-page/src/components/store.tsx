@@ -6,8 +6,8 @@ import reducer, {State} from './reducer';
 export const makeStore = (context: Context) => {
     const store = createStore(reducer, applyMiddleware(logger));
 
-    if (module.hot) {
-        module.hot.accept('./reducer', () => {
+    if ((module as any).hot) {
+        (module as any).hot.accept('./reducer', () => {
             console.log('Replacing reducer');
             store.replaceReducer(require('./reducer').default);
         });

@@ -59,10 +59,18 @@ test('other page -> static', async ({page}) => {
     await expect(page.locator('body')).toContainText('"app": "was set in _app"'); // redux
 });
 
-test('initial page props', async ({page}) => {
+test('initial page props with wrapper and dispatch', async ({page}) => {
     await openPage(page, '/pageProps');
 
     await page.waitForSelector('div.pageProps');
 
-    await expect(page.locator('body')).toContainText('{"appProp":"/pageProps","prop":"foo"}');
+    await expect(page.locator('body')).toContainText('{"props":{"appProp":"/pageProps","prop":"foo"},"page":"pageProps"}');
+});
+
+test('initial page props without wrapper and dispatch', async ({page}) => {
+    await openPage(page, '/pageProps2');
+
+    await page.waitForSelector('div.pageProps');
+
+    await expect(page.locator('body')).toContainText('{"prop":"bar","appProp":"/pageProps2"}');
 });

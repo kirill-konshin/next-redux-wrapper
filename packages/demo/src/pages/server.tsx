@@ -19,9 +19,7 @@ const Server: NextPage<OtherProps> = ({appProp, getServerSideProp}) => {
             <pre>{JSON.stringify({app, page, getServerSideProp, appProp}, null, 2)}</pre>
 
             <nav>
-                <Link href="/">
-                    <a>Navigate to index</a>
-                </Link>
+                <Link href="/">Navigate to index</Link>
             </nav>
         </div>
     );
