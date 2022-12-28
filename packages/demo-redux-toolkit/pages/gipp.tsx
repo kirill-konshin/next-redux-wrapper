@@ -2,14 +2,19 @@ import React from 'react';
 import {useDispatch, useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
 import {NextPage} from 'next';
-import {fetchGipp, selectGippPageData, selectGippPageStateTimestamp, selectGippPageTestData, wrapper} from '../store';
+import {fetchGipp, selectGippPageData, selectGippPageStateTimestamp, selectGippPageTestData, selectSystemSource, wrapper} from '../store';
 
-const Page: NextPage = () => {
+interface Props {
+    name: string;
+}
+
+const Page: NextPage<Props> = ({name}) => {
     console.log('State on render', useStore().getState());
     const dispatch = useDispatch();
     const testData = useSelector(selectGippPageTestData);
     const stateTimestamp = useSelector(selectGippPageStateTimestamp);
     const data = useSelector(selectGippPageData);
+    const source = useSelector(selectSystemSource);
 
     console[testData ? 'info' : 'warn']('Rendered testData: ', testData);
 
@@ -21,7 +26,9 @@ const Page: NextPage = () => {
         <>
             <div style={{backgroundColor: 'lavender', padding: '20px'}}>Timestamp in state: {stateTimestamp}</div>
             <div className={`page${1}`}>
+                <h1>System source: {source}</h1>
                 <h3>{testData}</h3>
+                <h3>Page name: {name}</h3>
                 <Link href="/subject/1">Go id=1</Link>
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <Link href="/subject/2">Go id=2</Link>
@@ -41,7 +48,7 @@ const Page: NextPage = () => {
 
 Page.getInitialProps = wrapper.getInitialPageProps(store => async () => {
     await store.dispatch(fetchGipp());
-    return {};
+    return {name: 'GIPP'};
 });
 
 export default Page;

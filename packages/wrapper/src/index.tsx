@@ -120,7 +120,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             if ('getState' in context) {
                 return callback && callback(context as any);
             }
-            return makeProps({callback, context, addStoreToContext: true});
+            return await makeProps({callback, context, addStoreToContext: true});
         };
 
     const getInitialAppProps =
