@@ -7,9 +7,7 @@ const ErrorPage = ({page}: any) => (
     <>
         <p>This is an error page, {page}.</p>
         <nav>
-            <Link href="/">
-                <a>Navigate to index</a>
-            </Link>
+            <Link href="/">Navigate to index</Link>
         </nav>
     </>
 );

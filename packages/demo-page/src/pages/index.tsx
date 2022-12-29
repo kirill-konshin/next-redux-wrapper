@@ -15,13 +15,9 @@ const Page: NextPage<ConnectedPageProps> = ({custom}) => {
     return (
         <div className="index">
             <pre>{JSON.stringify({page, custom}, null, 2)}</pre>
-            <Link href="/other">
-                <a>Navigate</a>
-            </Link>
+            <Link href="/other">Navigate</Link>
             {' | '}
-            <Link href="/error">
-                <a>Navigate to error</a>
-            </Link>
+            <Link href="/error">Navigate to error</Link>
         </div>
     );
 };
