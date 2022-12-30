@@ -1,4 +1,4 @@
-import App, {AppContext, AppInitialProps} from 'next/app';
+import App, {AppContext, AppInitialProps, AppProps} from 'next/app';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
