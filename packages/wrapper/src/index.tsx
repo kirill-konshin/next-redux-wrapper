@@ -211,10 +211,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     // giapState stands for getInitialAppProps state
-    const useWrappedStore = <P>(
-        {initialState: giapState, initialProps, ...props}: P,
-        displayName = 'useWrappedStore',
-    ): {store: S; props: P} => {
+    const useWrappedStore = <P extends AppProps>(incomingProps: P, displayName = 'useWrappedStore'): {store: S; props: P} => {
+        // createWrapper adds WrapperProps to incomingProps, they are not present in P so type needs to be coerced here
+        const {initialState: giapState, initialProps, ...props} = incomingProps as P & WrapperProps;
+
         // getStaticProps state
         const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
         // getServerSideProps state
