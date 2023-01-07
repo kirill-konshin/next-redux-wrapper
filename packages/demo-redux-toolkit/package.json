@@ -8,7 +8,7 @@
     "start": "next --port=6060"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "1.8.6",
+    "@reduxjs/toolkit": "1.9.1",
     "next-redux-wrapper": "*",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -16,9 +16,9 @@
     "redux": "4.2.0"
   },
   "devDependencies": {
-    "@playwright/test": "1.27.1",
+    "@playwright/test": "1.29.2",
     "next": "13.1.1",
-    "playwright": "1.27.1"
+    "playwright": "1.29.2"
   },
   "license": "MIT"
 }
