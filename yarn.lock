@@ -6159,7 +6159,7 @@ __metadata:
     redux: 4.2.0
     redux-logger: 3.0.6
     rimraf: 3.0.2
-    typescript: 4.8.4
+    typescript: 4.9.4
   languageName: unknown
   linkType: soft
 
@@ -6200,7 +6200,7 @@ __metadata:
     redux-logger: 3.0.6
     redux-saga: 1.2.1
     rimraf: 3.0.2
-    typescript: 4.8.4
+    typescript: 4.9.4
   languageName: unknown
   linkType: soft
 
@@ -6225,7 +6225,7 @@ __metadata:
     redux-logger: 3.0.6
     redux-saga: 1.2.1
     rimraf: 3.0.2
-    typescript: 4.8.4
+    typescript: 4.9.4
   languageName: unknown
   linkType: soft
 
@@ -6248,7 +6248,7 @@ __metadata:
     redux: 4.2.0
     redux-logger: 3.0.6
     rimraf: 3.0.2
-    typescript: 4.8.4
+    typescript: 4.9.4
   languageName: unknown
   linkType: soft
 
@@ -9991,7 +9991,7 @@ __metadata:
     lint-staged: 13.0.3
     prettier: 2.7.1
     rimraf: 3.0.2
-    typescript: 4.8.4
+    typescript: 4.9.4
   languageName: unknown
   linkType: soft
 
@@ -10018,7 +10018,7 @@ __metadata:
     redux-promise-middleware: 6.1.3
     rimraf: 3.0.2
     ts-jest: 29.0.3
-    typescript: 4.8.4
+    typescript: 4.9.4
   peerDependencies:
     next: ">=9"
     react: "*"
@@ -12941,7 +12941,17 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"typescript@4.8.4, typescript@^3 || ^4":
+typescript@4.9.4:
+  version: 4.9.4
+  resolution: "typescript@npm:4.9.4"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: e782fb9e0031cb258a80000f6c13530288c6d63f1177ed43f770533fdc15740d271554cdae86701c1dd2c83b082cea808b07e97fd68b38a172a83dbf9e0d0ef9
+  languageName: node
+  linkType: hard
+
+typescript@^3 || ^4:
   version: 4.8.4
   resolution: "typescript@npm:4.8.4"
   bin:
@@ -12951,7 +12961,17 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@4.8.4#~builtin<compat/typescript>, typescript@patch:typescript@^3 || ^4#~builtin<compat/typescript>":
+"typescript@patch:typescript@4.9.4#~builtin<compat/typescript>":
+  version: 4.9.4
+  resolution: "typescript@patch:typescript@npm%3A4.9.4#~builtin<compat/typescript>::version=4.9.4&hash=32657b"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 8a0218b6fc89f1f3fa1acb20415aab070cd10f060c2bd5fc23295bdfb36f83a5c4eef32eadcc9fd4140c3517501d1cb83aca53d924346c7305d0112731e10e58
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^3 || ^4#~builtin<compat/typescript>":
   version: 4.8.4
   resolution: "typescript@patch:typescript@npm%3A4.8.4#~builtin<compat/typescript>::version=4.8.4&hash=32657b"
   bin:
