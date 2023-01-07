@@ -2,6 +2,7 @@ import {configureStore, createSelector, createSlice, PayloadAction, ThunkAction}
 import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 import {Action, combineReducers} from 'redux';
 import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+import {useDispatch as dispatchHook, useSelector as selectorHook, TypedUseSelectorHook} from 'react-redux';
 
 // System model
 interface SystemData {
@@ -28,11 +29,13 @@ const systemSlice = createSlice({
     extraReducers: {
         [HYDRATE]: (state, action) => {
             console.log('HYDRATE system', action.payload);
-
-            return {
-                ...state,
-                ...action.payload.system,
-            };
+            // React 18+ and/or next 13+ force us to do data reconciliation
+            if (action.payload.system.data !== initialSystemState.data) {
+                return {
+                    ...state,
+                    ...action.payload.system,
+                };
+            }
         },
     },
 });
@@ -64,11 +67,13 @@ const subjectPageSlice = createSlice({
     extraReducers: {
         [HYDRATE]: (state, action) => {
             console.log('HYDRATE subjectPage', action.payload);
-
-            return {
-                ...state,
-                ...action.payload.subjectPage,
-            };
+            // React 18+ and/or next 13+ force us to do data reconciliation
+            if (action.payload.subjectPage.data !== subjectPageInitialState.data) {
+                return {
+                    ...state,
+                    ...action.payload.subjectPage,
+                };
+            }
         },
     },
 });
@@ -81,7 +86,7 @@ interface DetailPageData {
 }
 
 interface DetailPageState {
-    data: DetailPageData | null;
+    data: DetailPageData;
 }
 
 const detailPageInitialState: DetailPageState = {
@@ -108,10 +113,19 @@ const detailPageSlice = createSlice({
         [HYDRATE]: (state, action) => {
             console.log('HYDRATE detailPage', action.payload);
 
-            return {
-                ...state,
-                ...action.payload.detailPage,
-            };
+            const {
+                data: {id: initialId, stateTimestamp: initialStateTimestamp, summary: initialSummary},
+            } = detailPageInitialState;
+            const {
+                data: {id, stateTimestamp, summary},
+            } = action.payload.detailPage;
+            // React 18+ and/or next 13+ force us to do data reconciliation
+            if (id !== initialId && stateTimestamp !== initialStateTimestamp && summary !== initialSummary) {
+                return {
+                    ...state,
+                    ...action.payload.detailPage,
+                };
+            }
         },
     },
 });
@@ -128,11 +142,7 @@ interface GippPageState {
 }
 
 const gippPageInitialState: GippPageState = {
-    data: {
-        id: null,
-        testData: null,
-        stateTimestamp: null,
-    },
+    data: null,
 };
 
 // Gipp page slice approach
@@ -148,10 +158,13 @@ const gippPageSlice = createSlice({
         [HYDRATE]: (state, action) => {
             console.log('HYDRATE gippPage', action.payload);
 
-            return {
-                ...state,
-                ...action.payload.gippPage,
-            };
+            // React 18+ and/or next 13+ force us to do data reconciliation
+            if (action.payload.gippPage.data !== gippPageInitialState.data) {
+                return {
+                    ...state,
+                    ...action.payload.gippPage,
+                };
+            }
         },
     },
 });
@@ -199,8 +212,16 @@ const makeStore = () =>
 type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
 type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
+type AppDispatch = AppStore['dispatch'];
 
 export const wrapper = createWrapper<AppStore>(makeStore);
+
+/** Use throughout your app instead of plain react-redux `useDispatch` and `useSelector` hooks
+ *
+ * https://react-redux.js.org/tutorials/typescript-quick-start#define-typed-hooks
+ */
+export const useDispatch: () => AppDispatch = dispatchHook;
+export const useSelector: TypedUseSelectorHook<AppState> = selectorHook;
 
 // System thunk
 export const fetchSystem = (): AppThunk => async dispatch => {
