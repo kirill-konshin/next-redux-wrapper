@@ -1,8 +1,16 @@
 import React from 'react';
-import {useDispatch, useSelector, useStore} from 'react-redux';
+import {useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
 import {NextPage} from 'next';
-import {fetchGipp, selectGippPageData, selectGippPageStateTimestamp, selectGippPageTestData, selectSystemSource, wrapper} from '../store';
+import {
+    fetchGipp,
+    selectGippPageData,
+    selectGippPageStateTimestamp,
+    selectGippPageTestData,
+    selectSystemSource,
+    useDispatch,
+    wrapper,
+} from '../store';
 
 interface Props {
     name: string;

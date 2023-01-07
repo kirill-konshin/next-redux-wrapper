@@ -13,7 +13,7 @@
     "next-redux-wrapper": "*",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-redux": "8.0.4",
+    "react-redux": "8.0.5",
     "redux": "4.2.0",
     "redux-logger": "3.0.6",
     "redux-saga": "1.2.1"
@@ -22,7 +22,7 @@
     "@playwright/test": "1.27.1",
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
-    "@types/react-redux": "7.1.24",
+    "@types/react-redux": "7.1.25",
     "@types/redux-logger": "3.0.9",
     "next": "13.0.1",
     "next-redux-wrapper-configs": "*",

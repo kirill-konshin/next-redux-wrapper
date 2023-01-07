@@ -1,8 +1,8 @@
 import React from 'react';
-import {useDispatch, useSelector, useStore} from 'react-redux';
+import {useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
 import {InferGetServerSidePropsType, NextPage} from 'next';
-import {fetchSubject, selectSubjectPageId, selectSubjectPageName, selectSubjectPageStateTimestamp, wrapper} from '../../store';
+import {fetchSubject, selectSubjectPageId, selectSubjectPageName, selectSubjectPageStateTimestamp, useDispatch, wrapper} from '../../store';
 
 const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({serverTimestamp}) => {
     console.log('State on render', useStore().getState());

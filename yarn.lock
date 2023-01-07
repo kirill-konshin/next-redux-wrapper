@@ -4053,15 +4053,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-redux@npm:7.1.24":
-  version: 7.1.24
-  resolution: "@types/react-redux@npm:7.1.24"
+"@types/react-redux@npm:7.1.25":
+  version: 7.1.25
+  resolution: "@types/react-redux@npm:7.1.25"
   dependencies:
     "@types/hoist-non-react-statics": ^3.3.0
     "@types/react": "*"
     hoist-non-react-statics: ^3.3.0
     redux: ^4.0.0
-  checksum: 6582246581331ac7fbbd44aa1f1c136c8a9c8febbcf462432ac81302263308c21e1a2e7868beb7f73bbcb52a8e67935d133cb37f5bdcb6564eaff3a811805101
+  checksum: a61ec25cbf8bb3720850402d3c49493fcff4afb73ad447d161460b5d4c600c984ad48708e8564d2fd32052eaa3c3b3f655c5b300ce813429637cce9e5958329f
   languageName: node
   linkType: hard
 
@@ -6146,7 +6146,7 @@ __metadata:
     "@playwright/test": 1.27.1
     "@types/react": 18.0.24
     "@types/react-dom": 18.0.8
-    "@types/react-redux": 7.1.24
+    "@types/react-redux": 7.1.25
     "@types/redux-logger": 3.0.9
     jsondiffpatch: 0.4.1
     next: 13.0.1
@@ -6155,7 +6155,7 @@ __metadata:
     playwright: 1.27.1
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     redux: 4.2.0
     redux-logger: 3.0.6
     rimraf: 3.0.2
@@ -6174,7 +6174,7 @@ __metadata:
     playwright: 1.27.1
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     redux: 4.2.0
   languageName: unknown
   linkType: soft
@@ -6186,7 +6186,7 @@ __metadata:
     "@playwright/test": 1.27.1
     "@types/react": 18.0.24
     "@types/react-dom": 18.0.8
-    "@types/react-redux": 7.1.24
+    "@types/react-redux": 7.1.25
     "@types/redux-logger": 3.0.9
     jsondiffpatch: 0.4.1
     next: 13.0.1
@@ -6195,7 +6195,7 @@ __metadata:
     playwright: 1.27.1
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     redux: 4.2.0
     redux-logger: 3.0.6
     redux-saga: 1.2.1
@@ -6211,7 +6211,7 @@ __metadata:
     "@playwright/test": 1.27.1
     "@types/react": 18.0.24
     "@types/react-dom": 18.0.8
-    "@types/react-redux": 7.1.24
+    "@types/react-redux": 7.1.25
     "@types/redux-logger": 3.0.9
     jsondiffpatch: 0.4.1
     next: 13.0.1
@@ -6220,7 +6220,7 @@ __metadata:
     playwright: 1.27.1
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     redux: 4.2.0
     redux-logger: 3.0.6
     redux-saga: 1.2.1
@@ -6236,7 +6236,7 @@ __metadata:
     "@playwright/test": 1.27.1
     "@types/react": 18.0.24
     "@types/react-dom": 18.0.8
-    "@types/react-redux": 7.1.24
+    "@types/react-redux": 7.1.25
     "@types/redux-logger": 3.0.9
     next: 13.0.1
     next-redux-wrapper: "*"
@@ -6244,7 +6244,7 @@ __metadata:
     playwright: 1.27.1
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     redux: 4.2.0
     redux-logger: 3.0.6
     rimraf: 3.0.2
@@ -10001,7 +10001,7 @@ __metadata:
   dependencies:
     "@types/jest": 29.2.1
     "@types/react": 18.0.24
-    "@types/react-redux": 7.1.24
+    "@types/react-redux": 7.1.25
     "@types/react-test-renderer": 18.0.0
     "@types/redux-promise-middleware": 6.0.0
     "@types/webpack": 5.28.0
@@ -10012,7 +10012,7 @@ __metadata:
     next-redux-wrapper-configs: "*"
     react: 18.2.0
     react-dom: 18.2.0
-    react-redux: 8.0.4
+    react-redux: 8.0.5
     react-test-renderer: 18.2.0
     redux: 4.2.0
     redux-promise-middleware: 6.1.3
@@ -11278,9 +11278,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-redux@npm:8.0.4":
-  version: 8.0.4
-  resolution: "react-redux@npm:8.0.4"
+"react-redux@npm:8.0.5":
+  version: 8.0.5
+  resolution: "react-redux@npm:8.0.5"
   dependencies:
     "@babel/runtime": ^7.12.1
     "@types/hoist-non-react-statics": ^3.3.1
@@ -11306,7 +11306,7 @@ __metadata:
       optional: true
     redux:
       optional: true
-  checksum: fd940de6a691c734ea975cb73a4413ee6beadb48434d6306fc2edbcf40c0c8c6432b0008663372d01b3578c9381b0acae7766d9f2f5f5f61a0cdaf7abc5eab7d
+  checksum: a108f4f7ead6ac005e656d46051474a2bbdb31ede481bbbb3d8d779c1a35e1940b8655577cc5021313411864d305f67fc719aa48d6e5ed8288cf9cbe8b7042e4
   languageName: node
   linkType: hard
 

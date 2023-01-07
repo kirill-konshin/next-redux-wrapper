@@ -1,5 +1,5 @@
 import React from 'react';
-import {useDispatch, useSelector, useStore} from 'react-redux';
+import {useSelector, useStore} from 'react-redux';
 import Link from 'next/link';
 import {InferGetServerSidePropsType, NextPage} from 'next';
 import {
@@ -9,6 +9,7 @@ import {
     selectDetailPageStateTimestamp,
     selectDetailPageSummary,
     selectSystemSource,
+    useDispatch,
     wrapper,
 } from '../../store';
 
