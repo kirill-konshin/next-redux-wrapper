@@ -1,4 +1,4 @@
-import App, {AppContext, AppInitialProps} from 'next/app';
+import App, {AppContext, AppInitialProps, AppProps} from 'next/app';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {Store} from 'redux';
@@ -211,10 +211,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     };
 
     // giapState stands for getInitialAppProps state
-    const useWrappedStore = (
-        {initialState: giapState, initialProps, ...props}: any,
-        displayName = 'useWrappedStore',
-    ): {store: S; props: any} => {
+    const useWrappedStore = <P extends AppProps>(incomingProps: P, displayName = 'useWrappedStore'): {store: S; props: P} => {
+        // createWrapper adds WrapperProps to incomingProps, they are not present in P so type needs to be coerced here
+        const {initialState: giapState, initialProps, ...props} = incomingProps as P & WrapperProps;
+
         // getStaticProps state
         const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
         // getServerSideProps state
