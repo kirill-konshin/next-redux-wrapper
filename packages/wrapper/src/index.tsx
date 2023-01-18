@@ -1,4 +1,4 @@
-import {AppContext, AppInitialProps} from 'next/app';
+import {AppContext} from 'next/app';
 import {useCallback, useLayoutEffect, useMemo, useState} from 'react';
 import {Store} from 'redux';
 import {
@@ -30,7 +30,7 @@ import {useDispatch} from 'react-redux';
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 export const RENDER = '__NEXT_REDUX_FIRST_RENDER__';
 
-const getIsServer = () => typeof window === 'undefined';
+const getIsServer = () => !process.browser;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
     deserializeState ? deserializeState(initialState) : initialState;
@@ -72,15 +72,11 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
 };
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    const makeProps = async ({callback, context}: {callback: Callback<S, any>; context: any}): Promise<WrapperProps> => {
+    const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
         const store = initStore({context, makeStore});
 
-        if (config.debug) {
-            console.log(`1. getProps created store with state`, store.getState());
-        }
-
         const nextCallback = callback && callback(store);
-        const initialProps = (nextCallback && (await nextCallback(context))) || {};
+        const initialProps = ((nextCallback && (await nextCallback(context))) || {}) as P;
 
         if (config.debug) {
             console.log(`2. getProps after dispatches has store state`, store.getState());
@@ -91,35 +87,35 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         return {
             initialProps,
             initialState: getIsServer() ? getSerializedState<S>(state, config) : state,
-        };
+        } as any;
     };
 
     const getInitialPageProps =
-        <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> =>
+        <P extends {} = any>(callback: PageCallback<S, P>): ReturnType<PageCallback<S, P>> =>
         async (
             context: NextPageContext | any, // legacy
         ) => {
-            // context is store — avoid double-wrapping
-            if ('getState' in context) {
-                return callback && callback(context as any);
-            }
-            return await makeProps({callback, context});
+            const {initialState, initialProps} = await makeProps({callback, context});
+            return {...initialProps, initialState};
         };
 
     const getInitialAppProps =
-        <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> =>
+        <P extends {} = any>(callback: AppCallback<S, P>): ReturnType<AppCallback<S, P>> =>
         async (context: AppContext) => {
-            const {initialProps, initialState} = await makeProps({callback, context});
+            const {initialState, initialProps} = await makeProps({callback, context} as any);
             return {
                 ...initialProps,
-                initialState,
+                pageProps: {
+                    ...initialProps.pageProps,
+                    initialState,
+                },
             };
         };
 
     const getStaticProps =
-        <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): GetStaticProps<P> =>
+        <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): ReturnType<GetStaticPropsCallback<S, P>> =>
         async context => {
-            const {initialProps, initialState} = await makeProps({callback, context});
+            const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
@@ -130,9 +126,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         };
 
     const getServerSideProps =
-        <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): GetServerSideProps<P> =>
+        <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): ReturnType<GetServerSidePropsCallback<S, P>> =>
         async context =>
-            await getStaticProps(callback as any)(context); // just not to repeat myself
+            await getStaticProps<P>(callback as any)(context); // just not to repeat myself
 
     const useStore = () => useMemo<S>(() => initStore<S>({makeStore}), []);
 
@@ -160,7 +156,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
      *
      * @param {any} initialState
      */
-    const useHydration = ({initialState}: any) => {
+    const useHydration = ({initialState}: PageProps | any) => {
         const dispatch = useDispatch();
 
         const [loading, setLoading] = useState(false);
@@ -189,7 +185,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         );
 
         // This guard is solely to suppress Next.js warning about useless layout effect
-        if (process.browser) {
+        if (!getIsServer()) {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             useLayoutEffect(() => {
                 if (!(window as any)[RENDER]) {
@@ -243,20 +239,18 @@ export interface Config<S extends Store> {
     debug?: boolean;
 }
 
-export interface WrapperProps {
-    initialProps: any; // stuff returned from getInitialProps or getServerSideProps
+export interface PageProps {
     initialState: any; // stuff in the Store state after getInitialProps
 }
 
-type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
-
-//FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
-type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
+export interface WrapperProps<P extends Object> extends PageProps {
+    initialProps: P; // stuff returned from getInitialProps or getServerSideProps
+}
 
 export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
 export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
-export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
-export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
+export type PageCallback<S extends Store, P> = (store: S) => NextComponentType<NextPageContext, P, P>['getInitialProps'];
+export type AppCallback<S extends Store, P> = (store: S) => ({Component, ctx}: AppContext) => Promise<{pageProps: P}> | {pageProps: P}; // AppInitialProps & //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
 export type Callback<S extends Store, P extends {[key: string]: any}> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>

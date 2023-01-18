@@ -10,7 +10,8 @@ export interface PageProps extends State {
     appProp: string;
 }
 
-const Page: NextPage<PageProps> = function ({pageProp, appProp}) {
+const Page: NextPage<PageProps> = function ({pageProp, appProp, ...props}) {
+    wrapper.useHydration(props);
     const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="index">
@@ -33,7 +34,7 @@ const Page: NextPage<PageProps> = function ({pageProp, appProp}) {
     );
 };
 
-Page.getInitialProps = wrapper.getInitialPageProps(store => async ({pathname, query, req}) => {
+(Page as any).getInitialProps = wrapper.getInitialPageProps(store => async ({pathname, query, req}) => {
     console.log('2. Page.getInitialProps uses the store to dispatch things', {
         pathname,
         query,
@@ -53,3 +54,5 @@ Page.getInitialProps = wrapper.getInitialPageProps(store => async ({pathname, qu
     // Some custom thing for this particular page
     return {pageProp: 'client'};
 });
+
+export default Page;

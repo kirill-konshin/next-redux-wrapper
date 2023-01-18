@@ -20,6 +20,7 @@
     "start:tsc:es6": "yarn build:tsc:es6 --watch --preserveWatchOutput"
   },
   "devDependencies": {
+    "@testing-library/react-hooks": "8.0.1",
     "@types/jest": "27.0.1",
     "@types/react": "17.0.37",
     "@types/react-redux": "7.1.20",
