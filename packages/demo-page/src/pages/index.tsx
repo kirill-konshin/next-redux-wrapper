@@ -10,7 +10,7 @@ export interface ConnectedPageProps {
 }
 
 // Page itself is not connected to Redux Store, it has to render Provider to allow child components to connect to Redux Store
-const Page: NextPage<ConnectedPageProps> = ({custom, initialState} : any) => {
+const Page: NextPage<ConnectedPageProps> = ({custom, initialState}: any) => {
     wrapper.useHydration({initialState});
     const {page} = useSelector<State, State>(state => state);
     return (
@@ -24,7 +24,6 @@ const Page: NextPage<ConnectedPageProps> = ({custom, initialState} : any) => {
 };
 
 export const getServerSideProps = wrapper.getServerSideProps(store => async ({req}) => {
-    console.log('2. Page.getServerSideProps uses the store to dispatch things');
     store.dispatch({
         type: 'PAGE',
         payload: 'was set in index page ' + req.url,

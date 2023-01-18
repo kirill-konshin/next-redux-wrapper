@@ -1,28 +1,22 @@
-import React from 'react';
+import React, {FC} from 'react';
 import {Provider} from 'react-redux';
 import App, {AppProps} from 'next/app';
 import {fetchSystem, wrapper} from '../store';
 
-interface PageProps {
-    pageProps: {
-        id: number;
-    };
-}
-
-const MyApp = ({Component, pageProps}: Omit<AppProps, 'pageProps'> & PageProps) => {
+const MyApp: FC<AppProps> = function MyApp({Component, pageProps}) {
     console.log('rest: ', pageProps);
 
-    const store = wrapper.useWrappedStore();
+    const store = wrapper.useStore();
 
     return (
         <Provider store={store}>
             <h1>PageProps.id: {pageProps.id}</h1>
-            <Component {...(pageProps as any)} />
+            <Component {...pageProps} />
         </Provider>
     );
 };
 
-MyApp.getInitialProps = wrapper.getInitialAppProps(store => async (appCtx): Promise<PageProps> => {
+(MyApp as any).getInitialProps = wrapper.getInitialAppProps(store => async appCtx => {
     // You have to do dispatches first, before...
     await store.dispatch(fetchSystem());
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import {NextPage} from 'next';
 import Link from 'next/link';
-import {wrapper} from "../components/store";
+import {wrapper} from '../components/store';
 
 const PropsPage2: NextPage = props => {
     wrapper.useHydration(props);
@@ -16,8 +16,6 @@ const PropsPage2: NextPage = props => {
     );
 };
 
-PropsPage2.getInitialProps = () => ({
-    prop: 'bar',
-});
+PropsPage2.getInitialProps = () => ({prop: 'bar'});
 
 export default PropsPage2;
