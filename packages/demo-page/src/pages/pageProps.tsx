@@ -5,6 +5,7 @@ import {State} from '../components/reducer';
 import {wrapper} from '../components/store';
 
 const PropsPage: NextPage<State> = props => {
+    wrapper.useHydration(props);
     return (
         <div className="pageProps">
             <p>Using Next.js default prop in a wrapped component.</p>

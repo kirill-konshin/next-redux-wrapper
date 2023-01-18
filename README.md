@@ -45,7 +45,7 @@ Furthermore, access to the Redux `Store` may also be needed during a page's `get
 
 This is where `next-redux-wrapper` comes in handy: It automatically creates the store instances for you and makes sure they all have the same state.
 
-Moreover it allows to properly handle complex cases like `App.getInitialProps` (when using `pages/_app`) together with `getStaticProps` or `getServerSideProps` at individual page level.
+More over it allows to properly handle complex cases like `App.getInitialProps` (when using `pages/_app`) together with `getStaticProps` or `getServerSideProps` at individual page level.
 
 Library provides uniform interface no matter in which Next.js lifecycle method you would like to use the `Store`.
 
@@ -141,11 +141,11 @@ import {Provider} from 'react-redux';
 import {AppProps} from 'next/app';
 import {wrapper} from '../components/store';
 
-const MyApp: FC<AppProps> = ({Component, ...rest}) => {
-  const {store, props} = wrapper.useWrappedStore(rest);
+const MyApp: FC<AppProps> = ({Component, pageProps}) => {
+  const store = wrapper.useWrappedStore();
   return (
     <Provider store={store}>
-      <Component {...props.pageProps} />
+      <Component {pageProps} />
     </Provider>
   );
 };
@@ -169,6 +169,8 @@ class MyApp extends React.Component<AppProps> {
 
 export default wrapper.withRedux(MyApp);
 ```
+
+Each page has to call `wrapper.useHydration(props)` in order to perform hydration, more on that in next sections.
 
 ## State reconciliation during hydration
 
@@ -257,7 +259,8 @@ export const getStaticProps = wrapper.getStaticProps(store => ({preview}) => {
 });
 
 // you can also use `connect()` instead of hooks
-const Page: NextPage = () => {
+const Page: NextPage = props => {
+  wrapper.useHydration(props);
   const {tick} = useSelector<State, State>(state => state);
   return <div>{tick}</div>;
 };
@@ -282,7 +285,8 @@ export const getStaticProps = wrapper.getStaticProps(store => ({preview}) => {
 });
 
 // you can also use `connect()` instead of hooks
-const Page = () => {
+const Page = props => {
+  wrapper.useHydration(props);
   const {tick} = useSelector(state => state);
   return <div>{tick}</div>;
 };
@@ -314,7 +318,10 @@ export const getServerSideProps = wrapper.getServerSideProps(store => ({req, res
 });
 
 // Page itself is not connected to Redux Store, it has to render Provider to allow child components to connect to Redux Store
-const Page: NextPage<State> = ({tick}) => <div>{tick}</div>;
+const Page: NextPage<State> = ({tick, ...props}) => {
+  wrapper.useHydration(props);
+  return <div>{tick}</div>;
+};
 
 // you can also use Redux `useSelector` and other hooks instead of `connect()`
 export default connect((state: State) => state)(Page);
@@ -334,7 +341,10 @@ export const getServerSideProps = wrapper.getServerSideProps(store => ({req, res
 });
 
 // Page itself is not connected to Redux Store, it has to render Provider to allow child components to connect to Redux Store
-const Page = ({tick}) => <div>{tick}</div>;
+const Page = ({tick, ...props}) => {
+  wrapper.useHydration(props);
+  return <div>{tick}</div>;
+};
 
 // you can also use Redux `useSelector` and other hooks instead of `connect()`
 export default connect(state => state)(Page);
@@ -354,7 +364,8 @@ import {NextPage} from 'next';
 import {wrapper, State} from '../store';
 
 // you can also use `connect()` instead of hooks
-const Page: NextPage = () => {
+const Page: NextPage = props => {
+  wrapper.useHydration(props);
   const {tick} = useSelector<State, State>(state => state);
   return <div>{tick}</div>;
 };
@@ -378,7 +389,8 @@ import React, {Component} from 'react';
 import {wrapper} from '../store';
 
 // you can also use `connect()` instead of hooks
-const Page = () => {
+const Page = props => {
+  wrapper.useHydration(props);
   const {tick} = useSelector(state => state);
   return <div>{tick}</div>;
 };
@@ -507,18 +519,21 @@ import {connect} from 'react-redux';
 import {NextPageContext} from 'next';
 import {State} from '../store';
 
-const Page: NextPage<State> = ({foo, custom}) => (
-  <div>
-    <div>Prop from Redux {foo}</div>
-    <div>Prop from getInitialProps {custom}</div>
-  </div>
-);
+const Page: NextPage<State> = ({foo, custom, ...props}) => {
+  wrapper.useHydration(props);
+  return (
+    <div>
+      <div>Prop from Redux {foo}</div>
+      <div>Prop from getInitialProps {custom}</div>
+    </div>
+  );
+};
 
 // No need to wrap pages if App was wrapped
-Page.getInitialProps = ({store, pathname, query}: NextPageContext) => {
+Page.getInitialProps = wrapper.getInitialPageProps(store => ({pathname, query}: NextPageContext) => {
   store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
   return {custom: 'custom'}; // You can pass some custom props to the component from here
-};
+});
 
 export default connect((state: State) => state)(Page);
 ```
@@ -532,18 +547,21 @@ export default connect((state: State) => state)(Page);
 import React from 'react';
 import {connect} from 'react-redux';
 
-const Page = ({foo, custom}) => (
-  <div>
-    <div>Prop from Redux {foo}</div>
-    <div>Prop from getInitialProps {custom}</div>
-  </div>
-);
+const Page = ({foo, custom, ...props}) => {
+  wrapper.useHydration(props);
+  return (
+    <div>
+      <div>Prop from Redux {foo}</div>
+      <div>Prop from getInitialProps {custom}</div>
+    </div>
+  );
+};
 
 // No need to wrap pages if App was wrapped
-Page.getInitialProps = ({store, pathname, query}) => {
+Page.getInitialProps = wrapper.getInitialPageProps(store => ({pathname, query}) => {
   store.dispatch({type: 'FOO', payload: 'foo'}); // The component can read from the store's state when rendered
   return {custom: 'custom'}; // You can pass some custom props to the component from here
-};
+});
 
 export default connect(state => state)(Page);
 ```
@@ -601,6 +619,28 @@ const reducer = (state = {app: 'init', page: 'init'}, action) => {
 Assume page only dispatches `PAGE` action and App only `APP`, this makes state merging safe.
 
 More about that in [Server and Client state separation](#server-and-client-state-separation).
+
+## Wrapping Class-based components
+
+```js
+import {connect} from 'react-redux';
+import {wrapper} from "../components/store";
+
+class Index extends React.Component {
+    public static getInitialProps = wrapper.getInitialPageProps(
+        store => async ({pathname, query, req}) => ({ ... })
+    );
+
+    public render() {
+        return (
+            <div>{JSON.stringify(this.props)}</div>
+        );
+    }
+}
+
+export default connect(state => state)(wrapper.withHydration(Index));
+
+```
 
 # How it works
 
@@ -1018,7 +1058,7 @@ export default wrapper.withRedux(WrappedApp);
 In order to use it with `getServerSideProps` or `getStaticProps` you need to `await` for sagas in each page's handler:
 
 ```js
-export const getServerSideProps = ReduxWrapper.getServerSideProps(async ({store, req, res, ...etc}) => {
+export const getServerSideProps = wrapper.getServerSideProps(store => async ({req, res, ...etc}) => {
   // regular stuff
   store.dispatch(ApplicationSlice.actions.updateConfiguration());
   // end the saga
@@ -1162,6 +1202,26 @@ export default connect(state => state, {setClientState})(({fromServer, fromClien
 ));
 ```
 
+## Upgrade from 7.x to 8.x
+
+1. `addStoreToContext` option is discontinued
+
+2. Pages wrapped with App, that has `getInitialProps` will not receive `store` in `context`, change:
+
+   ```
+   public static async getInitialProps({store, pathname, query, req}: NextPageContext) {
+   ```
+
+   to
+
+   ```
+   public static getInitialProps = wrapper.getInitialPageProps(store => async ({pathname, query, req}) => {
+   ```
+
+3. `const {store, props} = wrapper.useWrappedStore(rest);` is now `const store = wrapper.useWrappedStore();`
+
+4. Each page need to either call `wrapper.useHydration(props)` or should be wrapped with `wrapper.withHydration(Page)`
+
 ## Upgrade from 6.x to 7.x
 
 1. Signature of `createWrapper` has changed: instead of `createWrapper<State>` you should use `createWrapper<Store<State>>`, all types will be automatically inferred from `Store`.
@@ -1204,7 +1264,7 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
 2. Replace all usages of `import withRedux from "next-redux-wrapper";` and `withRedux(...)(WrappedComponent)` in all
    your pages with plain React Redux `connect` HOC:
 
-   ```js
+   ```
    import {connect} from "react-redux";
 
    export default connect(...)(WrappedComponent);
@@ -1214,7 +1274,7 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
 
 3. Create the `pages/_app.js` file with the following minimal code:
 
-   ```js
+   ```
    // pages/_app.js
    import React from 'react'
    import {Provider} from 'react-redux';

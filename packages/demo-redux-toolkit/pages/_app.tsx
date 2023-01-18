@@ -9,14 +9,15 @@ interface PageProps {
     };
 }
 
-const MyApp = ({Component, ...rest}: Omit<AppProps, 'pageProps'> & PageProps) => {
-    console.log('rest: ', rest);
-    const {store, props} = wrapper.useWrappedStore(rest);
+const MyApp = ({Component, pageProps}: Omit<AppProps, 'pageProps'> & PageProps) => {
+    console.log('rest: ', pageProps);
+
+    const store = wrapper.useWrappedStore();
 
     return (
         <Provider store={store}>
-            <h1>PageProps.id: {rest.pageProps.id}</h1>
-            <Component {...props.pageProps} />
+            <h1>PageProps.id: {pageProps.id}</h1>
+            <Component {...(pageProps as any)} />
         </Provider>
     );
 };
@@ -26,10 +27,13 @@ MyApp.getInitialProps = wrapper.getInitialAppProps(store => async (appCtx): Prom
     await store.dispatch(fetchSystem());
 
     // ...before calling (and awaiting!!!!) the children's getInitialProps
+    // @see https://nextjs.org/docs/advanced-features/custom-app#caveats
     const childrenGip = await App.getInitialProps(appCtx);
+
     return {
         pageProps: {
             // And you have to spread the children's GIP result into pageProps
+            // @see https://nextjs.org/docs/advanced-features/custom-app#caveats
             ...childrenGip.pageProps,
             id: 42,
         },

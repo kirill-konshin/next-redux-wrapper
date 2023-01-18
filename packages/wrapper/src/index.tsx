@@ -1,6 +1,5 @@
 import App, {AppContext, AppInitialProps, AppProps} from 'next/app';
-import React, {useEffect, useMemo, useRef} from 'react';
-import {Provider} from 'react-redux';
+import React, {useLayoutEffect, useMemo} from 'react';
 import {Store} from 'redux';
 import {
     GetServerSideProps,
@@ -10,7 +9,7 @@ import {
     NextComponentType,
     NextPageContext,
 } from 'next';
-import {useRouter} from 'next/router';
+import {useStore, Provider} from "react-redux";
 
 /**
  * Quick note on Next.js return types:
@@ -73,13 +72,11 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async ({
-        callback,
-        context,
-        addStoreToContext = false,
-    }: {
+                                 callback,
+                                 context,
+                             }: {
         callback: Callback<S, any>;
         context: any;
-        addStoreToContext?: boolean;
     }): Promise<WrapperProps> => {
         const store = initStore({context, makeStore});
 
@@ -87,20 +84,11 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             console.log(`1. getProps created store with state`, store.getState());
         }
 
-        // Legacy stuff - put store in context
-        if (addStoreToContext) {
-            if (context.ctx) {
-                context.ctx.store = store;
-            } else {
-                context.store = store;
-            }
-        }
-
         const nextCallback = callback && callback(store);
         const initialProps = (nextCallback && (await nextCallback(context))) || {};
 
         if (config.debug) {
-            console.log(`3. getProps after dispatches has store state`, store.getState());
+            console.log(`2. getProps after dispatches has store state`, store.getState());
         }
 
         const state = store.getState();
@@ -113,43 +101,43 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const getInitialPageProps =
         <P extends {} = any>(callback: PageCallback<S, P>): GetInitialPageProps<P> =>
-        async (
-            context: NextPageContext | any, // legacy
-        ) => {
-            // context is store — avoid double-wrapping
-            if ('getState' in context) {
-                return callback && callback(context as any);
-            }
-            return await makeProps({callback, context, addStoreToContext: true});
-        };
+            async (
+                context: NextPageContext | any, // legacy
+            ) => {
+                // context is store — avoid double-wrapping
+                if ('getState' in context) {
+                    return callback && callback(context as any);
+                }
+                return await makeProps({callback, context});
+            };
 
     const getInitialAppProps =
         <P extends {} = any>(callback: AppCallback<S, P>): GetInitialAppProps<P> =>
-        async (context: AppContext) => {
-            const {initialProps, initialState} = await makeProps({callback, context, addStoreToContext: true});
-            return {
-                ...initialProps,
-                initialState,
+            async (context: AppContext) => {
+                const {initialProps, initialState} = await makeProps({callback, context});
+                return {
+                    ...initialProps,
+                    initialState,
+                };
             };
-        };
 
     const getStaticProps =
         <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): GetStaticProps<P> =>
-        async context => {
-            const {initialProps, initialState} = await makeProps({callback, context});
-            return {
-                ...initialProps,
-                props: {
-                    ...initialProps.props,
-                    initialState,
-                },
-            } as any;
-        };
+            async context => {
+                const {initialProps, initialState} = await makeProps({callback, context});
+                return {
+                    ...initialProps,
+                    props: {
+                        ...initialProps.props,
+                        initialState,
+                    },
+                } as any;
+            };
 
     const getServerSideProps =
         <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): GetServerSideProps<P> =>
-        async context =>
-            await getStaticProps(callback as any)(context); // just not to repeat myself
+            async context =>
+                await getStaticProps(callback as any)(context); // just not to repeat myself
 
     const hydrate = (store: S, state: any) => {
         if (!state) {
@@ -161,38 +149,14 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         } as any);
     };
 
-    const hydrateOrchestrator = (store: S, giapState: any, gspState: any, gsspState: any, gippState: any) => {
-        if (gspState) {
-            // If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
-            // and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
-            hydrate(store, giapState);
-            hydrate(store, gspState);
-        } else if (gsspState || gippState || giapState) {
-            // If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
-            // (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
-            // If there is no GSP or GSSP for this page, but there is a GIP on page level (not _app), then we use the gippState.
-            // If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIP on _app level, then we use the giapState.
-            hydrate(store, gsspState ?? gippState ?? giapState);
-        }
-    };
+    // If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
+    // and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
+    // If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
+    // (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
+    // If there is no GSP or GSSP for this page, but there is a GIP on page level (not _app), then we use the gippState.
+    // If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIP on _app level, then we use the giapState.
 
-    const useHybridHydrate = (store: S, giapState: any, gspState: any, gsspState: any, gippState: any) => {
-        const {events} = useRouter();
-        const shouldHydrate = useRef(true);
-
-        // We should only hydrate when the router has changed routes
-        useEffect(() => {
-            const handleStart = () => {
-                shouldHydrate.current = true;
-            };
-
-            events?.on('routeChangeStart', handleStart);
-
-            return () => {
-                events?.off('routeChangeStart', handleStart);
-            };
-        }, [events]);
-
+    const useHybridHydrate = (store: S, state: any) => {
         // useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
         // components are mounted. This means we hydrate while the previous page components are still mounted.
         // You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
@@ -203,63 +167,33 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         // components, you still wouldn't get errors, because there's no rerender.
         // Instead, React will render the new page components straight away, which will have selectors with the correct data.
         useMemo(() => {
-            if (shouldHydrate.current) {
-                hydrateOrchestrator(store, giapState, gspState, gsspState, gippState);
-                shouldHydrate.current = false;
+            if (!process.browser || !(window as any).__redux_wrapper_first_render_complete) {
+                return;
             }
-        }, [store, giapState, gspState, gsspState, gippState]);
+            if (config.debug) {
+                console.log('3. useHybridHydrate memo', state);
+            }
+            if (process.browser) {
+                (window as any).__redux_wrapper_first_render_complete = true;
+            }
+            hydrate(store, state);
+        }, [store, state]);
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        process.browser && useLayoutEffect(() => {
+            if (process.browser && (window as any).__redux_wrapper_first_render_complete) {
+                return;
+            }
+            if (config.debug) {
+                console.log('3. useHybridHydrate effect', state);
+            }
+            hydrate(store, state);
+        }, [store, state]);
     };
 
-    // giapState stands for getInitialAppProps state
-    const useWrappedStore = <P extends AppProps>(incomingProps: P, displayName = 'useWrappedStore'): {store: S; props: P} => {
-        // createWrapper adds WrapperProps to incomingProps, they are not present in P so type needs to be coerced here
-        const {initialState: giapState, initialProps, ...props} = incomingProps as P & WrapperProps;
+    const useWrappedStore = () => useMemo<S>(() => initStore<S>({makeStore}), []);
 
-        // getStaticProps state
-        const gspState = props?.__N_SSG ? props?.pageProps?.initialState : null;
-        // getServerSideProps state
-        const gsspState = props?.__N_SSP ? props?.pageProps?.initialState : null;
-        // getInitialPageProps state
-        const gippState = !gspState && !gsspState ? props?.pageProps?.initialState ?? null : null;
-
-        if (config.debug) {
-            console.log('4.', displayName, 'created new store with', {
-                giapState,
-                gspState,
-                gsspState,
-                gippState,
-            });
-        }
-
-        const store = useMemo<S>(() => initStore<S>({makeStore}), []);
-
-        useHybridHydrate(store, giapState, gspState, gsspState, gippState);
-
-        let resultProps: any = props;
-
-        // order is important! Next.js overwrites props from pages/_app with getStaticProps from page
-        // @see https://github.com/zeit/next.js/issues/11648
-        if (initialProps && initialProps.pageProps) {
-            resultProps.pageProps = {
-                ...initialProps.pageProps, // this comes from wrapper in _app mode
-                ...props.pageProps, // this comes from gssp/gsp in _app mode
-            };
-        }
-
-        // just some cleanup to prevent passing it as props, we need to clone props to safely delete initialState
-        if (props?.pageProps?.initialState) {
-            resultProps = {...props, pageProps: {...props.pageProps}};
-            delete resultProps.pageProps.initialState;
-        }
-
-        // unwrap getInitialPageProps
-        if (resultProps?.pageProps?.initialProps) {
-            resultProps.pageProps = {...resultProps.pageProps, ...resultProps.pageProps.initialProps};
-            delete resultProps.pageProps.initialProps;
-        }
-
-        return {store, props: {...initialProps, ...resultProps}};
-    };
+    const useHydration = ({initialState}: any) => useHybridHydrate(useStore() as any, initialState);
 
     const withRedux = (Component: NextComponentType | App | any) => {
         console.warn(
@@ -268,16 +202,37 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
         const WrappedComponent = (props: any) => {
-            const {store, props: combinedProps} = useWrappedStore(props, WrappedComponent.displayName);
+            const store = useWrappedStore();
 
             return (
                 <Provider store={store}>
-                    <Component {...combinedProps} />
+                    <Component {...props} />
                 </Provider>
             );
         };
 
         WrappedComponent.displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
+
+        if ('getInitialProps' in Component) {
+            WrappedComponent.getInitialProps = Component.getInitialProps;
+        }
+
+        return WrappedComponent;
+    };
+
+    const withHydration = (Component: NextComponentType | any) => {
+        console.warn(
+            '/!\\ You are using legacy implementation. Please update your code: use createWrapper() and wrapper.useWrappedStore().',
+        );
+
+        //TODO Check if pages/_app was wrapped so there's no need to wrap a page itself
+        const WrappedComponent = (props: any) => {
+            useHydration(props);
+
+            return <Component {...props} />;
+        };
+
+        WrappedComponent.displayName = `withHydration(${Component.displayName || Component.name || 'Component'})`;
 
         if ('getInitialProps' in Component) {
             WrappedComponent.getInitialProps = Component.getInitialProps;
@@ -292,7 +247,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         getInitialAppProps,
         getInitialPageProps,
         withRedux,
+        withHydration,
         useWrappedStore,
+        useHydration,
     };
 };
 
@@ -319,24 +276,14 @@ export interface WrapperProps {
 type GetInitialPageProps<P> = NextComponentType<NextPageContext, any, P>['getInitialProps'];
 
 //FIXME Could be typeof App.getInitialProps & appGetInitialProps (not exported), see https://github.com/kirill-konshin/next-redux-wrapper/issues/412
-type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & {pageProps: P}>;
+type GetInitialAppProps<P> = ({Component, ctx}: AppContext) => Promise<AppInitialProps & { pageProps: P }>;
 
-export type GetStaticPropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetStaticProps<P>;
-export type GetServerSidePropsCallback<S extends Store, P extends {[key: string]: any}> = (store: S) => GetServerSideProps<P>;
+export type GetStaticPropsCallback<S extends Store, P extends { [key: string]: any }> = (store: S) => GetStaticProps<P>;
+export type GetServerSidePropsCallback<S extends Store, P extends { [key: string]: any }> = (store: S) => GetServerSideProps<P>;
 export type PageCallback<S extends Store, P> = (store: S) => GetInitialPageProps<P>;
 export type AppCallback<S extends Store, P> = (store: S) => GetInitialAppProps<P>;
-export type Callback<S extends Store, P extends {[key: string]: any}> =
+export type Callback<S extends Store, P extends { [key: string]: any }> =
     | GetStaticPropsCallback<S, P>
     | GetServerSidePropsCallback<S, P>
     | PageCallback<S, P>
     | AppCallback<S, P>;
-
-declare module 'next' {
-    export interface NextPageContext<S extends Store = any> {
-        //<S = any, A extends Action = AnyAction>
-        /**
-         * Provided by next-redux-wrapper: The redux store
-         */
-        store: S;
-    }
-}

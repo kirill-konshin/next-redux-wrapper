@@ -8,7 +8,8 @@ interface Props {
     name: string;
 }
 
-const Page: NextPage<Props> = ({name}) => {
+const Page: NextPage<Props> = ({name, initialState}: any) => {
+    wrapper.useHydration({initialState});
     console.log('State on render', useStore().getState());
     const dispatch = useDispatch();
     const testData = useSelector(selectGippPageTestData);

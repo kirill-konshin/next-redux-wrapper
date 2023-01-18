@@ -14,7 +14,8 @@ export const getStaticProps = wrapper.getStaticProps(store => async ({previewDat
     return {props: {}};
 });
 
-const OtherPage: NextPage<State> = () => {
+const OtherPage: NextPage<State> = (props) => {
+    wrapper.useHydration(props);
     const {page} = useSelector<State, State>(state => state);
     const dispatch = useDispatch();
     const bump = () => dispatch({type: 'BUMP'});

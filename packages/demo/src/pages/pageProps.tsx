@@ -6,6 +6,7 @@ import {wrapper} from '../components/store';
 import {useSelector} from 'react-redux';
 
 const PropsPage: NextPage<State> = props => {
+    wrapper.useHydration(props);
     const {page} = useSelector<State, State>(state => state);
 
     return (

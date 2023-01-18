@@ -10,7 +10,8 @@ export interface ConnectedPageProps {
 }
 
 // Page itself is not connected to Redux Store, it has to render Provider to allow child components to connect to Redux Store
-const Page: NextPage<ConnectedPageProps> = ({custom}) => {
+const Page: NextPage<ConnectedPageProps> = ({custom, initialState} : any) => {
+    wrapper.useHydration({initialState});
     const {page} = useSelector<State, State>(state => state);
     return (
         <div className="index">

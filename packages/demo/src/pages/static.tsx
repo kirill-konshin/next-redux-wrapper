@@ -10,7 +10,8 @@ interface OtherProps {
     appProp: string;
 }
 
-const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
+const Static: NextPage<OtherProps> = ({appProp, getStaticProp, ...props}) => {
+    wrapper.useHydration(props);
     const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="static">

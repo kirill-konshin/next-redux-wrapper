@@ -200,7 +200,7 @@ type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
 type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
 
-export const wrapper = createWrapper<AppStore>(makeStore);
+export const wrapper = createWrapper<AppStore>(makeStore, {debug: true});
 
 // System thunk
 export const fetchSystem = (): AppThunk => async dispatch => {
@@ -273,16 +273,16 @@ export const fetchGipp = (): AppThunk => async dispatch => {
 };
 
 // System selectors
-const systemSliceSelector = (state: AppState): SystemState => state.system;
+const systemSliceSelector = (state: AppState): SystemState => state?.system;
 
 const selectSystemData = createSelector(systemSliceSelector, s => s.data);
 
 export const selectSystemSource = createSelector(selectSystemData, s => s?.source);
 
 // Subject page selectors
-const subjectPageSliceSelector = (state: AppState): SubjectPageState => state.subjectPage;
+const subjectPageSliceSelector = (state: AppState): SubjectPageState => state?.subjectPage;
 
-const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s.data);
+const selectSubjectPageData = createSelector(subjectPageSliceSelector, s => s?.data);
 
 // The correct way with strict typing on
 export const selectSubjectPageId = createSelector(selectSubjectPageData, s => s?.id);
@@ -295,26 +295,24 @@ export const selectSubjectPageStateTimestamp = createSelector(selectSubjectPageD
 // to undefined/null.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-export const selectSubjectPageName = createSelector(selectSubjectPageData, s => s.name);
+export const selectSubjectPageName = createSelector(selectSubjectPageData, s => s?.name);
 
 // Detail page selectors
 const detailPageSliceSelector = (state: AppState): DetailPageState => state.detailPage;
 
-export const selectDetailPageData = createSelector(detailPageSliceSelector, s => s.data);
+export const selectDetailPageData = createSelector(detailPageSliceSelector, s => s?.data);
 
 // The correct way with strict typing on
 export const selectDetailPageId = createSelector(selectDetailPageData, s => s?.id);
 export const selectDetailPageStateTimestamp = createSelector(selectDetailPageData, s => s?.stateTimestamp);
 
 // The incorrect way with strict typing off. See comment above.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s.summary);
+export const selectDetailPageSummary = createSelector(selectDetailPageData, s => s?.summary);
 
 // Gipp page selectors
 const gippPageSliceSelector = (state: AppState): GippPageState => state.gippPage;
 
-export const selectGippPageData = createSelector(gippPageSliceSelector, s => s.data);
+export const selectGippPageData = createSelector(gippPageSliceSelector, s => s?.data);
 
 // The correct way with strict typing on
 export const selectGippPageId = createSelector(selectGippPageData, s => s?.id);

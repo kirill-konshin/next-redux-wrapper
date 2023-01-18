@@ -1,8 +1,10 @@
 import React from 'react';
 import {NextPage} from 'next';
 import Link from 'next/link';
+import {wrapper} from "../components/store";
 
 const PropsPage2: NextPage = props => {
+    wrapper.useHydration(props);
     return (
         <div className="pageProps">
             <p>Using Next.js default prop in a wrapped component.</p>
