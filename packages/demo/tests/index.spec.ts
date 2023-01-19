@@ -64,7 +64,9 @@ test('initial page props with wrapper and dispatch', async ({page}) => {
 
     await page.waitForSelector('div.pageProps');
 
-    await expect(page.locator('body')).toContainText('{"props":{"appProp":"/pageProps","prop":"foo"},"page":"pageProps"}');
+    await expect(page.locator('body')).toContainText('"appProp":"/pageProps"');
+    await expect(page.locator('body')).toContainText('"prop":"foo"');
+    await expect(page.locator('body')).toContainText('"page":"pageProps"');
 });
 
 test('initial page props without wrapper and dispatch', async ({page}) => {
@@ -72,5 +74,6 @@ test('initial page props without wrapper and dispatch', async ({page}) => {
 
     await page.waitForSelector('div.pageProps');
 
-    await expect(page.locator('body')).toContainText('{"prop":"bar","appProp":"/pageProps2"}');
+    await expect(page.locator('body')).toContainText('"prop":"bar"');
+    await expect(page.locator('body')).toContainText('"appProp":"/pageProps2"');
 });

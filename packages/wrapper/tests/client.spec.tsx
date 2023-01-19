@@ -14,6 +14,8 @@ let store: Store;
 const defaultState = {reduxStatus: 'init'};
 const modifiedState = {...defaultState, modified: true};
 
+//TODO https://github.com/testing-library/react-hooks-testing-library/issues/649
+
 describe('client integration', () => {
     describe('existing store is taken from window', () => {
         beforeEach(() => {

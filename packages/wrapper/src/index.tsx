@@ -1,5 +1,5 @@
 import {AppContext} from 'next/app';
-import {useCallback, useLayoutEffect, useMemo, useState} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Store} from 'redux';
 import {
     GetServerSideProps,
@@ -29,6 +29,10 @@ import {useDispatch} from 'react-redux';
 
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 export const RENDER = '__NEXT_REDUX_FIRST_RENDER__';
+export const STATE = '__NEXT_REDUX_STATE__';
+
+const makeHydrationKey = (stage: string) => STATE + performance.now() + '__' + stage;
+const isHydrationKey = (key: string) => key.startsWith(STATE);
 
 const getIsServer = () => !process.browser;
 
@@ -96,7 +100,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             context: NextPageContext | any, // legacy
         ) => {
             const {initialState, initialProps} = await makeProps({callback, context});
-            return {...initialProps, initialState};
+            return {
+                ...initialProps,
+                [makeHydrationKey('GIPP')]: initialState,
+            };
         };
 
     const getInitialAppProps =
@@ -107,7 +114,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 ...initialProps,
                 pageProps: {
                     ...initialProps.pageProps,
-                    initialState,
+                    [makeHydrationKey('GIAP')]: initialState,
                 },
             };
         };
@@ -120,27 +127,28 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 ...initialProps,
                 props: {
                     ...initialProps.props,
-                    initialState,
+                    [makeHydrationKey('GSP')]: initialState,
                 },
             } as any;
         };
 
     const getServerSideProps =
         <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): ReturnType<GetServerSidePropsCallback<S, P>> =>
-        async context =>
-            await getStaticProps<P>(callback as any)(context); // just not to repeat myself
+        async context => {
+            const {initialState, initialProps} = await makeProps({callback, context});
+            return {
+                ...initialProps,
+                props: {
+                    ...initialProps.props,
+                    [makeHydrationKey('GSSP')]: initialState,
+                },
+            } as any;
+        };
 
     const useStore = () => useMemo<S>(() => initStore<S>({makeStore}), []);
 
     /**
      * Old notes about props
-     *
-     * If GSP has run, then gspState will _not_ contain the data from GIP (if it exists), because GSP is run at build time,
-     * and GIP runs at request time. So we have to hydrate the GIP data first, and then do another hydrate on the gspState.
-     * If GSSP has run, then gsspState _will_ contain the data from GIP (if there is a GIP) and the GSSP data combined
-     * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
-     * If there is no GSP or GSSP for this page, but there is a GIP on page level (not _app), then we use the gippState.
-     * If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIP on _app level, then we use the giapState.
      *
      * Hydration strategies
      *
@@ -153,26 +161,45 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
      * some initial state values causing them to rerun after hydration, and you're accessing deeply nested values inside your
      * components, you still wouldn't get errors, because there's no rerender.
      * Instead, React will render the new page components straight away, which will have selectors with the correct data.
-     *
-     * @param {any} initialState
      */
-    const useHydration = ({initialState}: PageProps | any) => {
+    const useHydration = (props: PageProps | any) => {
         const dispatch = useDispatch();
 
         const [loading, setLoading] = useState(false);
 
-        const hydrate = useCallback(
-            (state: any) => {
-                if (!state) {
-                    return;
+        const propsRef = useRef<any>({});
+
+        propsRef.current = props;
+
+        const propsChecksum = Object.keys(props).filter(isHydrationKey).join('|');
+
+        /**
+         * If GSP has run, then state will _not_ contain the data from GIAP (if it exists), because GSP is run at build
+         * time, and GIAP runs at request time.
+         *
+         * So we have to hydrate the GIAP data first, and then do another hydrate on the GSP state.
+         *
+         * If GSSP has run, then state _will_ contain the data from GIAP (if there is a GIAP) and the GSSP data combined
+         * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
+         *
+         * If there is no GSP or GSSP for this page, but there is a GIPP (not _app), there will be one hydrate.
+         *
+         * If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIAP on _app level there
+         * will be also one hydrate.
+         */
+        const hydrate = useCallback(() => {
+            void propsChecksum; //FIXME Find a more elegant way to track keys of props
+            for (const [key, state] of Object.entries(propsRef.current)) {
+                if (!isHydrationKey(key)) {
+                    continue;
                 }
                 dispatch({
                     type: HYDRATE,
                     payload: getDeserializedState<S>(state, config),
+                    meta: {key},
                 } as any);
-            },
-            [dispatch],
-        );
+            }
+        }, [dispatch, propsChecksum]);
 
         const loadingSelector = useCallback(
             (fn, defValue = null) => {
@@ -196,27 +223,22 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 setLoading(true);
 
                 if (config.debug) {
-                    console.log('3. useHydration effect', initialState);
+                    console.log('3. useHydration effect');
                 }
 
-                hydrate(initialState);
+                hydrate();
 
                 setLoading(false);
-
-                return () => {
-                    setLoading(true);
-                };
-            }, [hydrate, initialState]);
+            }, [dispatch, hydrate]);
 
             if ((window as any)[RENDER]) {
                 return {loading, loadingSelector};
             }
         }
 
-        console.log('3. useHydration sync', initialState);
+        console.log('3. useHydration sync');
 
-        // perform sync hydrate
-        hydrate(initialState);
+        hydrate();
 
         return {loading, loadingSelector};
     };

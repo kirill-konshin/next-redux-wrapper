@@ -205,16 +205,11 @@ const Page = props => {
 };
 ```
 
-The only prop `wrapper.useHydration` actually cares about is `initialState`, a reserved name for server-side state snapshot. You can destructure `props` in any way you want, just make sure to provide this prop to hook:
+The `wrapper.useHydration` hook needs access to all props supplied to component. You can destructure `props` to pull out some of them, just make sure to provide this rest of the props to the hook:
 
 ```js
 const Page = ({foo, bar, ...props}) => {
-  wrapper.useHydration(props); // recommended way — just dump all unused props
-  // ... rest of code
-};
-
-const Page = ({foo, bar, initialState}) => {
-  wrapper.useHydration({initialState}); // bare minimum
+  wrapper.useHydration(props);
   // ... rest of code
 };
 ```
@@ -309,10 +304,14 @@ export default MyApp;
 
 Then all pages can be [instrumented the same way](#pagegetinitialprops).
 
-You can also use `getServerSideProps` or `getStaticProps` at page level while having `App.getInitialProps`, this scenario is supported, but I highly don't recommend to do this.
+:warning: You can use `getServerSideProps` or `getStaticProps` at page level while having `App.getInitialProps`, this scenario is supported, but I highly don't recommend to do this. In this case you should expect 2 `HYDRATE` actions being dispatched:
 
-- If you use `getServerSideProps` at page level then `store` in `getServerSideProps` will be executed after `App.getInitialProps` and will have state from it, so second `HYDRATE` will have full state from both
-- :warning: If you use `getStaticProps` at page level then `store` in `getStaticProps` will be executed at compile time and will **NOT** have state from `App.getInitialProps` because they are executed in different contexts and state cannot be shared.
+1. With state after `App.getInitialProps`
+2. With state after `getServerSideProps` or `getStaticProps`
+
+If you use `getServerSideProps` at page level `getServerSideProps` will be executed **after** `App.getInitialProps`, so first dispatched `HYDRATE` will be incomplete, and second will have state from both.
+
+If you use `getStaticProps` at page level then `getStaticProps` will be executed at **compile time** and store there will **NOT** have state from `App.getInitialProps` because they are executed in different contexts and state cannot be shared, so both `HYDRATE`s will have portions of state along with some default values (if any).
 
 # State reconciliation during hydration
 
