@@ -1,5 +1,5 @@
 import {AppContext} from 'next/app';
-import {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useState} from 'react';
 import {Store} from 'redux';
 import {
     GetServerSideProps,
@@ -28,13 +28,13 @@ import {useDispatch} from 'react-redux';
  */
 
 export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
-export const RENDER = '__NEXT_REDUX_FIRST_RENDER__';
-export const STATE = '__NEXT_REDUX_STATE__';
+export const RENDER = '__NEXT_REDUX_WRAPPER_FIRST_RENDER__';
+export const REQPROP = '__NEXT_REDUX_WRAPPER_STORE__';
 
 const getIsServer = () => !process.browser;
 
-const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
-    deserializeState ? deserializeState(initialState) : initialState;
+const getDeserializedState = <S extends Store>(state: any, {deserializeState}: Config<S> = {}) =>
+    deserializeState ? deserializeState(state) : state;
 
 const getSerializedState = <S extends Store>(state: any, {serializeState}: Config<S> = {}) =>
     serializeState ? serializeState(state) : state;
@@ -44,11 +44,12 @@ export declare type MakeStore<S extends Store> = (context: Context) => S;
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
     context?: Context;
+    config: Config<S>;
 }
 
 let sharedClientStore: any;
 
-const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<S>): S => {
+const initStore = <S extends Store>({makeStore, context = {}, config}: InitStoreOptions<S>): S => {
     const createStore = () => makeStore(context);
 
     if (getIsServer()) {
@@ -56,22 +57,58 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
         if (req) {
             // ATTENTION! THIS IS INTERNAL, DO NOT ACCESS DIRECTLY ANYWHERE ELSE
             // @see https://github.com/kirill-konshin/next-redux-wrapper/pull/196#issuecomment-611673546
-            if (!req.__nextReduxWrapperStore) {
-                req.__nextReduxWrapperStore = createStore(); // Used in GIP/GSSP
+            if (!req[REQPROP]) {
+                if (config.debug) {
+                    console.log('1. Store created within request');
+                }
+                req[REQPROP] = createStore(); // GIP/GSSP
+            } else if (config.debug) {
+                console.log('1. Store reused from request');
             }
-            return req.__nextReduxWrapperStore;
+            return req[REQPROP];
         }
-        return createStore();
+        if (config.debug) {
+            console.log('1. Store created without request');
+        }
+        return createStore(); // GSP or server rendering
     }
 
     // Memoize the store if we're on the client
     if (!sharedClientStore) {
+        console.log('1. Store created on client');
         sharedClientStore = createStore();
     }
 
     return sharedClientStore;
 };
 
+/**
+ * Returns an array of tuples with state and source. An array is needed to guarantee the order.
+ * Returns an empty array if it does not recognize state
+ *
+ * If GSP has run, then state will _not_ contain the data from GIAP (if it exists), because GSP is run at build
+ * time, and GIAP runs at request time.
+ *
+ * So we have to hydrate the GSP data first, and then do another hydrate on the GIAP state.
+ *
+ * If GSSP has run, then state _will_ contain the data from GIAP (if there is a GIAP) and the GSSP data combined
+ * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941), thus one hydrate.
+ *
+ * If there is no GSP or GSSP for this page, but there is a GIPP (not _app), there will be one hydrate.
+ *
+ * If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIAP on _app level there
+ * will be also one hydrate.
+ *
+ * GIPP (partial) -> GIAP (full)
+ * GIAP (partial) -> GSSP (full)
+ * GIAP (partial) -> GSP (partial)
+ *
+ * @param {any} initialStateGSSP
+ * @param {any} initialStateGSP
+ * @param {any} initialStateGIAP
+ * @param {any} initialStateGIPP
+ * @returns {(any | string)[][]}
+ */
 export const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps) => {
     if (initialStateGIAP) {
         if (initialStateGIPP) {
@@ -80,12 +117,12 @@ export const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, 
             return [[initialStateGSSP, 'GSSP']]; // ignore GIAP as GSSP is more complete
         } else if (initialStateGSP) {
             return [
-                // send both as they both are partial
+                // send both as they both are partial, order is important as GSP happens way before GIAP
                 [initialStateGSP, 'GSP'],
                 [initialStateGIAP, 'GIAP'],
             ];
         }
-        return [[initialStateGIAP, 'GIAP']];
+        return [[initialStateGIAP, 'GIAP']]; // simply return GIAP as there's nothing else
     } else if (initialStateGSP) {
         return [[initialStateGSP, 'GSP']];
     } else if (initialStateGSSP) {
@@ -98,16 +135,16 @@ export const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, 
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
-        const store = initStore({context, makeStore});
+        const store = initStore({context, makeStore, config});
 
         const nextCallback = callback && callback(store);
         const initialProps = ((nextCallback && (await nextCallback(context))) || {}) as P;
 
-        if (config.debug) {
-            console.log(`2. getProps after dispatches has store state`, store.getState());
-        }
-
         const state = store.getState();
+
+        if (config.debug) {
+            console.log(`2. initial state after dispatches`, state);
+        }
 
         return {
             initialProps,
@@ -120,7 +157,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         async (
             context: NextPageContext | any, // legacy
         ) => {
-            //TODO Check context props to ensure GIPP
+            if (!context.query || !context.pathname || !context.AppTree) {
+                throw new Error(`Looks like you've used getInitialPageProps for different kind of lifecycle method`);
+            }
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
@@ -131,7 +170,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getInitialAppProps =
         <P extends {} = any>(callback: AppCallback<S, P>): ReturnType<AppCallback<S, P>> =>
         async (context: AppContext) => {
-            //TODO Check context props to ensure GIAP
+            if (!context.router || !context.Component || !context.AppTree || !context.ctx) {
+                throw new Error(`Looks like you've used getInitialAppProps for different kind of lifecycle method`);
+            }
             const {initialState, initialProps} = await makeProps({callback, context} as any);
             return {
                 ...initialProps,
@@ -144,8 +185,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const getStaticProps =
         <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): ReturnType<GetStaticPropsCallback<S, P>> =>
-        async context => {
-            //TODO Check context props to ensure GSP
+        async (context: GetStaticPropsContext) => {
+            //TODO Check context props to ensure GSP, problem is context has all params optional...
+            // if (???) throw new Error('Looks like you've used getStaticProps for different kind of lifecycle method');
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
@@ -158,8 +200,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
     const getServerSideProps =
         <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): ReturnType<GetServerSidePropsCallback<S, P>> =>
-        async context => {
-            //TODO Check context props to ensure GSSP
+        async (context: GetServerSidePropsContext) => {
+            if (!context.req || !context.res || !context.resolvedUrl || !context.query) {
+                throw new Error(`Looks like you've used getStaticProps for different kind of lifecycle method`);
+            }
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
@@ -170,48 +214,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             } as any;
         };
 
-    const useStore = () => useMemo<S>(() => initStore<S>({makeStore}), []);
+    const useStore = () => useMemo<S>(() => initStore<S>({makeStore, config}), []);
 
-    /**
-     * Old notes about props
-     *
-     * Hydration strategies
-     *
-     * useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
-     * components are mounted. This means we hydrate while the previous page components are still mounted.
-     * You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
-     * contain other data, and maybe even nested properties, causing null reference exceptions.
-     * But that's not the case.
-     * Hydrating in useMemo will not trigger a rerender of the still mounted page component. So if your selectors do have
-     * some initial state values causing them to rerun after hydration, and you're accessing deeply nested values inside your
-     * components, you still wouldn't get errors, because there's no rerender.
-     * Instead, React will render the new page components straight away, which will have selectors with the correct data.
-     */
     const useHydration = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps | any) => {
         const dispatch = useDispatch();
 
         const [hydrating, setHydrating] = useState(false);
 
-        /**
-         * If GSP has run, then state will _not_ contain the data from GIAP (if it exists), because GSP is run at build
-         * time, and GIAP runs at request time.
-         *
-         * So we have to hydrate the GSP data first, and then do another hydrate on the GIAP state.
-         *
-         * If GSSP has run, then state _will_ contain the data from GIAP (if there is a GIAP) and the GSSP data combined
-         * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941), thus one hydrate.
-         *
-         * If there is no GSP or GSSP for this page, but there is a GIPP (not _app), there will be one hydrate.
-         *
-         * If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIAP on _app level there
-         * will be also one hydrate.
-         *
-         *
-         * GIPP (partial) -> GIAP (full)
-         * GIAP (partial) -> GSSP (full)
-         * GIAP (partial) -> GSP (partial)
-         *
-         */
         const hydrate = useCallback(() => {
             const states = getStates({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP});
             states.forEach(([state, source]) =>
@@ -248,7 +257,31 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             }
         }
 
-        console.log('3. useHydration sync');
+        /**
+         * When we navigate client side, we may always synchronously hydrate the state before the new page components
+         * are mounted. This means we hydrate while the previous page components are still mounted.
+         *
+         * This will cause ugly react message, that you're trying to update state of a component while rendering another.
+         * Warnings only appear in development mode.
+         *
+         * You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
+         * contain other data, and maybe even nested properties, causing null reference exceptions.
+         *
+         * But that's not the case.
+         *
+         * Hydrating synchronously will not trigger a rerender of the still mounted page component. So if your selectors do
+         * have some initial state values causing them to rerun after hydration, and you're accessing deeply nested values
+         * inside your components, you still wouldn't get errors, because there's no rerender.
+         *
+         * Instead, React will render the new page components straight away, which will have selectors with the correct data.
+         *
+         * So technically, other than an ugly warning, this does not have consequences. Nevertheless, subsequent navigation
+         * events (without reload) will be dispatched from useEffect, properly. This means that for split second selectors
+         * may render empty data. React may batch state updates though (or not).
+         */
+        if (config.debug) {
+            console.log('3. useHydration sync');
+        }
 
         hydrate();
 

@@ -4,7 +4,7 @@ import {createWrapper, Context} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 
 export const makeStore = (context: Context) => {
-    const store = createStore(reducer, applyMiddleware(logger));
+    const store = createStore(reducer, process.browser ? applyMiddleware(logger) : undefined);
 
     if ((module as any).hot) {
         (module as any).hot.accept('./reducer', () => {
