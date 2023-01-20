@@ -27,6 +27,8 @@ const Page: NextPage<PageProps> = function ({pageProp, appProp, ...props}) {
             {' | '}
             <Link href="/pageProps2">Navigate to pageProps2</Link>
             {' | '}
+            <Link href="/server">Navigate to server</Link>
+            {' | '}
             <Link href="/static">Navigate to static</Link>
             {' | '}
             <Link href="/error">Navigate to error</Link>

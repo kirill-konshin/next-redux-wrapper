@@ -31,9 +31,6 @@ export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
 export const RENDER = '__NEXT_REDUX_FIRST_RENDER__';
 export const STATE = '__NEXT_REDUX_STATE__';
 
-const makeHydrationKey = (stage: string) => STATE + performance.now() + '__' + stage;
-const isHydrationKey = (key: string) => key.startsWith(STATE);
-
 const getIsServer = () => !process.browser;
 
 const getDeserializedState = <S extends Store>(initialState: any, {deserializeState}: Config<S> = {}) =>
@@ -75,6 +72,30 @@ const initStore = <S extends Store>({makeStore, context = {}}: InitStoreOptions<
     return sharedClientStore;
 };
 
+export const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps) => {
+    if (initialStateGIAP) {
+        if (initialStateGIPP) {
+            return [[initialStateGIAP, 'GIAP']]; // ignore GIPP as GIAP is more complete
+        } else if (initialStateGSSP) {
+            return [[initialStateGSSP, 'GSSP']]; // ignore GIAP as GSSP is more complete
+        } else if (initialStateGSP) {
+            return [
+                // send both as they both are partial
+                [initialStateGSP, 'GSP'],
+                [initialStateGIAP, 'GIAP'],
+            ];
+        }
+        return [[initialStateGIAP, 'GIAP']];
+    } else if (initialStateGSP) {
+        return [[initialStateGSP, 'GSP']];
+    } else if (initialStateGSSP) {
+        return [[initialStateGSSP, 'GSSP']];
+    } else if (initialStateGIPP) {
+        return [[initialStateGIPP, 'GIPP']];
+    }
+    return [];
+};
+
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
         const store = initStore({context, makeStore});
@@ -99,22 +120,24 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         async (
             context: NextPageContext | any, // legacy
         ) => {
+            //TODO Check context props to ensure GIPP
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
-                [makeHydrationKey('GIPP')]: initialState,
+                initialStateGIPP: initialState,
             };
         };
 
     const getInitialAppProps =
         <P extends {} = any>(callback: AppCallback<S, P>): ReturnType<AppCallback<S, P>> =>
         async (context: AppContext) => {
+            //TODO Check context props to ensure GIAP
             const {initialState, initialProps} = await makeProps({callback, context} as any);
             return {
                 ...initialProps,
                 pageProps: {
                     ...initialProps.pageProps,
-                    [makeHydrationKey('GIAP')]: initialState,
+                    initialStateGIAP: initialState,
                 },
             };
         };
@@ -122,12 +145,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getStaticProps =
         <P extends {} = any>(callback: GetStaticPropsCallback<S, P>): ReturnType<GetStaticPropsCallback<S, P>> =>
         async context => {
+            //TODO Check context props to ensure GSP
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
                     ...initialProps.props,
-                    [makeHydrationKey('GSP')]: initialState,
+                    initialStateGSP: initialState,
                 },
             } as any;
         };
@@ -135,12 +159,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const getServerSideProps =
         <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): ReturnType<GetServerSidePropsCallback<S, P>> =>
         async context => {
+            //TODO Check context props to ensure GSSP
             const {initialState, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
                     ...initialProps.props,
-                    [makeHydrationKey('GSSP')]: initialState,
+                    initialStateGSSP: initialState,
                 },
             } as any;
         };
@@ -162,54 +187,41 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
      * components, you still wouldn't get errors, because there's no rerender.
      * Instead, React will render the new page components straight away, which will have selectors with the correct data.
      */
-    const useHydration = (props: PageProps | any) => {
+    const useHydration = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps | any) => {
         const dispatch = useDispatch();
 
-        const [loading, setLoading] = useState(false);
-
-        const propsRef = useRef<any>({});
-
-        propsRef.current = props;
-
-        const propsChecksum = Object.keys(props).filter(isHydrationKey).join('|');
+        const [hydrating, setHydrating] = useState(false);
 
         /**
          * If GSP has run, then state will _not_ contain the data from GIAP (if it exists), because GSP is run at build
          * time, and GIAP runs at request time.
          *
-         * So we have to hydrate the GIAP data first, and then do another hydrate on the GSP state.
+         * So we have to hydrate the GSP data first, and then do another hydrate on the GIAP state.
          *
          * If GSSP has run, then state _will_ contain the data from GIAP (if there is a GIAP) and the GSSP data combined
-         * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941).
+         * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941), thus one hydrate.
          *
          * If there is no GSP or GSSP for this page, but there is a GIPP (not _app), there will be one hydrate.
          *
          * If there is no GSP or GSSP and no GIP on page level for this page, but there is a GIAP on _app level there
          * will be also one hydrate.
+         *
+         *
+         * GIPP (partial) -> GIAP (full)
+         * GIAP (partial) -> GSSP (full)
+         * GIAP (partial) -> GSP (partial)
+         *
          */
         const hydrate = useCallback(() => {
-            void propsChecksum; //FIXME Find a more elegant way to track keys of props
-            for (const [key, state] of Object.entries(propsRef.current)) {
-                if (!isHydrationKey(key)) {
-                    continue;
-                }
+            const states = getStates({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP});
+            states.forEach(([state, source]) =>
                 dispatch({
                     type: HYDRATE,
                     payload: getDeserializedState<S>(state, config),
-                    meta: {key},
-                } as any);
-            }
-        }, [dispatch, propsChecksum]);
-
-        const loadingSelector = useCallback(
-            (fn, defValue = null) => {
-                if (loading) {
-                    return () => defValue;
-                }
-                return fn;
-            },
-            [loading],
-        );
+                    meta: {source},
+                } as any),
+            );
+        }, [dispatch, initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP]);
 
         // This guard is solely to suppress Next.js warning about useless layout effect
         if (!getIsServer()) {
@@ -220,7 +232,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                     return;
                 }
 
-                setLoading(true);
+                setHydrating(true);
 
                 if (config.debug) {
                     console.log('3. useHydration effect');
@@ -228,11 +240,11 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
                 hydrate();
 
-                setLoading(false);
+                setHydrating(false);
             }, [dispatch, hydrate]);
 
             if ((window as any)[RENDER]) {
-                return {loading, loadingSelector};
+                return {hydrating};
             }
         }
 
@@ -240,7 +252,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         hydrate();
 
-        return {loading, loadingSelector};
+        return {hydrating};
     };
 
     return {
@@ -262,10 +274,14 @@ export interface Config<S extends Store> {
 }
 
 export interface PageProps {
-    initialState: any; // stuff in the Store state after getInitialProps
+    initialStateGIAP: any; // stuff in the Store state after App.getInitialProps
+    initialStateGIPP: any; // stuff in the Store state after Page.getInitialProps
+    initialStateGSSP: any; // stuff in the Store state after getServerSideProps
+    initialStateGSP: any; // stuff in the Store state after getStaticProps
 }
 
-export interface WrapperProps<P extends Object> extends PageProps {
+export interface WrapperProps<P extends Object> {
+    initialState: any;
     initialProps: P; // stuff returned from getInitialProps or getServerSideProps
 }
 
