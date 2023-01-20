@@ -9,9 +9,11 @@ export interface State {
 const reducer = (state: State = {app: 'init', page: 'init'}, action: AnyAction) => {
     switch (action.type) {
         case HYDRATE:
+            // Ignoring initial state in subtree
             if (action.payload.app === 'init') {
                 delete action.payload.app;
             }
+            // Ignoring initial state in subtree
             if (action.payload.page === 'init') {
                 delete action.payload.page;
             }

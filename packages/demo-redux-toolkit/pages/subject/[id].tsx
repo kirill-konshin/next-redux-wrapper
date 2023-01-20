@@ -5,10 +5,11 @@ import {InferGetServerSidePropsType, NextPage} from 'next';
 import {fetchSubject, selectSubjectPageId, selectSubjectPageName, selectSubjectPageStateTimestamp, wrapper} from '../../store';
 
 const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = function Subject({serverTimestamp, ...props}) {
-    wrapper.useHydration(props);
+    const {hydrating} = wrapper.useHydration(props);
 
     console.log('State on render', useStore().getState());
     console.log('Timestamp on server: ', serverTimestamp);
+    console.log('Hydrating:', hydrating);
     const dispatch = useDispatch();
     const pageId = useSelector(selectSubjectPageId);
     const pageName = useSelector(selectSubjectPageName);
@@ -18,7 +19,6 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = f
 
     if (!pageName || !pageId) {
         return <div>Loading</div>;
-        // throw new Error('Whoops! We do not have the pageId and pageName selector data!');
     }
 
     return (

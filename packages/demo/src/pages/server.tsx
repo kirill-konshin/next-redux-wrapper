@@ -11,7 +11,8 @@ interface OtherProps {
 }
 
 const Server: NextPage<OtherProps> = ({appProp, getServerSideProp, ...props}) => {
-    wrapper.useHydration(props);
+    const {hydrating} = wrapper.useHydration(props);
+    console.log('render server', hydrating);
     const {app, page} = useSelector<State, State>(state => state);
     return (
         <div className="server">

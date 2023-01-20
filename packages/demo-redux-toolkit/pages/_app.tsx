@@ -16,6 +16,7 @@ const MyApp: FC<AppProps> = function MyApp({Component, pageProps}) {
     );
 };
 
+//FIXME This is not a recommended approach, only used here for demo purposes
 (MyApp as any).getInitialProps = wrapper.getInitialAppProps(store => async appCtx => {
     // You have to do dispatches first, before...
     await store.dispatch(fetchSystem());

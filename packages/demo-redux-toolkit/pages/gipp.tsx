@@ -20,7 +20,7 @@ const Page: NextPage<Props> = ({name, initialState}: any) => {
     console[testData ? 'info' : 'warn']('Rendered testData: ', testData);
 
     if (!testData || !data) {
-        throw new Error('Whoops! We do not have the data and testData selector data!');
+        return <div>Loading...</div>;
     }
 
     return (

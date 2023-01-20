@@ -12,7 +12,6 @@ export default function Pokemon(props: any) {
 
     if (!data) {
         return <div>Loading</div>;
-        // throw new Error('Whoops! We do not have the data selector data!');
     }
 
     return <div>Name: {data?.name}</div>;

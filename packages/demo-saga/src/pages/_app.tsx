@@ -1,8 +1,8 @@
 import React, {FC} from 'react';
 import App, {AppProps} from 'next/app';
 import {END} from 'redux-saga';
-import {SagaStore, wrapper} from '../components/store';
 import {Provider} from 'react-redux';
+import {SagaStore, wrapper} from '../components/store';
 
 const MyApp: FC<AppProps> = function MyApp({Component, pageProps}) {
     const store = wrapper.useStore();

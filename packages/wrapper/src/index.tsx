@@ -219,7 +219,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
     const useHydration = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps | any) => {
         const dispatch = useDispatch();
 
-        const [hydrating, setHydrating] = useState(false);
+        const [hydrating, setHydrating] = useState(true);
 
         const hydrate = useCallback(() => {
             const states = getStates({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP});
@@ -285,7 +285,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         hydrate();
 
-        return {hydrating};
+        return {hydrating: false};
     };
 
     return {
