@@ -281,8 +281,8 @@ describe('withRedux', () => {
 describe('custom serialization', () => {
     test('serialize on server and deserialize on client', async () => {
         const wrapper = createWrapper(makeStore, {
-            serializeState: (state: any) => ({...state, serialized: true}),
-            deserializeState: (state: any) => ({...state, deserialized: true}),
+            serializeAction: (state: any) => ({...state, serialized: true}),
+            deserializeAction: (state: any) => ({...state, deserialized: true}),
             debug: true,
         });
 

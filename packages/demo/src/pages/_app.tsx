@@ -17,6 +17,11 @@ export default function MyApp({Component, pageProps}: AppProps) {
     // Keep in mind that this will be called twice on server, one for page and second for error page
     store.dispatch({type: 'APP', payload: 'was set in _app'});
 
+    await store.dispatch({
+        type: 'PROMISE_APP',
+        payload: new Promise(res => setTimeout(() => res('bar'), 1)),
+    });
+
     return {
         pageProps: {
             // https://nextjs.org/docs/advanced-features/custom-app#caveats

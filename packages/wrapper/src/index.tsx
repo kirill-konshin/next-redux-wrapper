@@ -1,6 +1,6 @@
 import {AppContext} from 'next/app';
 import {useCallback, useLayoutEffect, useMemo, useState} from 'react';
-import {Store} from 'redux';
+import {Store, Middleware, Action, Dispatch} from 'redux';
 import {
     GetServerSideProps,
     GetServerSidePropsContext,
@@ -27,19 +27,16 @@ import {useDispatch} from 'react-redux';
  * {props: any}
  */
 
-export const HYDRATE = '__NEXT_REDUX_WRAPPER_HYDRATE__';
-export const RENDER = '__NEXT_REDUX_WRAPPER_FIRST_RENDER__';
-export const REQPROP = '__NEXT_REDUX_WRAPPER_STORE__';
+const RENDER = '__NEXT_REDUX_WRAPPER_FIRST_RENDER__';
+const REQPROP = '__NEXT_REDUX_WRAPPER_STORE__';
 
 const getIsServer = () => !process.browser;
 
-const getDeserializedState = <S extends Store>(state: any, {deserializeState}: Config<S> = {}) =>
-    deserializeState ? deserializeState(state) : state;
+const getDeserializedAction = (state: any, {deserializeAction}: Config<any> = {}) => (deserializeAction ? deserializeAction(state) : state);
 
-const getSerializedState = <S extends Store>(state: any, {serializeState}: Config<S> = {}) =>
-    serializeState ? serializeState(state) : state;
+const getSerializedAction = (state: any, {serializeAction}: Config<any> = {}) => (serializeAction ? serializeAction(state) : state);
 
-export declare type MakeStore<S extends Store> = (context: Context) => S;
+export declare type MakeStore<S extends Store> = (init: {context: Context; middleware: Middleware}) => S;
 
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
@@ -47,10 +44,41 @@ export interface InitStoreOptions<S extends Store> {
     config: Config<S>;
 }
 
+export enum Source {
+    GIAP = 'GIAP',
+    GIPP = 'GIPP',
+    GSP = 'GSP',
+    GSSP = 'GSSP',
+}
+
 let sharedClientStore: any;
 
-const initStore = <S extends Store>({makeStore, context = {}, config}: InitStoreOptions<S>): S => {
-    const createStore = () => makeStore(context);
+const undefinedReplacer = (key: string, value: any) => (typeof value === 'undefined' ? null : value);
+
+const createMiddleware = (config: Config<any>): {log: Action[]; middleware: Middleware} => {
+    const log: Action[] = [];
+
+    const middleware: Middleware = api => next => action => {
+        if (!getIsServer()) {
+            return next(action);
+        }
+
+        action = JSON.parse(JSON.stringify(action, undefinedReplacer));
+
+        log.push(getSerializedAction(action, config));
+
+        return next(action);
+    };
+
+    return {log, middleware};
+};
+
+const initStore = <S extends Store>({makeStore, context = {}, config}: InitStoreOptions<S>): {store: S; log: Action[]} => {
+    const createStore = () => {
+        const {log, middleware} = createMiddleware(config);
+        const store = makeStore({context, middleware});
+        return {store, log};
+    };
 
     if (getIsServer()) {
         const req: any = (context as NextPageContext)?.req || (context as AppContext)?.ctx?.req;
@@ -75,7 +103,9 @@ const initStore = <S extends Store>({makeStore, context = {}, config}: InitStore
 
     // Memoize the store if we're on the client
     if (!sharedClientStore) {
-        console.log('1. Store created on client');
+        if (config.debug) {
+            console.log('1. Store created on client');
+        }
         sharedClientStore = createStore();
     }
 
@@ -102,53 +132,58 @@ const initStore = <S extends Store>({makeStore, context = {}, config}: InitStore
  * GIPP (partial) -> GIAP (full)
  * GIAP (partial) -> GSSP (full)
  * GIAP (partial) -> GSP (partial)
- *
- * @param {any} initialStateGSSP
- * @param {any} initialStateGSP
- * @param {any} initialStateGIAP
- * @param {any} initialStateGIPP
- * @returns {(any | string)[][]}
  */
-export const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps) => {
+const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps): Map<string, Action[]> => {
+    const map = new Map();
     if (initialStateGIAP) {
         if (initialStateGIPP) {
-            return [[initialStateGIAP, 'GIAP']]; // ignore GIPP as GIAP is more complete
+            map.set(Source.GIAP, initialStateGIAP); // ignore GIPP as GIAP is more complete
         } else if (initialStateGSSP) {
-            return [[initialStateGSSP, 'GSSP']]; // ignore GIAP as GSSP is more complete
+            map.set(Source.GSSP, initialStateGSSP); // ignore GIAP as GSSP is more complete
         } else if (initialStateGSP) {
-            return [
-                // send both as they both are partial, order is important as GSP happens way before GIAP
-                [initialStateGSP, 'GSP'],
-                [initialStateGIAP, 'GIAP'],
-            ];
+            // send both as they both are partial, order is important as GSP happens way before GIAP
+            map.set(Source.GSP, initialStateGSP);
+            map.set(Source.GIAP, initialStateGIAP);
+        } else {
+            map.set(Source.GIAP, initialStateGIAP); // simply return GIAP
         }
-        return [[initialStateGIAP, 'GIAP']]; // simply return GIAP as there's nothing else
     } else if (initialStateGSP) {
-        return [[initialStateGSP, 'GSP']];
+        map.set(Source.GSP, initialStateGSP);
     } else if (initialStateGSSP) {
-        return [[initialStateGSSP, 'GSSP']];
+        map.set(Source.GSSP, initialStateGSSP);
     } else if (initialStateGIPP) {
-        return [[initialStateGIPP, 'GIPP']];
+        map.set(Source.GIPP, initialStateGIPP);
     }
-    return [];
+    return map;
 };
 
+const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<any>) =>
+    getStates(states).forEach((actions, source) =>
+        actions.forEach(action => {
+            action = getDeserializedAction(action, config);
+            dispatch({
+                ...action,
+                meta: {...(action as any).meta, source},
+            });
+        }),
+    );
+
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
+    //const log: Action[] = [];
+
     const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
-        const store = initStore({context, makeStore, config});
+        const {store, log} = initStore({context, makeStore, config});
 
         const nextCallback = callback && callback(store);
         const initialProps = ((nextCallback && (await nextCallback(context))) || {}) as P;
 
-        const state = store.getState();
-
         if (config.debug) {
-            console.log(`2. initial state after dispatches`, state);
+            console.log(`2. initial state after dispatches`, store.getState());
         }
 
         return {
             initialProps,
-            initialState: getIsServer() ? getSerializedState<S>(state, config) : state,
+            initialState: log,
         } as any;
     };
 
@@ -214,23 +249,17 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             } as any;
         };
 
-    const useStore = () => useMemo<S>(() => initStore<S>({makeStore, config}), []);
+    const useStore = () => useMemo<S>(() => initStore<S>({makeStore, config}).store, []);
 
     const useHydration = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps | any) => {
         const dispatch = useDispatch();
 
         const [hydrating, setHydrating] = useState(true);
 
-        const hydrate = useCallback(() => {
-            const states = getStates({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP});
-            states.forEach(([state, source]) =>
-                dispatch({
-                    type: HYDRATE,
-                    payload: getDeserializedState<S>(state, config),
-                    meta: {source},
-                } as any),
-            );
-        }, [dispatch, initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP]);
+        const hydrate = useCallback(
+            () => dispatchStates(dispatch, {initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}, config),
+            [dispatch, initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP],
+        );
 
         // This guard is solely to suppress Next.js warning about useless layout effect
         if (!getIsServer()) {
@@ -238,6 +267,14 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             useLayoutEffect(() => {
                 if (!(window as any)[RENDER]) {
                     (window as any)[RENDER] = true;
+                    return;
+                }
+
+                // if there are only GIAP or GIPP these actions were already dispatched on client side
+                if (!initialStateGSP && !initialStateGSSP) {
+                    if (config.debug) {
+                        console.log('4. useHydration effect skipped');
+                    }
                     return;
                 }
 
@@ -250,7 +287,11 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 hydrate();
 
                 setHydrating(false);
-            }, [dispatch, hydrate]);
+
+                if (config.debug) {
+                    console.log('4. useHydration done');
+                }
+            }, [dispatch, hydrate, initialStateGSP, initialStateGSSP]);
 
             if ((window as any)[RENDER]) {
                 return {hydrating};
@@ -285,6 +326,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         hydrate();
 
+        if (config.debug) {
+            console.log('4. useHydration done');
+        }
+
         return {hydrating: false};
     };
 
@@ -301,16 +346,16 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 export type Context = NextPageContext | AppContext | GetStaticPropsContext | GetServerSidePropsContext;
 
 export interface Config<S extends Store> {
-    serializeState?: (state: ReturnType<S['getState']>) => any;
-    deserializeState?: (state: any) => ReturnType<S['getState']>;
+    serializeAction?: (state: ReturnType<S['getState']>) => any;
+    deserializeAction?: (state: any) => ReturnType<S['getState']>;
     debug?: boolean;
 }
 
 export interface PageProps {
-    initialStateGIAP: any; // stuff in the Store state after App.getInitialProps
-    initialStateGIPP: any; // stuff in the Store state after Page.getInitialProps
-    initialStateGSSP: any; // stuff in the Store state after getServerSideProps
-    initialStateGSP: any; // stuff in the Store state after getStaticProps
+    initialStateGIAP: Action[]; // stuff in the Store state after App.getInitialProps
+    initialStateGIPP: Action[]; // stuff in the Store state after Page.getInitialProps
+    initialStateGSSP: Action[]; // stuff in the Store state after getServerSideProps
+    initialStateGSP: Action[]; // stuff in the Store state after getStaticProps
 }
 
 export interface WrapperProps<P extends Object> {

@@ -43,6 +43,6 @@
   "license": "MIT",
   "packageManager": "yarn@3.0.2",
   "resolutions": {
-    "@types/react": "17.0.53"
+    "@types/react": "17.0.37"
   }
 }

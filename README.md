@@ -47,6 +47,8 @@ This is where `next-redux-wrapper` comes in handy: it automatically creates the 
 
 Library provides uniform interface no matter in which Next.js data lifecycle method you would like to use the `Store`.
 
+The hydration is performed by replaying the actions dispatched on server, in the same order.
+
 In Next.js example https://github.com/vercel/next.js/blob/canary/examples/with-redux-thunk/store.js#L23 store is being replaced on navigation. Redux will re-render components even with memoized selectors (`createSelector` from `recompose`) if `store` is replaced: https://codesandbox.io/s/redux-store-change-kzs8q, which may affect performance of the app by causing a huge re-render of everything, even what did not change. This library makes sure `store` remains the same.
 
 # Installation
@@ -72,8 +74,8 @@ Create a file named `store.ts`:
 ```typescript
 // store.ts
 
-import {createStore, AnyAction, Store} from 'redux';
-import {createWrapper, Context, HYDRATE} from 'next-redux-wrapper';
+import {createStore, applyMiddleware, AnyAction, Store} from 'redux';
+import {createWrapper, MakeStore} from 'next-redux-wrapper';
 
 export interface State {
   tick: string;
@@ -82,9 +84,6 @@ export interface State {
 // create your reducer
 const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
   switch (action.type) {
-    case HYDRATE:
-      // Attention! This will overwrite client state! Real apps should use proper reconciliation.
-      return {...state, ...action.payload};
     case 'TICK':
       return {...state, tick: action.payload};
     default:
@@ -93,7 +92,7 @@ const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
 };
 
 // create a makeStore function
-const makeStore = (context: Context) => createStore(reducer);
+const makeStore: MakeStore<Store<State>> = ({context, middleware}) => createStore(reducer, applyMiddleware(middleware)); // make sure middleware is last, after thunk or promise middlewares
 
 // export an assembled wrapper
 export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
@@ -105,14 +104,12 @@ export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
 ```js
 // store.js
 
-import {createStore} from 'redux';
-import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+import {createStore, applyMiddleware} from 'redux';
+import {createWrapper} from 'next-redux-wrapper';
 
 // create your reducer
 const reducer = (state = {tick: 'init'}, action) => {
   switch (action.type) {
-    case HYDRATE:
-      return {...state, ...action.payload};
     case 'TICK':
       return {...state, tick: action.payload};
     default:
@@ -121,13 +118,11 @@ const reducer = (state = {tick: 'init'}, action) => {
 };
 
 // create a makeStore function
-const makeStore = context => createStore(reducer);
+const makeStore = ({context, middleware}) => createStore(reducer, applyMiddleware(middleware));
 
 // export an assembled wrapper
 export const wrapper = createWrapper(makeStore, {debug: true});
 ```
-
-**Please note that your reducer _must_ have the `HYDRATE` action handler. `HYDRATE` action handler must properly reconciliate the hydrated state on top of the existing state (if any).**
 
 </details>
 
@@ -192,7 +187,7 @@ export default Page;
 
 </details>
 
-:warning: **Since hydration can happen both on first visit and on subsequent navigation (then hydration will be asynchronous) `getSomeValue` has to safely handle empty store state. Component will be rendered twice, with empty state, and after hydration. Write selectors like so `export const getSomeValue = createSelector(getAnotherValue, s => s?.someValue);`.**.
+:warning: **Since hydration can happen both on first visit and on subsequent navigation (then hydration will be asynchronous) `getSomeValue` selector has to safely handle empty store state. Component will be rendered twice, with empty state, and after hydration. Write selectors like so `export const getSomeValue = createSelector(getAnotherValue, s => s?.someValue);`.**.
 
 You can use `hydrating` variable to understand the status of the hydration and show loading screen if needed.
 
@@ -224,8 +219,6 @@ export const getStaticProps = wrapper.getStaticProps(store => ({preview}) => {
 // ... usual Page component code
 ```
 
-:warning: **Each time when pages that have `getStaticProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of static generation, it will not have client state, or server state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
-
 ### getServerSideProps
 
 This section describes how to attach to [getServerSideProps](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) lifecycle function.
@@ -243,8 +236,6 @@ export const getServerSideProps = wrapper.getServerSideProps(store => ({req, res
 // ... usual Page component code
 ```
 
-:warning: **Each time when pages that have `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched.** The `payload` of this action will contain the `state` at the moment of server side rendering, it will not have client state, so your reducer must merge it with existing client state properly. More about this in [Server and Client State Separation](#server-and-client-state-separation).
-
 ### `Page.getInitialProps`
 
 ```js
@@ -258,7 +249,7 @@ Page.getInitialProps = wrapper.getInitialPageProps(store => ({pathname, req, res
 });
 ```
 
-:warning: `req` and `res` are not available if `getInitialProps` is called on client side during navigation. And the actions dispatched from `getInitialProps` will be dispatched on client side, as well as `HYDRATE` action. Your hydration reducer can ignore the `HYDRATE` action if it considers it redundant.
+:warning: `req` and `res` are not available if `getInitialProps` is called on client side during navigation.
 
 ### `App.getInitialProps`
 
@@ -291,59 +282,29 @@ MyApp.getInitialProps = wrapper.getInitialAppProps(store => async context => {
 export default MyApp;
 ```
 
-:warning: `req` and `res` are not available if `App.getInitialProps` is called on client side during navigation. And the actions dispatched from `App.getInitialProps` will be dispatched on client side, as well as `HYDRATE` action. Your hydration reducer can ignore the `HYDRATE` action if it considers it redundant.
+:warning: `req` and `res` are not available if `App.getInitialProps` or `Page.getInitialProps` are called on client side during navigation. And the actions dispatched from `App.getInitialProps` or `Page.getInitialProps` will be dispatched on client side.
 
 All pages still can have all standard data lifecycle methods, with one common pitfall:
 
-:warning: You can use `getStaticProps` at page level while having `App.getInitialProps`, this scenario is supported, but I highly don't recommend to do this. In this case you should expect 2 `HYDRATE` actions being dispatched:
-
-1. With state after `getStaticProps` with partial state after dispatches at compile time
-2. With state after `App.getInitialProps` with partial state during runtime either on server or on client
-
-Your `HYDRATE` reducer has to properly handle these partial hydrations, e.g. don't overwrite state blindly. I suggest to design state shape in a way that it does not overlap, and each hydration can simply update whole subtree. Same principle is described in sections [server and client state separation](#server-and-client-state-separation) and [state reconciliation during hydration](#state-reconciliation-during-hydration).
+:warning: You can use `getStaticProps` at page level while having `App.getInitialProps`, this scenario is supported, but I highly don't recommend to do this.
 
 # State reconciliation during hydration
 
-Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the `HYDRATE` action will be dispatched. This may happen during initial page load and during regular page navigation. The `payload` of this action will contain the `state` at the moment of static generation or server side rendering, so your reducer must merge it with existing client state properly.
+Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the actions performed on server will be dispatched on client as well. This may happen during initial page load and during regular page navigation. Your reducer must merge it with existing client state properly.
 
 Best way is to use [server and client state separation](#server-and-client-state-separation).
 
 Another way is to use https://github.com/benjamine/jsondiffpatch to analyze diff and apply it properly, or any other way to determine which state subtrees were modified.
 
 ```js
-import {HYDRATE} from 'next-redux-wrapper';
-
 // create your reducer
 const reducer = (state = {tick: 'init'}, action) => {
   switch (action.type) {
-    case HYDRATE:
-      const wasBumpedOnClient = state.tick !== 'init'; // or any other criteria
-      return {
-        ...state,
-        ...action.payload,
-        page: wasBumpedOnClient ? state.tick : action.payload.tick, // keep existing state or use hydrated
-      };
     case 'TICK':
-      return {...state, tick: action.payload};
+      const wasBumpedOnClient = state.tick !== 'init'; // or any other criteria
+      return {...state, tick: wasBumpedOnClient ? state.tick : action.payload};
     default:
       return state;
-  }
-};
-```
-
-Or [like this](https://github.com/zeit/next.js/blob/canary/examples/with-redux-wrapper/store/store.js) (from [with-redux-wrapper example](https://github.com/zeit/next.js/tree/canary/examples/with-redux-wrapper) in Next.js repo):
-
-```js
-const reducer = (state, action) => {
-  if (action.type === HYDRATE) {
-    const nextState = {
-      ...state, // use previous state
-      ...action.payload, // apply delta from hydration
-    };
-    if (state.count) nextState.count = state.count; // preserve count value on client side navigation
-    return nextState;
-  } else {
-    return combinedReducer(state, action);
   }
 };
 ```
@@ -355,7 +316,7 @@ The `createWrapper` function accepts `makeStore` as its first argument. The `mak
 `createWrapper` also optionally accepts a config object as a second parameter:
 
 - `debug` (optional, boolean) : enable debug logging
-- `serializeState` and `deserializeState`: custom functions for serializing and deserializing the redux state, see [Custom serialization and deserialization](#custom-serialization-and-deserialization).
+- `serializeAction` and `deserializeAction`: custom functions for serializing and deserializing the actions, see [Custom serialization and deserialization](#custom-serialization-and-deserialization).
 
 When `makeStore` is invoked it is provided with a Next.js context, which could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap.
 
@@ -381,17 +342,20 @@ Using `next-redux-wrapper` ("the wrapper"), the following things happen on a req
 - Phase 2: SSR
 
   - The wrapper creates a new store using `makeStore`
-  - The wrapper dispatches `HYDRATE` action with the previous store's state as `payload`
-  - That store is passed as a property to the `_app` or `page` component.
+  - The wrapper replays all actions dispatched on Phase 1
+  - Resulting HTML is emitted to browser
   - **Connected components may alter the store's state, but the modified state will not be transferred to the client.**
 
 - Phase 3: Client
-  - The wrapper creates a new store
-  - The wrapper dispatches `HYDRATE` action with the state from Phase 1 as `payload`
-  - That store is passed as a property to the `_app` or `page` component.
-  - The wrapper persists the store in the client's window object, so it can be restored in case of HMR.
 
-**Note:** The client's state is not persisted across requests (i.e. Phase 1 always starts with an empty state). Hence, it is reset on page reloads. Consider using [Redux persist](#usage-with-redux-persist) if you want to persist state between requests.
+  - The wrapper creates a new store
+  - The wrapper replays all actions dispatched on Phase 1
+
+- Phase 4: Soft client navigation (without reload)
+  - The wrapper reuses same client store
+  - The wrapper idles if no `getServerSideProps` or `getStaticProps` were used on the page, otherwise the wrapper replays all actions dispatched on new Phase 1 of the new page
+
+**Note:** The client's state is not persisted across requests (i.e. Phase 1 always starts with an empty state). Hence, it is reset on page reloads. Consider using [Redux persist](#usage-with-redux-persist) if you want to persist state between page reloads or hard navigation.
 
 ## Tips and Tricks
 
@@ -404,7 +368,7 @@ Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/p
 ```ts
 import {configureStore, createSlice, ThunkAction} from '@reduxjs/toolkit';
 import {Action} from 'redux';
-import {createWrapper, HYDRATE} from 'next-redux-wrapper';
+import {createWrapper} from 'next-redux-wrapper';
 
 export const subjectSlice = createSlice({
   name: 'subject',
@@ -416,24 +380,15 @@ export const subjectSlice = createSlice({
       return action.payload;
     },
   },
-
-  extraReducers: {
-    [HYDRATE]: (state, action) => {
-      console.log('HYDRATE', state, action.payload);
-      return {
-        ...state,
-        ...action.payload.subject,
-      };
-    },
-  },
 });
 
-const makeStore = () =>
+const makeStore = ({middleware}) =>
   configureStore({
     reducer: {
       [subjectSlice.name]: subjectSlice.reducer,
     },
     devTools: true,
+    middleware: getDefaultMiddleware => getDefaultMiddleware().concat(middleware),
   });
 
 export type AppStore = ReturnType<typeof makeStore>;
@@ -479,14 +434,6 @@ The easiest and most stable way to make sure nothing is accidentally overwritten
 ```js
 const reducer = (state = {tick: 'init'}, action) => {
   switch (action.type) {
-    case HYDRATE:
-      return {
-        ...state,
-        server: {
-          ...state.server,
-          ...action.payload.server,
-        },
-      };
     case 'SERVER_ACTION':
       return {
         ...state,
@@ -565,7 +512,7 @@ await store.dispatch(someAsyncAction());
 
 If you are storing complex types such as Immutable.JS or JSON objects in your state, a custom serialize and deserialize
 handler might be handy to serialize the redux state on the server and deserialize it again on the client. To do so,
-provide `serializeState` and `deserializeState` as config options to `withRedux`.
+provide `serializeAction` and `deserializeAction` as config options to `createStore`.
 
 The reason is that state snapshot is transferred over the network from server to client as a plain object.
 
@@ -575,8 +522,8 @@ Example of a custom serialization of an Immutable.JS state using `json-immutable
 const {serialize, deserialize} = require('json-immutable');
 
 createWrapper({
-  serializeState: state => serialize(state),
-  deserializeState: state => deserialize(state),
+  serializeAction: action => serialize(action),
+  deserializeAction: action => deserialize(action),
 });
 ```
 
@@ -586,8 +533,8 @@ Same thing using Immutable.JS:
 const {fromJS} = require('immutable');
 
 createWrapper({
-  serializeState: state => state.toJS(),
-  deserializeState: state => fromJS(state),
+  serializeAction: action => action.toJS(),
+  deserializeAction: action => fromJS(action),
 });
 ```
 
@@ -604,12 +551,12 @@ import createSagaMiddleware from 'redux-saga';
 import reducer from './reducer';
 import rootSaga from './saga';
 
-export const makeStore = context => {
+export const makeStore = ({context, wrapper}) => {
   // 1: Create the middleware
   const sagaMiddleware = createSagaMiddleware();
 
   // 2: Add an extra parameter for applying middleware:
-  const store = createStore(reducer, applyMiddleware(sagaMiddleware));
+  const store = createStore(reducer, applyMiddleware(sagaMiddleware, wrapper));
 
   // 3: Run your sagas on server
   store.sagaTask = sagaMiddleware.run(rootSaga);
@@ -874,9 +821,11 @@ export default connect(state => state)(
 
 ## Upgrade from 8.x to 9.x
 
-1. `addStoreToContext` option is discontinued
+1. `HYDRATE` action has been removed, all actions are replayed as-is
 
-2. Pages wrapped with App, that has `getInitialProps` will not receive `store` in `context`, change:
+2. `addStoreToContext` option is discontinued
+
+3. Pages wrapped with App, that has `getInitialProps` will not receive `store` in `context`, change:
 
    ```
    public static async getInitialProps({store, pathname, query, req}: NextPageContext) {
@@ -888,11 +837,15 @@ export default connect(state => state)(
    public static getInitialProps = wrapper.getInitialPageProps(store => async ({pathname, query, req}) => {
    ```
 
-3. `const {store, props} = wrapper.useWrappedStore(rest);` is now `const store = wrapper.useStore();`
+4. `const {store, props} = wrapper.useWrappedStore(rest);` is now `const store = wrapper.useStore();`
 
-4. Each page need to call `wrapper.useHydration(props)`
+5. Each page need to call `wrapper.useHydration(props)`
 
-5. All legacy HOCs are were removed, please use [custom ones](#usage-with-old-class-based-components) if you still need them, but I suggest to rewrite code into functional components and hooks
+6. All legacy HOCs are were removed, please use [custom ones](#usage-with-old-class-based-components) if you still need them, but I suggest to rewrite code into functional components and hooks
+
+7. `serializeState` and `deserializeState` were removed, use `serializeAction` and `deserializeAction`
+
+8. `const makeStore = (context) => {...}` is now `const makeStore = ({context, middleware})`, you must add middleware to your store
 
 ## Upgrade from 6.x to 7.x
 

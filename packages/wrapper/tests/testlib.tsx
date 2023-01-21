@@ -3,7 +3,7 @@ import {create} from 'react-test-renderer';
 import {applyMiddleware, createStore, AnyAction} from 'redux';
 import {useSelector} from 'react-redux';
 import promiseMiddleware from 'redux-promise-middleware';
-import {createWrapper, HYDRATE} from '../src';
+import {createWrapper} from '../src';
 import {RouterContext} from 'next/dist/shared/lib/router-context';
 
 export interface State {
@@ -13,8 +13,6 @@ export interface State {
 
 export const reducer = (state: State = {reduxStatus: 'init'}, action: AnyAction) => {
     switch (action.type) {
-        case HYDRATE:
-            return {...state, ...action.payload};
         case 'FOO': // sync
         case 'FOO_FULFILLED': // async
             return {reduxStatus: action.payload};

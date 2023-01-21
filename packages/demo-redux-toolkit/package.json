@@ -13,7 +13,8 @@
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-redux": "7.2.6",
-    "redux": "4.1.2"
+    "redux": "4.1.2",
+    "redux-logger": "3.0.6"
   },
   "devDependencies": {
     "@playwright/test": "1.17.1",

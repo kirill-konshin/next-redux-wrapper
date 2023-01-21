@@ -12,14 +12,14 @@ export interface PageProps extends State {
 
 const Page: NextPage<PageProps> = function ({pageProp, appProp, ...props}) {
     wrapper.useHydration(props);
-    const {app, page} = useSelector<State, State>(state => state);
+    const {app, page, promise, promiseApp} = useSelector<State, State>(state => state);
     return (
         <div className="index">
             <p>
                 Try to navigate to another page and return back here to see how <code>getInitialProps</code> will be used on client side.
             </p>
 
-            <pre>{JSON.stringify({pageProp, appProp, app, page}, null, 2)}</pre>
+            <pre>{JSON.stringify({pageProp, appProp, app, page, promise, promiseApp}, null, 2)}</pre>
 
             <Link href="/server">Navigate</Link>
             {' | '}
