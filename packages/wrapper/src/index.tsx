@@ -36,6 +36,11 @@ const getDeserializedAction = (state: any, {deserializeAction}: Config<any> = {}
 
 const getSerializedAction = (state: any, {serializeAction}: Config<any> = {}) => (serializeAction ? serializeAction(state) : state);
 
+const getActionFilter =
+    ({actionFilter}: Config<any> = {}) =>
+    (action: Action) =>
+        actionFilter ? actionFilter(action) : true;
+
 export declare type MakeStore<S extends Store> = (init: {context: Context; middleware: Middleware}) => S;
 
 export interface InitStoreOptions<S extends Store> {
@@ -159,7 +164,7 @@ const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initial
 
 const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<any>) =>
     getStates(states).forEach((actions, source) =>
-        actions.forEach(action => {
+        actions.filter(getActionFilter(config)).forEach(action => {
             action = getDeserializedAction(action, config);
             dispatch({
                 ...action,
@@ -349,6 +354,7 @@ export interface Config<S extends Store> {
     serializeAction?: (state: ReturnType<S['getState']>) => any;
     deserializeAction?: (state: any) => ReturnType<S['getState']>;
     debug?: boolean;
+    actionFilter?: (action: Action) => boolean | any;
 }
 
 export interface PageProps {

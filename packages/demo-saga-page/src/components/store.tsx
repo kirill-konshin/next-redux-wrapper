@@ -3,7 +3,7 @@ import logger from 'redux-logger';
 import createSagaMiddleware, {Task} from 'redux-saga';
 import {createWrapper} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
-import rootSaga from './saga';
+import rootSaga, {SAGA_ACTION} from './saga';
 
 export interface SagaStore extends Store<State> {
     sagaTask: Task;
@@ -23,4 +23,7 @@ const makeStore = ({middleware}) => {
     return store;
 };
 
-export const wrapper = createWrapper<SagaStore>(makeStore as any, {debug: true});
+export const wrapper = createWrapper<SagaStore>(makeStore as any, {
+    debug: true,
+    actionFilter: action => action.type !== SAGA_ACTION,
+});

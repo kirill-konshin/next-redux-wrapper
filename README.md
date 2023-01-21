@@ -316,7 +316,8 @@ The `createWrapper` function accepts `makeStore` as its first argument. The `mak
 `createWrapper` also optionally accepts a config object as a second parameter:
 
 - `debug` (optional, boolean) : enable debug logging
-- `serializeAction` and `deserializeAction`: custom functions for serializing and deserializing the actions, see [Custom serialization and deserialization](#custom-serialization-and-deserialization).
+- `serializeAction` and `deserializeAction` (optional, function): custom functions for serializing and deserializing the actions, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
+- `actionFilter` (optional, function): filter out actions that should not be replayed on client, usually Redux Saga actions that cause subsequent actions
 
 When `makeStore` is invoked it is provided with a Next.js context, which could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap.
 
@@ -542,6 +543,8 @@ createWrapper({
 
 [Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs. Keep in mind that this setup will opt you out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization.
 
+Don't forget to filter out actions that cause saga to run using `actionFilter` config property.
+
 Create your root saga as usual, then implement the store creator:
 
 ```js
@@ -549,7 +552,7 @@ import {createStore, applyMiddleware} from 'redux';
 import {createWrapper} from 'next-redux-wrapper';
 import createSagaMiddleware from 'redux-saga';
 import reducer from './reducer';
-import rootSaga from './saga';
+import rootSaga, {SAGA_ACTION} from './saga';
 
 export const makeStore = ({context, wrapper}) => {
   // 1: Create the middleware
@@ -565,7 +568,10 @@ export const makeStore = ({context, wrapper}) => {
   return store;
 };
 
-export const wrapper = createWrapper(makeStore, {debug: true});
+export const wrapper = createWrapper(makeStore, {
+  debug: true,
+  actionFilter: action => action.type !== SAGA_ACTION, // don't forget to filter out actions that cause saga to run
+});
 ```
 
 ### Using `getServerSideProps` or `getStaticProps`
