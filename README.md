@@ -338,23 +338,23 @@ Using `next-redux-wrapper` ("the wrapper"), the following things happen on a req
   - The wrapper calls the `_app`'s `getInitialProps` (if any) function and passes the previously created store.
   - Next.js takes the props returned from the `_app`'s `getInitialProps` method, along with the store's state.
   - The wrapper calls the Page's `getXXXProps` function and passes the previously created store.
-  - Next.js takes the props returned from the Page's `getXXXProps` method, along with the store's state.
+  - Next.js takes the props returned from the Page's `getXXXProps` method, as well as a serialized list of actions that were dispatched.
 
 - Phase 2: SSR
 
   - The wrapper creates a new store using `makeStore`
   - The wrapper replays all actions dispatched on Phase 1
   - Resulting HTML is emitted to browser
-  - **Connected components may alter the store's state, but the modified state will not be transferred to the client.**
+  - **Connected components may dispatch actions in this phase too, but they will not be replayed on the client.**
 
 - Phase 3: Client
 
   - The wrapper creates a new store
-  - The wrapper replays all actions dispatched on Phase 1
+  - The wrapper replays all actions dispatched in Phase 1
 
 - Phase 4: Soft client navigation (without reload)
   - The wrapper reuses same client store
-  - The wrapper idles if no `getServerSideProps` or `getStaticProps` were used on the page, otherwise the wrapper replays all actions dispatched on new Phase 1 of the new page
+  - The wrapper idles if no `getServerSideProps` or `getStaticProps` were used on the page, otherwise the wrapper replays all actions dispatched in Phase 1 of the new page
 
 **Note:** The client's state is not persisted across requests (i.e. Phase 1 always starts with an empty state). Hence, it is reset on page reloads. Consider using [Redux persist](#usage-with-redux-persist) if you want to persist state between page reloads or hard navigation.
 
