@@ -358,10 +358,10 @@ export interface Config<S extends Store> {
 }
 
 export interface PageProps {
-    initialStateGIAP: Action[]; // stuff in the Store state after App.getInitialProps
-    initialStateGIPP: Action[]; // stuff in the Store state after Page.getInitialProps
-    initialStateGSSP: Action[]; // stuff in the Store state after getServerSideProps
-    initialStateGSP: Action[]; // stuff in the Store state after getStaticProps
+    initialStateGIAP?: Action[]; // stuff in the Store state after App.getInitialProps
+    initialStateGIPP?: Action[]; // stuff in the Store state after Page.getInitialProps
+    initialStateGSSP?: Action[]; // stuff in the Store state after getServerSideProps
+    initialStateGSP?: Action[]; // stuff in the Store state after getStaticProps
 }
 
 export interface WrapperProps<P extends Object> {
