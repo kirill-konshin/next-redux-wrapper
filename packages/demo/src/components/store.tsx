@@ -4,10 +4,10 @@ import promiseMiddleware from 'redux-promise-middleware';
 import {createWrapper, MakeStore} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 
-export const makeStore: MakeStore<any> = ({context, middleware}) => {
+export const makeStore: MakeStore<any> = ({context, reduxWrapperMiddleware}) => {
     const store = createStore(
         reducer,
-        applyMiddleware(...[promiseMiddleware, process.browser ? logger : null, middleware].filter(Boolean)),
+        applyMiddleware(...[promiseMiddleware, process.browser ? logger : null, reduxWrapperMiddleware].filter(Boolean)),
     );
 
     if ((module as any).hot) {

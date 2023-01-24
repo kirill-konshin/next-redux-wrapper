@@ -30,18 +30,19 @@ import {useDispatch} from 'react-redux';
 const RENDER = '__NEXT_REDUX_WRAPPER_FIRST_RENDER__';
 const REQPROP = '__NEXT_REDUX_WRAPPER_STORE__';
 
-const getIsServer = () => !process.browser;
+const getIsServer = () => typeof window === 'undefined';
 
-const getDeserializedAction = (state: any, {deserializeAction}: Config<any> = {}) => (deserializeAction ? deserializeAction(state) : state);
+const getDeserializedAction = (action: any, {deserializeAction}: Config<any> = {}) =>
+    deserializeAction ? deserializeAction(action) : action;
 
-const getSerializedAction = (state: any, {serializeAction}: Config<any> = {}) => (serializeAction ? serializeAction(state) : state);
+const getSerializedAction = (action: any, {serializeAction}: Config<any> = {}) => (serializeAction ? serializeAction(action) : action);
 
 const getActionFilter =
     ({actionFilter}: Config<any> = {}) =>
     (action: Action) =>
         actionFilter ? actionFilter(action) : true;
 
-export declare type MakeStore<S extends Store> = (init: {context: Context; middleware: Middleware}) => S;
+export declare type MakeStore<S extends Store> = (init: {context: Context; reduxWrapperMiddleware: Middleware}) => S;
 
 export interface InitStoreOptions<S extends Store> {
     makeStore: MakeStore<S>;
@@ -60,10 +61,10 @@ let sharedClientStore: any;
 
 const undefinedReplacer = (key: string, value: any) => (typeof value === 'undefined' ? null : value);
 
-const createMiddleware = (config: Config<any>): {log: Action[]; middleware: Middleware} => {
+const createMiddleware = (config: Config<any>): {log: Action[]; reduxWrapperMiddleware: Middleware} => {
     const log: Action[] = [];
 
-    const middleware: Middleware = api => next => action => {
+    const reduxWrapperMiddleware: Middleware = api => next => action => {
         if (!getIsServer()) {
             return next(action);
         }
@@ -75,13 +76,13 @@ const createMiddleware = (config: Config<any>): {log: Action[]; middleware: Midd
         return next(action);
     };
 
-    return {log, middleware};
+    return {log, reduxWrapperMiddleware};
 };
 
 const initStore = <S extends Store>({makeStore, context = {}, config}: InitStoreOptions<S>): {store: S; log: Action[]} => {
     const createStore = () => {
-        const {log, middleware} = createMiddleware(config);
-        const store = makeStore({context, middleware});
+        const {log, reduxWrapperMiddleware} = createMiddleware(config);
+        const store = makeStore({context, reduxWrapperMiddleware});
         return {store, log};
     };
 
@@ -138,26 +139,31 @@ const initStore = <S extends Store>({makeStore, context = {}, config}: InitStore
  * GIAP (partial) -> GSSP (full)
  * GIAP (partial) -> GSP (partial)
  */
-const getStates = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps): Map<string, Action[]> => {
+const getStates = ({
+    reduxWrapperActionsGSSP,
+    reduxWrapperActionsGSP,
+    reduxWrapperActionsGIAP,
+    reduxWrapperActionsGIPP,
+}: PageProps): Map<string, Action[]> => {
     const map = new Map();
-    if (initialStateGIAP) {
-        if (initialStateGIPP) {
-            map.set(Source.GIAP, initialStateGIAP); // ignore GIPP as GIAP is more complete
-        } else if (initialStateGSSP) {
-            map.set(Source.GSSP, initialStateGSSP); // ignore GIAP as GSSP is more complete
-        } else if (initialStateGSP) {
+    if (reduxWrapperActionsGIAP) {
+        if (reduxWrapperActionsGIPP) {
+            map.set(Source.GIAP, reduxWrapperActionsGIAP); // ignore GIPP as GIAP is more complete
+        } else if (reduxWrapperActionsGSSP) {
+            map.set(Source.GSSP, reduxWrapperActionsGSSP); // ignore GIAP as GSSP is more complete
+        } else if (reduxWrapperActionsGSP) {
             // send both as they both are partial, order is important as GSP happens way before GIAP
-            map.set(Source.GSP, initialStateGSP);
-            map.set(Source.GIAP, initialStateGIAP);
+            map.set(Source.GSP, reduxWrapperActionsGSP);
+            map.set(Source.GIAP, reduxWrapperActionsGIAP);
         } else {
-            map.set(Source.GIAP, initialStateGIAP); // simply return GIAP
+            map.set(Source.GIAP, reduxWrapperActionsGIAP); // simply return GIAP
         }
-    } else if (initialStateGSP) {
-        map.set(Source.GSP, initialStateGSP);
-    } else if (initialStateGSSP) {
-        map.set(Source.GSSP, initialStateGSSP);
-    } else if (initialStateGIPP) {
-        map.set(Source.GIPP, initialStateGIPP);
+    } else if (reduxWrapperActionsGSP) {
+        map.set(Source.GSP, reduxWrapperActionsGSP);
+    } else if (reduxWrapperActionsGSSP) {
+        map.set(Source.GSSP, reduxWrapperActionsGSSP);
+    } else if (reduxWrapperActionsGIPP) {
+        map.set(Source.GIPP, reduxWrapperActionsGIPP);
     }
     return map;
 };
@@ -188,8 +194,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 
         return {
             initialProps,
-            initialState: log,
-        } as any;
+            reduxWrapperActions: log,
+        };
     };
 
     const getInitialPageProps =
@@ -200,10 +206,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             if (!context.query || !context.pathname || !context.AppTree) {
                 throw new Error(`Looks like you've used getInitialPageProps for different kind of lifecycle method`);
             }
-            const {initialState, initialProps} = await makeProps({callback, context});
+            const {reduxWrapperActions, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
-                initialStateGIPP: initialState,
+                reduxWrapperActionsGIPP: reduxWrapperActions,
             };
         };
 
@@ -213,12 +219,12 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             if (!context.router || !context.Component || !context.AppTree || !context.ctx) {
                 throw new Error(`Looks like you've used getInitialAppProps for different kind of lifecycle method`);
             }
-            const {initialState, initialProps} = await makeProps({callback, context} as any);
+            const {reduxWrapperActions, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 pageProps: {
                     ...initialProps.pageProps,
-                    initialStateGIAP: initialState,
+                    reduxWrapperActionsGIAP: reduxWrapperActions,
                 },
             };
         };
@@ -228,14 +234,14 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         async (context: GetStaticPropsContext) => {
             //TODO Check context props to ensure GSP, problem is context has all params optional...
             // if (???) throw new Error('Looks like you've used getStaticProps for different kind of lifecycle method');
-            const {initialState, initialProps} = await makeProps({callback, context});
+            const {reduxWrapperActions, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
                     ...initialProps.props,
-                    initialStateGSP: initialState,
+                    reduxWrapperActionsGSP: reduxWrapperActions,
                 },
-            } as any;
+            };
         };
 
     const getServerSideProps =
@@ -244,26 +250,41 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             if (!context.req || !context.res || !context.resolvedUrl || !context.query) {
                 throw new Error(`Looks like you've used getStaticProps for different kind of lifecycle method`);
             }
-            const {initialState, initialProps} = await makeProps({callback, context});
+            const {reduxWrapperActions, initialProps} = await makeProps({callback, context});
             return {
                 ...initialProps,
                 props: {
                     ...initialProps.props,
-                    initialStateGSSP: initialState,
+                    reduxWrapperActionsGSSP: reduxWrapperActions,
                 },
-            } as any;
+            };
         };
 
     const useStore = () => useMemo<S>(() => initStore<S>({makeStore, config}).store, []);
 
-    const useHydration = ({initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}: PageProps | any) => {
+    const useHydration = ({
+        reduxWrapperActionsGSSP,
+        reduxWrapperActionsGSP,
+        reduxWrapperActionsGIAP,
+        reduxWrapperActionsGIPP,
+    }: PageProps | any) => {
         const dispatch = useDispatch();
 
         const [hydrating, setHydrating] = useState(true);
 
         const hydrate = useCallback(
-            () => dispatchStates(dispatch, {initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP}, config),
-            [dispatch, initialStateGSSP, initialStateGSP, initialStateGIAP, initialStateGIPP],
+            () =>
+                dispatchStates(
+                    dispatch,
+                    {
+                        reduxWrapperActionsGSSP,
+                        reduxWrapperActionsGSP,
+                        reduxWrapperActionsGIAP,
+                        reduxWrapperActionsGIPP,
+                    },
+                    config,
+                ),
+            [dispatch, reduxWrapperActionsGSSP, reduxWrapperActionsGSP, reduxWrapperActionsGIAP, reduxWrapperActionsGIPP],
         );
 
         // This guard is solely to suppress Next.js warning about useless layout effect
@@ -276,7 +297,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 }
 
                 // if there are only GIAP or GIPP these actions were already dispatched on client side
-                if (!initialStateGSP && !initialStateGSSP) {
+                if (!reduxWrapperActionsGSP && !reduxWrapperActionsGSSP) {
                     if (config.debug) {
                         console.log('4. useHydration effect skipped');
                     }
@@ -296,7 +317,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 if (config.debug) {
                     console.log('4. useHydration done');
                 }
-            }, [dispatch, hydrate, initialStateGSP, initialStateGSSP]);
+            }, [dispatch, hydrate, reduxWrapperActionsGSP, reduxWrapperActionsGSSP]);
 
             if ((window as any)[RENDER]) {
                 return {hydrating};
@@ -358,14 +379,14 @@ export interface Config<S extends Store> {
 }
 
 export interface PageProps {
-    initialStateGIAP?: Action[]; // stuff in the Store state after App.getInitialProps
-    initialStateGIPP?: Action[]; // stuff in the Store state after Page.getInitialProps
-    initialStateGSSP?: Action[]; // stuff in the Store state after getServerSideProps
-    initialStateGSP?: Action[]; // stuff in the Store state after getStaticProps
+    reduxWrapperActionsGIAP?: Action[]; // stuff in the Store state after App.getInitialProps
+    reduxWrapperActionsGIPP?: Action[]; // stuff in the Store state after Page.getInitialProps
+    reduxWrapperActionsGSSP?: Action[]; // stuff in the Store state after getServerSideProps
+    reduxWrapperActionsGSP?: Action[]; // stuff in the Store state after getStaticProps
 }
 
 export interface WrapperProps<P extends Object> {
-    initialState: any;
+    reduxWrapperActions: Action[];
     initialProps: P; // stuff returned from getInitialProps or getServerSideProps
 }
 

@@ -3,8 +3,8 @@ import logger from 'redux-logger';
 import {createWrapper} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 
-export const makeStore = ({context, middleware}) => {
-    const store = createStore(reducer, applyMiddleware(...[process.browser ? logger : null, middleware].filter(Boolean)));
+export const makeStore = ({context, reduxWrapperMiddleware}) => {
+    const store = createStore(reducer, applyMiddleware(...[process.browser ? logger : null, reduxWrapperMiddleware].filter(Boolean)));
 
     if ((module as any).hot) {
         (module as any).hot.accept('./reducer', () => {

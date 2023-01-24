@@ -6,6 +6,12 @@
 
 A library that brings Next.js and Redux together.
 
+> :warning: This library does not support the new experimental `app` folder because at this moment there is no clear way to use Redux with Server Components...
+>
+> Components that use Redux need a `Provider` up in the tree in order to work, and `Provider` is using `Context`, which is [not available on server](https://shopify.dev/custom-storefronts/hydrogen/react-server-components/work-with-rsc#using-context-in-react-server-components) (yet?).
+>
+> With that said, if you are using `app` folder, I suggest to keep Redux in client components (`"use client"`), and keep server-side state outside of Redux.
+
 - [Motivation](#motivation)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -92,7 +98,8 @@ const reducer = (state: State = {tick: 'init'}, action: AnyAction) => {
 };
 
 // create a makeStore function
-const makeStore: MakeStore<Store<State>> = ({context, middleware}) => createStore(reducer, applyMiddleware(middleware)); // make sure middleware is last, after thunk or promise middlewares
+const makeStore: MakeStore<Store<State>> = ({context, reduxWrapperMiddleware}) =>
+  createStore(reducer, applyMiddleware(reduxWrapperMiddleware)); // make sure reduxWrapperMiddleware is last, after thunk or promise middlewares
 
 // export an assembled wrapper
 export const wrapper = createWrapper<Store<State>>(makeStore, {debug: true});
@@ -118,7 +125,7 @@ const reducer = (state = {tick: 'init'}, action) => {
 };
 
 // create a makeStore function
-const makeStore = ({context, middleware}) => createStore(reducer, applyMiddleware(middleware));
+const makeStore = ({context, reduxWrapperMiddleware}) => createStore(reducer, applyMiddleware(reduxWrapperMiddleware)); // make sure reduxWrapperMiddleware is last, after thunk or promise middlewares
 
 // export an assembled wrapper
 export const wrapper = createWrapper(makeStore, {debug: true});
@@ -290,7 +297,7 @@ All pages still can have all standard data lifecycle methods, with one common pi
 
 # State reconciliation during hydration
 
-Each time when pages that have `getStaticProps` or `getServerSideProps` are opened by user the actions performed on server will be dispatched on client as well. This may happen during initial page load and during regular page navigation. Your reducer must merge it with existing client state properly.
+Each time when the user opens a page containing the `useHydration` hook, the actions performed on server will be dispatched on client as well. This may happen during initial page load and during regular page navigation. Your reducer must merge it with existing client state properly.
 
 Best way is to use [server and client state separation](#server-and-client-state-separation).
 
@@ -334,9 +341,9 @@ Using `next-redux-wrapper` ("the wrapper"), the following things happen on a req
 
 - Phase 1: `getInitialProps`/`getStaticProps`/`getServerSideProps`
 
-  - The wrapper creates a server-side store (using `makeStore`) with an empty initial state. In doing so it also provides the `Request` and `Response` objects as options to `makeStore`.
+  - The wrapper creates a server-side store (using `makeStore`) with an empty initial state.
   - The wrapper calls the `_app`'s `getInitialProps` (if any) function and passes the previously created store.
-  - Next.js takes the props returned from the `_app`'s `getInitialProps` method, along with the store's state.
+  - Next.js takes the props returned from the `_app`'s `getInitialProps` method, as well as a serialized list of actions that were dispatched.
   - The wrapper calls the Page's `getXXXProps` function and passes the previously created store.
   - Next.js takes the props returned from the Page's `getXXXProps` method, as well as a serialized list of actions that were dispatched.
 
@@ -383,13 +390,13 @@ export const subjectSlice = createSlice({
   },
 });
 
-const makeStore = ({middleware}) =>
+const makeStore = ({reduxWrapperMiddleware}) =>
   configureStore({
     reducer: {
       [subjectSlice.name]: subjectSlice.reducer,
     },
     devTools: true,
-    middleware: getDefaultMiddleware => getDefaultMiddleware().concat(middleware),
+    middleware: getDefaultMiddleware => getDefaultMiddleware().concat(reduxWrapperMiddleware),
   });
 
 export type AppStore = ReturnType<typeof makeStore>;
@@ -554,12 +561,12 @@ import createSagaMiddleware from 'redux-saga';
 import reducer from './reducer';
 import rootSaga, {SAGA_ACTION} from './saga';
 
-export const makeStore = ({context, wrapper}) => {
+export const makeStore = ({context, reduxWrapperMiddleware}) => {
   // 1: Create the middleware
   const sagaMiddleware = createSagaMiddleware();
 
   // 2: Add an extra parameter for applying middleware:
-  const store = createStore(reducer, applyMiddleware(sagaMiddleware, wrapper));
+  const store = createStore(reducer, applyMiddleware(sagaMiddleware, reduxWrapperMiddleware));
 
   // 3: Run your sagas on server
   store.sagaTask = sagaMiddleware.run(rootSaga);
@@ -654,10 +661,10 @@ export const reducer = (state, {type, payload}) => {
   return state;
 };
 
-const makeConfiguredStore = reducer => createStore(reducer, undefined, applyMiddleware(logger));
-
-const makeStore = () => {
+const makeStore = ({context, reduxWrapperMiddleware}) => {
   const isServer = typeof window === 'undefined';
+
+  const makeConfiguredStore = reducer => createStore(reducer, undefined, applyMiddleware(logger, reduxWrapperMiddleware));
 
   if (isServer) {
     return makeConfiguredStore(reducer);
@@ -851,7 +858,7 @@ export default connect(state => state)(
 
 7. `serializeState` and `deserializeState` were removed, use `serializeAction` and `deserializeAction`
 
-8. `const makeStore = (context) => {...}` is now `const makeStore = ({context, middleware})`, you must add middleware to your store
+8. `const makeStore = (context) => {...}` is now `const makeStore = ({context, reduxWrapperMiddleware})`, you must add `reduxWrapperMiddleware` to your store
 
 ## Upgrade from 6.x to 7.x
 

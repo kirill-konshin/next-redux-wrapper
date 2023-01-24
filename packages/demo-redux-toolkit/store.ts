@@ -145,12 +145,14 @@ const reducers = {
 
 const reducer = combineReducers(reducers);
 
-const makeStore: MakeStore<any> = ({middleware}) =>
+const makeStore: MakeStore<any> = ({reduxWrapperMiddleware}) =>
     configureStore({
         reducer,
         devTools: true,
         middleware: getDefaultMiddleware =>
-            [...getDefaultMiddleware(), process.browser ? logger : null, pokemonApi.middleware, middleware].filter(Boolean) as any,
+            [...getDefaultMiddleware(), process.browser ? logger : null, pokemonApi.middleware, reduxWrapperMiddleware].filter(
+                Boolean,
+            ) as any,
     });
 
 type AppStore = ReturnType<typeof makeStore>;
