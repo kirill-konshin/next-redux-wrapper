@@ -180,8 +180,6 @@ const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<an
     );
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    //const log: Action[] = [];
-
     const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
         const {store, log} = initStore({context, makeStore, config});
 
@@ -248,7 +246,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         <P extends {} = any>(callback: GetServerSidePropsCallback<S, P>): ReturnType<GetServerSidePropsCallback<S, P>> =>
         async (context: GetServerSidePropsContext) => {
             if (!context.req || !context.res || !context.resolvedUrl || !context.query) {
-                throw new Error(`Looks like you've used getStaticProps for different kind of lifecycle method`);
+                throw new Error(`Looks like you've used getServerSideProps for different kind of lifecycle method`);
             }
             const {reduxWrapperActions, initialProps} = await makeProps({callback, context});
             return {

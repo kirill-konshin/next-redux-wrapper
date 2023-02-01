@@ -17,7 +17,7 @@ const PropsPage: NextPage<State> = props => {
     );
 };
 
-PropsPage.getInitialProps = wrapper.getInitialPageProps(store => async () => ({
+(PropsPage as any).getInitialProps = wrapper.getInitialPageProps(store => async () => ({
     prop: 'foo',
 }));
 

@@ -1,9 +1,9 @@
 import {test, expect, Page} from '@playwright/test';
 
-const openPage = (page: Page, url = '/') => page.goto(`http://localhost:4000${url}`);
+const openPage = (page: Page, baseURL: string | undefined, url = '/') => page.goto(`${baseURL}${url}`);
 
-test('shows the page', async ({page}) => {
-    await openPage(page);
+test('shows the page', async ({page, baseURL}) => {
+    await openPage(page, baseURL);
 
     await page.waitForSelector('div.index');
 
@@ -11,8 +11,8 @@ test('shows the page', async ({page}) => {
     await expect(page.locator('body')).toContainText('"custom": "custom"');
 });
 
-test('clicks the button', async ({page}) => {
-    await openPage(page, '/other');
+test('clicks the button', async ({page, baseURL}) => {
+    await openPage(page, baseURL, '/other');
 
     await page.waitForSelector('div.other');
 
@@ -26,10 +26,10 @@ test('clicks the button', async ({page}) => {
     await expect(page.locator('body')).toContainText('"custom": "custom"');
 });
 
-test('initial page props', async ({page}) => {
-    await openPage(page, '/pageProps');
+test('initial page props', async ({page, baseURL}) => {
+    await openPage(page, baseURL, '/pageProps');
 
     await page.waitForSelector('div.pageProps');
 
-    await expect(page.locator('body')).toContainText('{"prop":"foo"}');
+    await expect(page.locator('body')).toContainText('"prop":"foo"');
 });

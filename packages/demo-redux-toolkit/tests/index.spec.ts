@@ -1,9 +1,9 @@
-import {test, expect, Page, chromium} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 
-const openPage = (page: Page, url = '/') => page.goto(`http://localhost:6060${url}`);
+const openPage = (page: Page, baseURL: string | undefined, url = '/') => page.goto(`${baseURL}${url}`);
 
-test('shows the page', async ({page}) => {
-    await openPage(page);
+test('shows the page', async ({page, baseURL}) => {
+    await openPage(page, baseURL);
 
     // Problem page 1
     await page.click('text=Go to problem pages');
@@ -45,52 +45,29 @@ test('shows the page', async ({page}) => {
     await expect(page.locator('body')).toContainText('Page name: GIPP');
 });
 
-test('server rendered subject page', async () => {
-    const browser = await chromium.launch();
+test.describe('server rendered', () => {
+    test.use({javaScriptEnabled: false});
 
-    const context = await browser.newContext({
-        javaScriptEnabled: false,
+    test('subject page', async ({page, baseURL}) => {
+        await openPage(page, baseURL, '/subject/1');
+
+        await expect(page.locator('body')).toContainText('Subject 1');
     });
-    const page = await context.newPage();
 
-    await openPage(page, '/subject/1');
+    test('detail page', async ({page, baseURL}) => {
+        await openPage(page, baseURL, '/detail/1');
 
-    await expect(page.locator('body')).toContainText('Subject 1');
-
-    await browser.close();
-});
-
-test('server rendered detail page', async () => {
-    const browser = await chromium.launch();
-
-    const context = await browser.newContext({
-        javaScriptEnabled: false,
+        await expect(page.locator('body')).toContainText('PageProps.id: 42');
+        await expect(page.locator('body')).toContainText('System source: GIAP');
+        await expect(page.locator('body')).toContainText('This is the summary for the page with id 1');
     });
-    const page = await context.newPage();
 
-    await openPage(page, '/detail/1');
+    test('gipp page', async ({page, baseURL}) => {
+        await openPage(page, baseURL, '/gipp');
 
-    await expect(page.locator('body')).toContainText('PageProps.id: 42');
-    await expect(page.locator('body')).toContainText('System source: GIAP');
-    await expect(page.locator('body')).toContainText('This is the summary for the page with id 1');
-
-    await browser.close();
-});
-
-test('server rendered gipp page', async () => {
-    const browser = await chromium.launch();
-
-    const context = await browser.newContext({
-        javaScriptEnabled: false,
+        await expect(page.locator('body')).toContainText('PageProps.id: 42');
+        await expect(page.locator('body')).toContainText('System source: GIAP');
+        await expect(page.locator('body')).toContainText('This is the test data for the gipp page');
+        await expect(page.locator('body')).toContainText('Page name: GIPP');
     });
-    const page = await context.newPage();
-
-    await openPage(page, '/gipp');
-
-    await expect(page.locator('body')).toContainText('PageProps.id: 42');
-    await expect(page.locator('body')).toContainText('System source: GIAP');
-    await expect(page.locator('body')).toContainText('This is the test data for the gipp page');
-    await expect(page.locator('body')).toContainText('Page name: GIPP');
-
-    await browser.close();
 });

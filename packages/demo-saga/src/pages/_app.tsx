@@ -17,7 +17,7 @@ const MyApp: FC<AppProps> = function MyApp({Component, pageProps}) {
     // 1. Wait for all page actions to dispatch
     const pageProps = {
         // https://nextjs.org/docs/advanced-features/custom-app#caveats
-        ...(await App.getInitialProps(context)).pageProps,
+        ...(await App.getInitialProps(context as any)).pageProps,
     };
 
     // 2. Stop the saga if on server
