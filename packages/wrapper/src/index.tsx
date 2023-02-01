@@ -180,7 +180,13 @@ const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<an
     );
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
-    const makeProps = async function <P>({callback, context}: {callback: Callback<S, P>; context: any}): Promise<WrapperProps<any>> {
+    const makeProps = async function <P extends Object>({
+        callback,
+        context,
+    }: {
+        callback: Callback<S, P>;
+        context: any;
+    }): Promise<WrapperProps<any>> {
         const {store, log} = initStore({context, makeStore, config});
 
         const nextCallback = callback && callback(store);

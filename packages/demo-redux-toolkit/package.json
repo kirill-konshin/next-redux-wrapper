@@ -17,11 +17,11 @@
     "redux-logger": "3.0.6"
   },
   "devDependencies": {
-    "@playwright/test": "1.17.1",
+    "@playwright/test": "1.30.0",
     "@types/react": "18.0.27",
     "@types/react-dom": "18.0.10",
     "next": "13.1.6",
-    "playwright": "1.17.1"
+    "playwright": "1.30.0"
   },
   "license": "MIT"
 }

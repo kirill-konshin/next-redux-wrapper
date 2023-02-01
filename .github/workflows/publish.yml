@@ -41,6 +41,11 @@ jobs:
         env:
           CI: true
 
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          path: packages/*/test-results
+
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - run: yarn publish:release ${TAG} --yes
