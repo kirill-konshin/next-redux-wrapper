@@ -5,17 +5,26 @@ import {child, DummyComponent, makeStore, withStore} from './testlib';
 describe('function API', () => {
     const ctx: any = {req: {request: true}};
     const pageProps = {prop: 'val'};
-    const initialState = {reduxStatus: 'val'};
     const action = {type: 'FOO', payload: 'val'};
+
+    const nextJsContext = () => ({
+        ctx: {req: {}, res: {}, query: true, pathname: true, AppTree: {}, resolvedUrl: true},
+        router: {},
+        Component: {},
+        AppTree: {},
+    }); // overwhelming context with both GIAP and GSSP needs
 
     test('getStaticProps', async () => {
         expect(
             await createWrapper(makeStore).getStaticProps(store => async context => {
                 store.dispatch(action);
-                return {props: {...pageProps, __N_SSG: true}, preview: true};
+                return {props: pageProps, preview: true};
             })(ctx),
         ).toEqual({
-            props: {...pageProps, __N_SSG: true, reduxWrapperActionsGSP: [action]},
+            props: {
+                ...pageProps,
+                reduxWrapperActionsGSP: [action],
+            },
             preview: true,
         });
     });
@@ -24,24 +33,21 @@ describe('function API', () => {
         expect(
             await createWrapper(makeStore).getServerSideProps(store => async context => {
                 store.dispatch(action);
-                return {props: {...pageProps, __N_SSP: true}, fromSSP: true};
+                return {props: pageProps, fromSSP: true};
             })({req: {}, res: {}, query: true, resolvedUrl: true} as any), //TODO Test missing context items
         ).toEqual({
-            props: {...pageProps, __N_SSP: true, reduxWrapperActionsGSSP: [action]},
+            props: {
+                ...pageProps,
+                reduxWrapperActionsGSSP: [action],
+            },
             fromSSP: true,
         });
     });
 
     describe('App.getInitialProps', () => {
-        const nextJsContext = () => ({
-            ctx: {req: {}, res: {}, query: true, pathname: true, AppTree: {}, resolvedUrl: true},
-            router: {},
-            Component: {},
-            AppTree: {},
-        }); // overwhelming context with both GIAP and GSSP needs
-
         test('simple usage', async () => {
             const wrapper = createWrapper(makeStore);
+
             const App = () => null;
             App.getInitialProps = wrapper.getInitialAppProps(store => async (context: any) => {
                 store.dispatch(action);
@@ -50,7 +56,10 @@ describe('function API', () => {
 
             //TODO Test missing context items
             expect(await withStore(wrapper)(App)?.getInitialProps(nextJsContext())).toEqual({
-                pageProps: {...pageProps, reduxWrapperActionsGIAP: [action]},
+                pageProps: {
+                    ...pageProps,
+                    reduxWrapperActionsGIAP: [action],
+                },
             });
         });
 
@@ -73,7 +82,10 @@ describe('function API', () => {
             const initialAppProps = await withStore(wrapper)(App)?.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
-                pageProps: {fromApp: true, reduxWrapperActionsGIAP: [{type: 'FOO', payload: 'app'}]},
+                pageProps: {
+                    fromApp: true,
+                    reduxWrapperActionsGIAP: [{type: 'FOO', payload: 'app'}],
+                },
             });
 
             // Execute Page level
@@ -87,10 +99,6 @@ describe('function API', () => {
                 props: {
                     fromSSP: true,
                     reduxWrapperActionsGSSP: [
-                        {
-                            payload: 'app',
-                            type: 'FOO',
-                        },
                         {
                             payload: 'ssp',
                             type: 'FOO',
@@ -107,29 +115,19 @@ describe('function API', () => {
                     ...initialAppProps.pageProps,
                     ...(serverSideProps as any).props,
                 },
-                __N_SSP: true,
             };
 
-            const WrappedPage: any = withStore(wrapper)(DummyComponent);
+            const WrappedPage = withStore(wrapper)(DummyComponent);
 
-            expect(child(<WrappedPage {...resultingProps} />)).toEqual(
+            expect(child(<WrappedPage {...resultingProps.pageProps} />)).toEqual(
                 JSON.stringify({
                     props: {
-                        pageProps: {
-                            fromApp: true,
-                            reduxWrapperActionsGIAP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'ssp'},
-                            ],
-                            fromSSP: true,
-                            reduxWrapperActionsGSSP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'ssp'},
-                            ],
-                        },
-                        __N_SSP: true,
+                        fromApp: true,
+                        reduxWrapperActionsGIAP: [{type: 'FOO', payload: 'app'}],
+                        fromSSP: true,
+                        reduxWrapperActionsGSSP: [{type: 'FOO', payload: 'ssp'}],
                     },
-                    state: {reduxStatus: 'init'},
+                    state: {reduxStatus: 'ssp'},
                 }),
             );
         });
@@ -176,10 +174,6 @@ describe('function API', () => {
                     fromSP: true,
                     reduxWrapperActionsGSP: [
                         {
-                            payload: 'app',
-                            type: 'FOO',
-                        },
-                        {
                             payload: 'ssg',
                             type: 'FOO',
                         },
@@ -195,29 +189,19 @@ describe('function API', () => {
                     ...initialAppProps.pageProps,
                     ...(serverStaticProps as any).props,
                 },
-                __N_SSG: true,
             };
 
-            const WrappedPage: any = withStore(wrapper)(DummyComponent);
+            const WrappedPage = withStore(wrapper)(DummyComponent);
 
-            expect(child(<WrappedPage {...resultingProps} />)).toEqual(
+            expect(child(<WrappedPage {...resultingProps.pageProps} />)).toEqual(
                 JSON.stringify({
                     props: {
-                        pageProps: {
-                            fromApp: true,
-                            reduxWrapperActionsGIAP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'ssg'},
-                            ],
-                            fromSP: true,
-                            reduxWrapperActionsGSP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'ssg'},
-                            ],
-                        },
-                        __N_SSG: true,
+                        fromApp: true,
+                        reduxWrapperActionsGIAP: [{type: 'FOO', payload: 'app'}],
+                        fromSP: true,
+                        reduxWrapperActionsGSP: [{type: 'FOO', payload: 'ssg'}],
                     },
-                    state: {reduxStatus: 'init'},
+                    state: {reduxStatus: 'app'},
                 }),
             );
         });
@@ -265,10 +249,6 @@ describe('function API', () => {
                 fromGip: true,
                 reduxWrapperActionsGIPP: [
                     {
-                        payload: 'app',
-                        type: 'FOO',
-                    },
-                    {
                         payload: 'gipp',
                         type: 'FOO',
                     },
@@ -286,25 +266,17 @@ describe('function API', () => {
                 },
             };
 
-            const WrappedPage: any = withStore(wrapper)(DummyComponent);
+            const WrappedPage = withStore(wrapper)(DummyComponent);
 
-            expect(child(<WrappedPage {...resultingProps} />)).toEqual(
+            expect(child(<WrappedPage {...resultingProps.pageProps} />)).toEqual(
                 JSON.stringify({
                     props: {
-                        pageProps: {
-                            fromApp: true,
-                            reduxWrapperActionsGIAP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'gipp'}, //FIXME why?
-                            ],
-                            fromGip: true,
-                            reduxWrapperActionsGIPP: [
-                                {type: 'FOO', payload: 'app'},
-                                {type: 'FOO', payload: 'gipp'},
-                            ],
-                        },
+                        fromApp: true,
+                        reduxWrapperActionsGIAP: [{type: 'FOO', payload: 'app'}],
+                        fromGip: true,
+                        reduxWrapperActionsGIPP: [{type: 'FOO', payload: 'gipp'}],
                     },
-                    state: {reduxStatus: 'init'},
+                    state: {reduxStatus: 'app'},
                 }),
             );
         });
@@ -313,37 +285,25 @@ describe('function API', () => {
     describe('Page.getInitialProps', () => {
         test('simple context', async () => {
             const wrapper = createWrapper(makeStore);
+
             const Page = () => null;
             Page.getInitialProps = wrapper.getInitialPageProps(store => async (context: any) => {
                 store.dispatch({type: 'FOO', payload: 'val'});
                 return {pageProps};
             });
-            expect(
-                await withStore(wrapper)(Page).getInitialProps({
-                    req: {},
-                    res: {},
-                    query: true,
-                    pathname: true,
-                    AppTree: {},
-                    resolvedUrl: true,
-                }),
-            ).toEqual({
+
+            expect(await withStore(wrapper)(Page).getInitialProps(nextJsContext().ctx)).toEqual({
                 pageProps: {
                     prop: 'val',
                 },
-                reduxWrapperActionsGIPP: [
-                    {
-                        payload: 'val',
-                        type: 'FOO',
-                    },
-                ],
+                reduxWrapperActionsGIPP: [{payload: 'val', type: 'FOO'}],
             });
         });
     });
 });
 
-describe('custom serialization', () => {
-    test.skip('serialize on server and deserialize on client', async () => {
+describe.skip('custom serialization', () => {
+    test('serialize on server and deserialize on client', async () => {
         const wrapper = createWrapper(makeStore, {
             serializeAction: (state: any) => ({...state, serialized: true}),
             deserializeAction: (state: any) => ({...state, deserialized: true}),
@@ -366,7 +326,7 @@ describe('custom serialization', () => {
         const WrappedApp: any = withStore(wrapper)(DummyComponent);
 
         expect(child(<WrappedApp {...props} />)).toEqual(
-            '{"props":{},"state":{"reduxStatus":"init","serialized":true,"deserialized":true}}',
+            JSON.stringify({props: {}, state: {reduxStatus: 'init', serialized: true, deserialized: true}}),
         );
     });
 });

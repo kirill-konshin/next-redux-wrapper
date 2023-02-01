@@ -190,9 +190,13 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             console.log(`2. initial state after dispatches`, store.getState());
         }
 
+        const reduxWrapperActions = [...log];
+
+        log.splice(0, log.length); // flush all logs
+
         return {
             initialProps,
-            reduxWrapperActions: log,
+            reduxWrapperActions,
         };
     };
 
