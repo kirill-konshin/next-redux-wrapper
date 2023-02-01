@@ -12,7 +12,7 @@ import {
     wrapper,
 } from '../../store';
 
-const Page : NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = function Detail ({serverTimestamp, ...rest}) {
+const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = function Detail({serverTimestamp, ...rest}) {
     wrapper.useHydration(rest);
 
     console.log('State on render', useStore().getState());

@@ -1,4 +1,4 @@
-import React, {FC} from 'react';
+import React from 'react';
 import App, {AppProps} from 'next/app';
 import {Provider} from 'react-redux';
 import {wrapper} from '../components/store';
@@ -25,7 +25,7 @@ export default function MyApp({Component, pageProps}: AppProps) {
     return {
         pageProps: {
             // https://nextjs.org/docs/advanced-features/custom-app#caveats
-            ...(await App.getInitialProps(context)).pageProps,
+            ...(await App.getInitialProps(context as any)).pageProps,
             // Some custom thing for all pages
             appProp: context.ctx.pathname,
         },

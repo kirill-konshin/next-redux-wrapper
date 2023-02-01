@@ -13,9 +13,8 @@
     "test:quick": "lerna run test:quick --stream --concurrency=1",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "prettier": "prettier --write --ignore-path=.eslintignore --loglevel=warn",
-    "eslint": "eslint --cache --cache-location node_modules/.cache/eslint --fix",
-    "lint": "eslint --cache --cache-location .eslint/cache --fix",
-    "lint:all": "yarn eslint . && yarn prettier .",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint --fix",
+    "lint:all": "yarn lint . && yarn prettier .",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
