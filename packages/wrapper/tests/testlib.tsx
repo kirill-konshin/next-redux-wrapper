@@ -28,7 +28,7 @@ export const makeStore: MakeStore<any> = ({reduxWrapperMiddleware}) =>
 export const wrapper = createWrapper(makeStore);
 
 export const DummyComponent: React.ComponentType<any> = (props: any) => {
-    wrapper.useHydration(props);
+    (props.wrapper || wrapper).useHydration(props);
     const state = useSelector((s: State) => s);
     return <div>{JSON.stringify({props, state})}</div>;
 };

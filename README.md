@@ -530,8 +530,8 @@ Example of a custom serialization of an Immutable.JS state using `json-immutable
 const {serialize, deserialize} = require('json-immutable');
 
 createWrapper({
-  serializeAction: action => serialize(action),
-  deserializeAction: action => deserialize(action),
+  serializeAction: action => ({...action, payload: serialize(action.payload)}),
+  deserializeAction: action => ({...action, payload: deserialize(action.payload)}),
 });
 ```
 
@@ -541,8 +541,8 @@ Same thing using Immutable.JS:
 const {fromJS} = require('immutable');
 
 createWrapper({
-  serializeAction: action => action.toJS(),
-  deserializeAction: action => fromJS(action),
+  serializeAction: action => ({...action, payload: action.payload.toJS()}),
+  deserializeAction: action => ({...action, payload: fromJS(action)}),
 });
 ```
 
