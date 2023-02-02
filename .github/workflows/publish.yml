@@ -41,10 +41,14 @@ jobs:
         env:
           CI: true
 
+      # FIXME Coverage report
+
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          path: packages/*/test-results
+          path: |
+            packages/*/test-results
+            packages/*/coverage
 
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 

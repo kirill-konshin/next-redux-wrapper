@@ -301,6 +301,8 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         );
 
         // This guard is solely to suppress Next.js warning about useless layout effect
+        // Coverage is not gathered, all checks are via demo apps
+        /* c8 ignore start */
         if (!getIsServer()) {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             useLayoutEffect(() => {
@@ -336,6 +338,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
                 return {hydrating};
             }
         }
+        /*c8 ignore end */
 
         /**
          * When we navigate client side, we may always synchronously hydrate the state before the new page components
