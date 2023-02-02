@@ -1,8 +1,10 @@
 /** @type {import('@playwright/test').PlaywrightTestConfig} */
 module.exports = {
-    trace: process.env.CI ? 'retain-on-failure' : 'off',
-    video: 'retain-on-failure',
-    screenshot: 'on',
+    use: {
+        trace: process.env.CI ? 'retain-on-failure' : 'off',
+        video: 'retain-on-failure',
+        screenshot: 'on',
+    },
     outputDir: process.cwd() + '/test-results/out',
     reporter: [
         ['html', {outputFolder: process.cwd() + '/test-results/html', open: 'never'}],

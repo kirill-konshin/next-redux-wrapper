@@ -129,6 +129,7 @@ const initStore = <S extends Store>({makeStore, context = {}, config}: InitStore
  *
  * If GSSP has run, then state _will_ contain the data from GIAP (if there is a GIAP) and the GSSP data combined
  * (see https://github.com/kirill-konshin/next-redux-wrapper/pull/499#discussion_r1014500941), thus one hydrate.
+ * !!! Not applied anymore since we flush log after dispatches.
  *
  * If there is no GSP or GSSP for this page, but there is a GIPP (not _app), there will be one hydrate.
  *
@@ -148,9 +149,13 @@ const getStates = ({
     const map = new Map();
     if (reduxWrapperActionsGIAP) {
         if (reduxWrapperActionsGIPP) {
-            map.set(Source.GIAP, reduxWrapperActionsGIAP); // ignore GIPP as GIAP is more complete
+            // send both as they both are partial, order is important as GIPP happens before GIAP
+            map.set(Source.GIPP, reduxWrapperActionsGIPP);
+            map.set(Source.GIAP, reduxWrapperActionsGIAP);
         } else if (reduxWrapperActionsGSSP) {
-            map.set(Source.GSSP, reduxWrapperActionsGSSP); // ignore GIAP as GSSP is more complete
+            // send both as they both are partial, order is important as GIAP happens before GSSP
+            map.set(Source.GIAP, reduxWrapperActionsGIAP);
+            map.set(Source.GSSP, reduxWrapperActionsGSSP);
         } else if (reduxWrapperActionsGSP) {
             // send both as they both are partial, order is important as GSP happens way before GIAP
             map.set(Source.GSP, reduxWrapperActionsGSP);
