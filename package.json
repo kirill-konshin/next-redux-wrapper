@@ -13,20 +13,19 @@
     "test:quick": "lerna run test:quick --stream --concurrency=1",
     "publish:release": "lerna publish --tag-version-prefix=\"\" --force-publish=* --no-push --no-git-tag-version",
     "prettier": "prettier --write --ignore-path=.eslintignore --loglevel=warn",
-    "eslint": "eslint --cache --cache-location node_modules/.cache/eslint --fix",
-    "lint": "eslint --cache --cache-location .eslint/cache --fix",
-    "lint:all": "yarn eslint . && yarn prettier .",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint --fix",
+    "lint:all": "yarn lint . && yarn prettier .",
     "lint:staged": "lint-staged --debug"
   },
   "devDependencies": {
-    "eslint": "8.29.0",
+    "eslint": "8.33.0",
     "eslint-config-ringcentral-typescript": "7.0.3",
     "husky": "7.0.4",
     "lerna": "4.0.0",
     "lint-staged": "11.1.2",
-    "prettier": "2.5.1",
-    "rimraf": "3.0.2",
-    "typescript": "4.5.2"
+    "prettier": "2.8.3",
+    "rimraf": "4.1.2",
+    "typescript": "4.5.5"
   },
   "workspaces": [
     "packages/*"
@@ -43,6 +42,7 @@
   "license": "MIT",
   "packageManager": "yarn@3.0.2",
   "resolutions": {
-    "@types/react": "17.0.37"
+    "@types/react": "18.0.27",
+    "typescript": "4.5.5"
   }
 }

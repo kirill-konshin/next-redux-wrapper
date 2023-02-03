@@ -5,7 +5,7 @@ const config: PlaywrightTestConfig = {
     ...defaultConfig,
     webServer: {
         ...defaultConfig.webServer,
-        port: 5000,
+        port: 5055,
     },
 };
 

@@ -1,9 +1,9 @@
 import {test, expect, Page} from '@playwright/test';
 
-const openPage = (page: Page, url = '/') => page.goto(`http://localhost:5000${url}`);
+const openPage = (page: Page, baseURL, url = '/') => page.goto(`${baseURL}${url}`);
 
-test('shows the page', async ({page}) => {
-    await openPage(page);
+test('shows the page', async ({page, baseURL}) => {
+    await openPage(page, baseURL);
 
     await page.waitForSelector('div.index');
 

@@ -8,7 +8,8 @@ interface Props {
     name: string;
 }
 
-const Page: NextPage<Props> = ({name}) => {
+const Page: NextPage<Props> = ({name, ...props}: any) => {
+    wrapper.useHydration(props);
     console.log('State on render', useStore().getState());
     const dispatch = useDispatch();
     const testData = useSelector(selectGippPageTestData);
@@ -19,7 +20,7 @@ const Page: NextPage<Props> = ({name}) => {
     console[testData ? 'info' : 'warn']('Rendered testData: ', testData);
 
     if (!testData || !data) {
-        throw new Error('Whoops! We do not have the data and testData selector data!');
+        return <div>Loading...</div>;
     }
 
     return (

@@ -1,10 +1,14 @@
 import {createStore, applyMiddleware, Store} from 'redux';
 import logger from 'redux-logger';
-import {createWrapper, Context} from 'next-redux-wrapper';
+import promiseMiddleware from 'redux-promise-middleware';
+import {createWrapper, MakeStore} from 'next-redux-wrapper';
 import reducer, {State} from './reducer';
 
-export const makeStore = (context: Context) => {
-    const store = createStore(reducer, applyMiddleware(logger));
+export const makeStore: MakeStore<any> = ({context, reduxWrapperMiddleware}) => {
+    const store = createStore(
+        reducer,
+        applyMiddleware(...[promiseMiddleware, process.browser ? logger : null, reduxWrapperMiddleware].filter(Boolean)),
+    );
 
     if ((module as any).hot) {
         (module as any).hot.accept('./reducer', () => {

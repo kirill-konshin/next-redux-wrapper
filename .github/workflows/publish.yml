@@ -13,17 +13,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
 
       - id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -41,6 +40,15 @@ jobs:
       - run: yarn test
         env:
           CI: true
+
+      # FIXME Coverage report
+
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          path: |
+            packages/*/test-results
+            packages/*/coverage
 
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 

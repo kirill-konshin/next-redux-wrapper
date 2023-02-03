@@ -10,13 +10,14 @@ interface OtherProps {
     appProp: string;
 }
 
-const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
-    const {app, page} = useSelector<State, State>(state => state);
+const Static: NextPage<OtherProps> = ({appProp, getStaticProp, ...props}) => {
+    wrapper.useHydration(props);
+    const {app, page, promise, promiseApp} = useSelector<State, State>(state => state);
     return (
         <div className="static">
             <p>Page has access to store even though it does not dispatch anything itself</p>
 
-            <pre>{JSON.stringify({app, page, getStaticProp, appProp}, null, 2)}</pre>
+            <pre>{JSON.stringify({app, page, promise, promiseApp, getStaticProp, appProp}, null, 2)}</pre>
 
             <nav>
                 <Link href="/">Navigate to index</Link>
@@ -27,6 +28,10 @@ const Static: NextPage<OtherProps> = ({appProp, getStaticProp}) => {
 
 export const getStaticProps = wrapper.getStaticProps(store => async () => {
     store.dispatch({type: 'PAGE', payload: 'static'});
+    await store.dispatch({
+        type: 'PROMISE',
+        payload: new Promise(res => setTimeout(() => res('bar'), 1)),
+    });
     return {props: {getStaticProp: 'bar'}};
 });
 

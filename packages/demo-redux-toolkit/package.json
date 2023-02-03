@@ -10,15 +10,18 @@
   "dependencies": {
     "@reduxjs/toolkit": "1.8.6",
     "next-redux-wrapper": "*",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-redux": "7.2.6",
-    "redux": "4.1.2"
+    "redux": "4.1.2",
+    "redux-logger": "3.0.6"
   },
   "devDependencies": {
-    "@playwright/test": "1.17.1",
-    "next": "12.0.4",
-    "playwright": "1.17.1"
+    "@playwright/test": "1.30.0",
+    "@types/react": "18.0.27",
+    "@types/react-dom": "18.0.10",
+    "next": "13.1.6",
+    "playwright": "1.30.0"
   },
   "license": "MIT"
 }

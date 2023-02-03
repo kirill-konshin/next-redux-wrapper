@@ -5,13 +5,14 @@ import {State} from '../components/reducer';
 import {wrapper} from '../components/store';
 import {useSelector} from 'react-redux';
 
-const PropsPage: NextPage<State> = props => {
-    const {page} = useSelector<State, State>(state => state);
+const PropsPage: NextPage<any> = ({prop, appProp, ...props}) => {
+    wrapper.useHydration(props);
+    const {page, app} = useSelector<State, State>(state => state);
 
     return (
         <div className="pageProps">
             <p>Using Next.js default prop in a wrapped component.</p>
-            <pre>{JSON.stringify({props, page})}</pre>
+            <pre>{JSON.stringify({prop, appProp, page, app})}</pre>
             <nav>
                 <Link href="/">Navigate to index</Link>
             </nav>

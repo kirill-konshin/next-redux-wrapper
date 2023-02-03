@@ -12,7 +12,9 @@ import {
     wrapper,
 } from '../../store';
 
-const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = ({serverTimestamp}) => {
+const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = function Detail({serverTimestamp, ...rest}) {
+    wrapper.useHydration(rest);
+
     console.log('State on render', useStore().getState());
     console.log('Timestamp on server: ', serverTimestamp);
     const dispatch = useDispatch();
@@ -25,7 +27,7 @@ const Page: NextPage<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     console[pageSummary ? 'info' : 'warn']('Rendered pageName: ', pageSummary);
 
     if (!pageSummary || !pageId || !data) {
-        throw new Error('Whoops! We do not have the pageId and pageSummary selector data!');
+        return <div>Loading</div>;
     }
 
     return (

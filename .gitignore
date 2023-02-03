@@ -8,6 +8,7 @@ lib
 node_modules
 npm-debug*
 out
+test-results
 types
 lerna-debug.log
 

@@ -3,14 +3,15 @@ import {useRouter} from 'next/router';
 import {wrapper, pokemonApi, useGetPokemonByNameQuery} from '../../store';
 import {useStore} from 'react-redux';
 
-export default function Pokemon() {
+export default function Pokemon(props: any) {
+    wrapper.useHydration(props);
     const {query} = useRouter();
 
     console.log('State on render', useStore().getState());
     const {data} = useGetPokemonByNameQuery(query.pokemon as string); // data is undefined for the first render
 
     if (!data) {
-        throw new Error('Whoops! We do not have the data selector data!');
+        return <div>Loading</div>;
     }
 
     return <div>Name: {data?.name}</div>;
