@@ -3,9 +3,10 @@
   "version": "7.0.0",
   "private": true,
   "scripts": {
+    "wait": "wait-on -v ../wrapper/es6/index.js",
     "clean": "rimraf .next coverage",
-    "test": "playwright test",
-    "start": "next --port=6060"
+    "test": "yarn wait && playwright test",
+    "start": "yarn wait && next --port=6060"
   },
   "dependencies": {
     "@reduxjs/toolkit": "1.8.6",
@@ -21,7 +22,8 @@
     "@types/react": "18.0.27",
     "@types/react-dom": "18.0.10",
     "next": "13.1.6",
-    "playwright": "1.30.0"
+    "playwright": "1.30.0",
+    "wait-on": "7.0.1"
   },
   "license": "MIT"
 }

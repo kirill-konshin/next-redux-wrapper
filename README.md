@@ -1,4 +1,4 @@
-# Redux Wrapper for Next.js <!-- omit in toc -->
+# Redux Wrapper for Next.js
 
 [![npm version](https://badge.fury.io/js/next-redux-wrapper.svg)](https://www.npmjs.com/package/next-redux-wrapper)
 ![Build status](https://travis-ci.org/kirill-konshin/next-redux-wrapper.svg?branch=master)
@@ -12,20 +12,23 @@ A library that brings Next.js and Redux together.
 >
 > With that said, if you are using `app` folder, I suggest to keep Redux in client components (`"use client"`), and keep server-side state outside of Redux.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 - [Motivation](#motivation)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Store](#step-1-create-a-store)
-  - [App](#step-2-add-store-to-your-app)
-  - [Pages](#step-3-add-hydration-to-pages)
-  - [getStaticProps](#getstaticprops)
-  - [getServerSideProps](#getserversideprops)
-  - [Page.getInitialProps](#pagegetinitialprops)
-  - [App.getInitialProps](#appgetinitialprops)
+  - [Step 1. Create a store](#step-1-create-a-store)
+  - [Step 2. Add store to your App](#step-2-add-store-to-your-app)
+  - [Step 3. Add hydration to Pages](#step-3-add-hydration-to-pages)
+    - [getStaticProps](#getstaticprops)
+    - [getServerSideProps](#getserversideprops)
+    - [`Page.getInitialProps`](#pagegetinitialprops)
+    - [`App.getInitialProps`](#appgetinitialprops)
 - [State reconciliation during hydration](#state-reconciliation-during-hydration)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
-- [Tips and Tricks](#tips-and-tricks)
+  - [Tips and Tricks](#tips-and-tricks)
   - [Redux Toolkit](#redux-toolkit)
   - [Server and Client state separation](#server-and-client-state-separation)
   - [Document](#document)
@@ -34,12 +37,14 @@ A library that brings Next.js and Redux together.
   - [Custom serialization and deserialization](#custom-serialization-and-deserialization)
   - [Usage with Redux Saga](#usage-with-redux-saga)
   - [Usage with Redux Persist](#usage-with-redux-persist)
-  - [Usage with Old Class Based Components](#usage-with-old-class-based-components)
+  - [Usage with old class-based components](#usage-with-old-class-based-components)
 - [Upgrade from 8.x to 9.x](#upgrade-from-8x-to-9x)
 - [Upgrade from 6.x to 7.x](#upgrade-from-6x-to-7x)
 - [Upgrade from 5.x to 6.x](#upgrade-from-5x-to-6x)
 - [Upgrade from 1.x to 2.x](#upgrade-from-1x-to-2x)
 - [Resources](#resources)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Motivation
 
@@ -297,7 +302,7 @@ All pages still can have all standard data lifecycle methods, with one common pi
 
 # State reconciliation during hydration
 
-Each time when the user opens a page containing the `useHydration` hook, the actions performed on server will be dispatched on client as well. This may happen during initial page load and during regular page navigation. Your reducer must merge it with existing client state properly.
+Each time when the user opens a page containing the `useHydration` hook, the actions performed on server will be dispatched on client as well. This may happen during initial page load and during regular page navigation. Your reducer must merge it with existing client state properly. This means "toggle" actions are not supported, each action has to analyze what's in the state and do things properly.
 
 Best way is to use [server and client state separation](#server-and-client-state-separation).
 
@@ -581,7 +586,7 @@ export const wrapper = createWrapper(makeStore, {
 });
 ```
 
-### Using `getServerSideProps` or `getStaticProps`
+#### Using `getServerSideProps` or `getStaticProps`
 
 If you don't want to opt-out of automatic pre-rendering in your Next.js app, you can manage server-called sagas on a per page basis like [the official Next.js "with Redux Saga" example](https://github.com/vercel/next.js/tree/canary/examples/with-redux-saga) does. If you do go with this option, please ensure that you await any and all sagas within any [Next.js page methods](https://nextjs.org/docs/basic-features/data-fetching). If you miss it on one of pages you'll end up with inconsistent state being sent to client.
 
@@ -597,7 +602,7 @@ export const getServerSideProps = wrapper.getServerSideProps(store => async ({re
 });
 ```
 
-### Using `App.getInitialProps`
+#### Using `App.getInitialProps`
 
 :warning: Not Recommended! :warning:
 
@@ -751,7 +756,7 @@ export default ({fromServer, fromClient, setClientState}) => {
 
 ## Usage with old class-based components
 
-### App
+#### App
 
 If you're still using old class-based
 
@@ -794,7 +799,7 @@ export default withStore(MyApp);
 
 Next.js provides [generic `getInitialProps`](https://github.com/vercel/next.js/blob/canary/packages/next/src/pages/_app.tsx#L39) which will be picked up by wrapper, so you **must not extend `App`** as you'll be opted out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization. Just export a regular Functional Component or extend `React.Component` as in the example above.
 
-### Pages
+#### Pages
 
 ```js
 function DefaultLoading() {
@@ -832,7 +837,7 @@ export default connect(state => state)(
 );
 ```
 
-## Upgrade from 8.x to 9.x
+# Upgrade from 8.x to 9.x
 
 1. `HYDRATE` action has been removed, all actions are replayed as-is
 
@@ -860,7 +865,7 @@ export default connect(state => state)(
 
 8. `const makeStore = (context) => {...}` is now `const makeStore = ({context, reduxWrapperMiddleware})`, you must add `reduxWrapperMiddleware` to your store
 
-## Upgrade from 6.x to 7.x
+# Upgrade from 6.x to 7.x
 
 1. Signature of `createWrapper` has changed: instead of `createWrapper<State>` you should use `createWrapper<Store<State>>`, all types will be automatically inferred from `Store`.
 
@@ -872,7 +877,7 @@ export default connect(state => state)(
 
 5. **window.NEXT_REDUX_WRAPPER_STORE** has been removed as it was causing [issues with hot reloading](https://github.com/kirill-konshin/next-redux-wrapper/pull/324)
 
-## Upgrade from 5.x to 6.x
+# Upgrade from 5.x to 6.x
 
 Major change in the way how things are wrapped in version 6.
 
@@ -888,7 +893,7 @@ Major change in the way how things are wrapped in version 6.
 
 6. `WrappedAppProps` was renamed to `WrapperProps`.
 
-## Upgrade from 1.x to 2.x
+# Upgrade from 1.x to 2.x
 
 If your project was using Next.js 5 and Next Redux Wrapper 1.x these instructions will help you to upgrade to 2.x.
 
@@ -944,9 +949,9 @@ If your project was using Next.js 5 and Next Redux Wrapper 1.x these instruction
 
 That's it. Your project should now work the same as before.
 
-## Resources
+# Resources
 
 - [next-redux-saga](https://github.com/bmealhouse/next-redux-saga)
 - [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
-- Redux Saga Example: https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e.
+- [Redux Saga Example](https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e)
 - [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper)

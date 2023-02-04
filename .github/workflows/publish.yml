@@ -20,7 +20,7 @@ jobs:
           node-version: '16.x'
 
       - id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - uses: actions/cache@v3
         with:
@@ -31,7 +31,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - run: yarn install --prefer-offline
+      - run: yarn install
 
       - run: DEBUG=eslint:cli-engine yarn lint:all
 
