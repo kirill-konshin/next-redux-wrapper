@@ -44,10 +44,5 @@ export const withStore = (w: any) => (Component: any) => {
 
     WrappedComponent.displayName = `withRedux(${Component.displayName || Component.name || 'Component'})`;
 
-    // also you can use hoist-non-react-statics package
-    if ('getInitialProps' in Component) {
-        WrappedComponent.getInitialProps = Component.getInitialProps;
-    }
-
     return WrappedComponent;
 };

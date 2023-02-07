@@ -86,7 +86,7 @@ describe('function API', () => {
                 return {pageProps};
             });
 
-            const resultingProps = await withStore(wrapper)(App)?.getInitialProps(nextJsContext());
+            const resultingProps = await App.getInitialProps(nextJsContext());
 
             //TODO Test missing context items
             expect(resultingProps).toEqual({
@@ -125,7 +125,7 @@ describe('function API', () => {
                 return {pageProps: {fromApp: true}};
             });
 
-            const initialAppProps = await withStore(wrapper)(App)?.getInitialProps(context);
+            const initialAppProps = await App.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
                 pageProps: {
@@ -189,7 +189,7 @@ describe('function API', () => {
                 return {pageProps: {fromApp: true}};
             });
 
-            const initialAppProps = await withStore(wrapper)(App)?.getInitialProps(context);
+            const initialAppProps = await App.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
                 pageProps: {
@@ -253,7 +253,7 @@ describe('function API', () => {
                 return {pageProps: {fromApp: true}};
             });
 
-            const initialAppProps = await withStore(wrapper)(App)?.getInitialProps(context);
+            const initialAppProps = await App.getInitialProps(context);
 
             expect(initialAppProps).toEqual({
                 pageProps: {
@@ -269,7 +269,7 @@ describe('function API', () => {
                 return {fromGip: true};
             });
 
-            const initialPageProps = await withStore(wrapper)(Page).getInitialProps(context.ctx);
+            const initialPageProps = await Page.getInitialProps?.(context.ctx);
 
             expect(initialPageProps).toEqual({
                 fromGip: true,
@@ -313,7 +313,7 @@ describe('function API', () => {
                 return pageProps;
             });
 
-            const resultingProps = await withStore(wrapper)(Page).getInitialProps(nextJsContext().ctx);
+            const resultingProps = await Page.getInitialProps?.(nextJsContext().ctx);
 
             expect(resultingProps).toEqual({
                 prop: 'val',
@@ -337,10 +337,17 @@ describe('function API', () => {
 
 describe('custom serialization', () => {
     test('serialize on server and deserialize on client', async () => {
-        const serializeAction = jest.fn((a: any) => ({...a, payload: JSON.stringify(a.payload)}));
-        const deserializeAction = jest.fn((a: any) => ({...a, payload: JSON.parse(a.payload)}));
+        const serialize = jest.fn((actions: any) => {
+            console.log(actions);
+            return actions.map((a: any) => ({...a, payload: JSON.stringify(a.payload)}));
+        });
+        const deserialize = jest.fn((actions: any) => actions.map((a: any) => ({...a, payload: JSON.parse(a.payload)})));
 
-        const wrapper = createWrapper(makeStore, {serializeAction, deserializeAction});
+        const wrapper = createWrapper(makeStore, {
+            serialize,
+            deserialize,
+            debug: true, // just for sake of coverage
+        });
 
         const Page = () => null;
         Page.getInitialProps = wrapper.getInitialPageProps(store => () => {
@@ -348,7 +355,9 @@ describe('custom serialization', () => {
             return pageProps;
         });
 
-        const props = await withStore(wrapper)(Page)?.getInitialProps(nextJsContext().ctx);
+        const props = await Page.getInitialProps?.(nextJsContext().ctx);
+
+        expect(serialize).toBeCalled();
 
         expect(props).toEqual({
             ...pageProps,
@@ -378,43 +387,6 @@ describe('custom serialization', () => {
             }),
         );
 
-        expect(serializeAction).toBeCalled();
-        expect(deserializeAction).toBeCalled();
-    });
-});
-
-describe('action filter', () => {
-    test('skips actions if filter removes them', async () => {
-        const wrapper = createWrapper(makeStore, {
-            actionFilter: (a: any) => a.payload !== actionAPP.payload,
-            debug: true, // just for sake of coverage
-        });
-
-        const Page = () => null;
-        Page.getInitialProps = wrapper.getInitialPageProps(store => () => {
-            store.dispatch(action);
-            store.dispatch(actionAPP);
-            return pageProps;
-        });
-
-        const props = await withStore(wrapper)(Page)?.getInitialProps(nextJsContext().ctx);
-
-        expect(props).toEqual({
-            ...pageProps,
-            reduxWrapperActionsGIPP: [action, actionAPP],
-        });
-
-        const WrappedApp: any = withStore(wrapper)(DummyComponent);
-
-        expect(child(<WrappedApp {...props} wrapper={wrapper} />)).toEqual(
-            JSON.stringify({
-                props: {
-                    ...pageProps,
-                    reduxWrapperActionsGIPP: [action, actionAPP],
-                    wrapper: {},
-                },
-                state: {reduxStatus: action.payload},
-            }),
-        );
+        expect(deserialize).toBeCalled();
     });
 });

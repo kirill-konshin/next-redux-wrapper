@@ -328,8 +328,7 @@ The `createWrapper` function accepts `makeStore` as its first argument. The `mak
 `createWrapper` also optionally accepts a config object as a second parameter:
 
 - `debug` (optional, boolean) : enable debug logging
-- `serializeAction` and `deserializeAction` (optional, function): custom functions for serializing and deserializing the actions, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
-- `actionFilter` (optional, function): filter out actions that should not be replayed on client, usually Redux Saga actions that cause subsequent actions
+- `serialize` and `deserialize` (optional, function): custom functions for serializing and deserializing the actions, see [Custom serialization and deserialization](#custom-serialization-and-deserialization)
 
 When `makeStore` is invoked it is provided with a Next.js context, which could be [`NextPageContext`](https://nextjs.org/docs/api-reference/data-fetching/getInitialProps) or [`AppContext`](https://nextjs.org/docs/advanced-features/custom-app) or [`getStaticProps`](https://nextjs.org/docs/basic-features/data-fetching#getstaticprops-static-generation) or [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching#getserversideprops-server-side-rendering) context depending on which lifecycle function you will wrap.
 
@@ -524,8 +523,10 @@ await store.dispatch(someAsyncAction());
 ## Custom serialization and deserialization
 
 If you are storing complex types such as Immutable.JS or JSON objects in your state, a custom serialize and deserialize
-handler might be handy to serialize the redux state on the server and deserialize it again on the client. To do so,
-provide `serializeAction` and `deserializeAction` as config options to `createStore`.
+handler might be handy to serialize the actions on the server and deserialize it again on the client. To do so,
+provide `serialize` and `deserialize` as config options to `createStore`.
+
+Both functions should take an array of actions and return an array of actions. `serialize` should remove all non-transferable objects and `deserialize` should return whatever your store can consume.
 
 The reason is that state snapshot is transferred over the network from server to client as a plain object.
 
@@ -535,8 +536,8 @@ Example of a custom serialization of an Immutable.JS state using `json-immutable
 const {serialize, deserialize} = require('json-immutable');
 
 createWrapper({
-  serializeAction: action => ({...action, payload: serialize(action.payload)}),
-  deserializeAction: action => ({...action, payload: deserialize(action.payload)}),
+  serialize: actions => actions.map(action => ({...action, payload: serialize(action.payload)})),
+  deserialize: actions => actions.map(action => ({...action, payload: deserialize(action.payload)})),
 });
 ```
 
@@ -546,8 +547,16 @@ Same thing using Immutable.JS:
 const {fromJS} = require('immutable');
 
 createWrapper({
-  serializeAction: action => ({...action, payload: action.payload.toJS()}),
-  deserializeAction: action => ({...action, payload: fromJS(action)}),
+  serialize: actions => actions.map(action => ({...action, payload: action.payload.toJS()})),
+  deserialize: actions => actions.map(action => ({...action, payload: fromJS(action)})),
+});
+```
+
+You can also filter out actions that you don't want to dispatch on client (or even add actions that should only be dispatched on client, although latter it's not recommended). This approach may be useful for [sagas](#usage-with-redux-saga) to remove unnecessary actions from client:
+
+```js
+export const wrapper = createWrapper(makeStore, {
+  serialize: actions => actions.filter(action => action.type !== 'xxx'),
 });
 ```
 
@@ -555,7 +564,7 @@ createWrapper({
 
 [Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs. Keep in mind that this setup will opt you out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization.
 
-Don't forget to filter out actions that cause saga to run using `actionFilter` config property.
+Don't forget to filter out actions that cause saga to run using [`serialize`](#custom-serialization-and-deserialization) config property.
 
 Create your root saga as usual, then implement the store creator:
 
@@ -580,9 +589,10 @@ export const makeStore = ({context, reduxWrapperMiddleware}) => {
   return store;
 };
 
+const filterActions = ['@@redux-saga/CHANNEL_END', SAGA_ACTION];
+
 export const wrapper = createWrapper(makeStore, {
-  debug: true,
-  actionFilter: action => action.type !== SAGA_ACTION, // don't forget to filter out actions that cause saga to run
+  serialize: actions => actions.filter(action => !filterActions.includes(action.type)), // !!! don't forget to filter out actions that cause saga to run
 });
 ```
 
@@ -861,7 +871,7 @@ export default connect(state => state)(
 
 6. All legacy HOCs are were removed, please use [custom ones](#usage-with-old-class-based-components) if you still need them, but I suggest to rewrite code into functional components and hooks
 
-7. `serializeState` and `deserializeState` were removed, use `serializeAction` and `deserializeAction`
+7. `serializeState` and `deserializeState` were removed, use `serialize` and `deserialize`
 
 8. `const makeStore = (context) => {...}` is now `const makeStore = ({context, reduxWrapperMiddleware})`, you must add `reduxWrapperMiddleware` to your store
 

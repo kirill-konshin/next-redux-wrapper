@@ -32,15 +32,9 @@ const REQPROP = '__NEXT_REDUX_WRAPPER_STORE__';
 
 const getIsServer = () => typeof window === 'undefined';
 
-const getDeserializedAction = (action: any, {deserializeAction}: Config<any> = {}) =>
-    deserializeAction ? deserializeAction(action) : action;
+const getDeserialized = (actions: Action[], {deserialize}: Config<any> = {}): Action[] => (deserialize ? deserialize(actions) : actions);
 
-const getSerializedAction = (action: any, {serializeAction}: Config<any> = {}) => (serializeAction ? serializeAction(action) : action);
-
-const getActionFilter =
-    ({actionFilter}: Config<any> = {}) =>
-    (action: Action) =>
-        actionFilter ? actionFilter(action) : true;
+const getSerialized = (actions: Action[], {serialize}: Config<any> = {}): Action[] => (serialize ? serialize(actions) : actions);
 
 export declare type MakeStore<S extends Store> = (init: {context: Context; reduxWrapperMiddleware: Middleware}) => S;
 
@@ -69,9 +63,9 @@ const createMiddleware = (config: Config<any>): {log: Action[]; reduxWrapperMidd
             return next(action);
         }
 
-        action = JSON.parse(JSON.stringify(action, undefinedReplacer));
+        action = JSON.parse(JSON.stringify(action, undefinedReplacer)); //FIXME Let serialize take care of it?
 
-        log.push(getSerializedAction(action, config));
+        log.push(action);
 
         return next(action);
     };
@@ -175,13 +169,12 @@ const getStates = ({
 
 const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<any>) =>
     getStates(states).forEach((actions, source) =>
-        actions.filter(getActionFilter(config)).forEach(action => {
-            action = getDeserializedAction(action, config);
+        getDeserialized(actions, config).forEach(action =>
             dispatch({
                 ...action,
                 meta: {...(action as any).meta, source},
-            });
-        }),
+            }),
+        ),
     );
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
@@ -198,10 +191,10 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         const initialProps = ((nextCallback && (await nextCallback(context))) || {}) as P;
 
         if (config.debug) {
-            console.log(`2. initial state after dispatches`, store.getState());
+            console.log(`2. initial state after dispatches`, store.getState(), 'actions', log);
         }
 
-        const reduxWrapperActions = [...log];
+        const reduxWrapperActions = getSerialized([...log], config);
 
         log.splice(0, log.length); // flush all logs
 
@@ -388,10 +381,9 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
 export type Context = NextPageContext | AppContext | GetStaticPropsContext | GetServerSidePropsContext;
 
 export interface Config<S extends Store> {
-    serializeAction?: (state: ReturnType<S['getState']>) => any;
-    deserializeAction?: (state: any) => ReturnType<S['getState']>;
+    serialize?: (actions: Action[]) => Action[];
+    deserialize?: (actions: Action[]) => Action[];
     debug?: boolean;
-    actionFilter?: (action: Action) => boolean | any;
 }
 
 export interface PageProps {

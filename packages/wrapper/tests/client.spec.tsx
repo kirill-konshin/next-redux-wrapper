@@ -30,7 +30,7 @@ describe('client integration', () => {
         test('API functions', async () => {
             const Page = () => null;
             Page.getInitialProps = wrapper.getInitialPageProps(s => () => null as any);
-            expect(await withStore(wrapper)(Page)?.getInitialProps({} as any)).toEqual({
+            expect(await Page.getInitialProps?.({} as any)).toEqual({
                 initialProps: {},
                 initialState: defaultState,
             });
@@ -64,7 +64,7 @@ describe('client integration', () => {
         });
 
         // expected when invoked above
-        await withStore(wrapper)(Page)?.getInitialProps({
+        await Page.getInitialProps?.({
             req: {},
             res: {},
             query: true,

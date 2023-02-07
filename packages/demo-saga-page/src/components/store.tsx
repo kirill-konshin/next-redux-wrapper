@@ -29,6 +29,5 @@ const makeStore = ({reduxWrapperMiddleware}) => {
 const filterActions = ['@@redux-saga/CHANNEL_END', SAGA_ACTION];
 
 export const wrapper = createWrapper<SagaStore>(makeStore as any, {
-    debug: true,
-    actionFilter: action => !filterActions.includes(action.type),
+    serialize: actions => actions.filter(action => !filterActions.includes(action.type)),
 });
