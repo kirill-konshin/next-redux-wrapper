@@ -51,6 +51,8 @@ jobs:
             packages/*/test-results
             packages/*/coverage
 
+      - run: cp README.md packages/wrapper/README.md
+
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - run: yarn publish:release
