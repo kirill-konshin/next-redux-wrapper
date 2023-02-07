@@ -8,3 +8,4 @@ next-env.d.ts
 tests
 tsconfig.json
 tsconfig.es6.json
+!es6
