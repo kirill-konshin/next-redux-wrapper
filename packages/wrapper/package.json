@@ -1,6 +1,6 @@
 {
   "name": "next-redux-wrapper",
-  "version": "7.0.0",
+  "version": "1.0.0",
   "description": "Redux wrapper for Next.js",
   "main": "lib/index.js",
   "module": "es6/index.js",
@@ -10,14 +10,15 @@
   "main:src": "src/index.tsx",
   "scripts": {
     "test": "jest",
-    "test:quick": "yarn test",
     "clean": "rimraf lib es6 types coverage",
     "build": "concurrently 'yarn:build:tsc:*'",
     "build:tsc:es5": "tsc",
     "build:tsc:es6": "tsc --project tsconfig.es6.json",
     "start": "concurrently 'yarn:start:tsc:*'",
     "start:tsc:es5": "yarn build:tsc:es5 --watch --preserveWatchOutput",
-    "start:tsc:es6": "yarn build:tsc:es6 --watch --preserveWatchOutput"
+    "start:tsc:es6": "yarn build:tsc:es6 --watch --preserveWatchOutput",
+    "wait": "wait-on -v es6/index.js es6/index.d.ts lib/index.js lib/index.d.ts",
+    "publish:release": "yarn wait && npm version ${TAG} && npm publish"
   },
   "devDependencies": {
     "@testing-library/react-hooks": "8.0.1",
@@ -39,7 +40,8 @@
     "redux-promise-middleware": "6.1.2",
     "rimraf": "3.0.2",
     "ts-jest": "27.0.7",
-    "typescript": "4.9.5"
+    "typescript": "4.9.5",
+    "wait-on": "7.0.1"
   },
   "peerDependencies": {
     "next": ">=9",

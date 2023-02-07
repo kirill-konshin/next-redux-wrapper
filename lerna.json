@@ -1,5 +1,8 @@
 {
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
   "version": "1.0.0",
   "useWorkspaces": true,
-  "npmClient": "yarn"
+  "npmClient": "yarn",
+  "tagVersionPrefix": "",
+  "verifyAccess": false
 }

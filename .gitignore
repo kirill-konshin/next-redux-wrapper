@@ -1,6 +1,7 @@
 .idea
 .next
 .tscache
+.turbo
 .eslint
 coverage
 es6

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "start": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": [
+        "build"
+      ]
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "packages/*/lib/**",
+        "packages/*/es6/**",
+        "packages/*/.next/**"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "build"
+      ],
+      "cache": false
+    },
+    "clean": {
+      "dependsOn": [
+        "^clean"
+      ],
+      "cache": false
+    },
+    "publish:release": {
+      "dependsOn": [
+        "build"
+      ],
+      "cache": false
+    }
+  }
+}

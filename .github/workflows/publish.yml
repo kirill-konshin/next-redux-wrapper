@@ -18,6 +18,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
 
       - id: yarn-cache-dir-path
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
@@ -52,12 +53,12 @@ jobs:
 
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - run: yarn publish:release ${TAG} --yes
+      - run: yarn publish:release
         if: ${{ env.TAG != '' && !contains(env.TAG, '/') && !contains(env.TAG, '-') }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - run: yarn publish:release ${TAG} --yes --dist-tag next
+      - run: yarn publish:release -- --tag next
         if: ${{ env.TAG != '' && !contains(env.TAG, '/') && contains(env.TAG, '-') }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
