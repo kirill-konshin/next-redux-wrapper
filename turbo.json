@@ -5,13 +5,26 @@
       "cache": false,
       "persistent": true,
       "dependsOn": [
-        "build"
+        "wait"
+      ]
+    },
+    "next-redux-wrapper#start": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": []
+    },
+    "wait": {
+      "cache": false,
+      "dependsOn": [
+        "^wait"
       ]
     },
     "build": {
       "dependsOn": [
         "^build"
-      ],
+      ]
+    },
+    "next-redux-wrapper#build": {
       "outputs": [
         "packages/*/lib/**",
         "packages/*/es6/**",

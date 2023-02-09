@@ -17,7 +17,7 @@
     "start": "concurrently 'yarn:start:tsc:*'",
     "start:tsc:es5": "yarn build:tsc:es5 --watch --preserveWatchOutput",
     "start:tsc:es6": "yarn build:tsc:es6 --watch --preserveWatchOutput",
-    "wait": "wait-on -v es6/index.js es6/index.d.ts lib/index.js lib/index.d.ts",
+    "wait": "wait-on -v -c wait-on.json",
     "publish:release": "yarn wait && npm version ${TAG} && npm publish"
   },
   "devDependencies": {

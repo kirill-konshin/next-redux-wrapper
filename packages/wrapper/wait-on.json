@@ -1,0 +1,10 @@
+{
+  "resources": [
+    "es6/index.js",
+    "es6/index.d.ts",
+    "lib/index.js",
+    "lib/index.d.ts"
+  ],
+  "delay": 3000,
+  "interval": 3000
+}
