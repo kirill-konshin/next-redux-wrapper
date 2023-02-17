@@ -43,6 +43,7 @@ A library that brings Next.js and Redux together.
 - [Upgrade from 5.x to 6.x](#upgrade-from-5x-to-6x)
 - [Upgrade from 1.x to 2.x](#upgrade-from-1x-to-2x)
 - [Resources](#resources)
+- [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -560,6 +561,19 @@ export const wrapper = createWrapper(makeStore, {
 });
 ```
 
+One more recipe, if you want to analyze the whole actions snapshot (coming from different lifecycle methods) before dispatching, you can do so like this:
+
+```js
+const Page: NextPage = props => {
+  const adjustedProps = useMemo(() => {
+    // do something with props
+    return props;
+  }, [props]);
+
+  const {hydrating} = wrapper.useHydration(adjustedProps); // dump all props to hook
+};
+```
+
 ## Usage with Redux Saga
 
 [Note, this method _may_ be unsafe - make sure you put a lot of thought into handling async sagas correctly. Race conditions happen very easily if you aren't careful.] To utilize Redux Saga, one simply has to make some changes to their `makeStore` function. Specifically, `redux-saga` needs to be initialized inside this function, rather than outside of it. (I did this at first, and got a nasty error telling me `Before running a Saga, you must mount the Saga middleware on the Store using applyMiddleware`). Here is how one accomplishes just that. This is just slightly modified from the setup example at the beginning of the docs. Keep in mind that this setup will opt you out of Automatic Static Optimization: https://err.sh/next.js/opt-out-auto-static-optimization.
@@ -965,3 +979,20 @@ That's it. Your project should now work the same as before.
 - [How to use with Redux and Redux Saga](https://www.robinwieruch.de/nextjs-redux-saga/)
 - [Redux Saga Example](https://gist.github.com/pesakitan22/94b4984140ba0f2c9e52c5289a7d833e)
 - [next-redux-cookie-wrapper](https://github.com/bjoluc/next-redux-cookie-wrapper)
+
+# Development
+
+Project is using Turbo and Yarn. Clone, run
+
+```bash
+$ yarn install
+$ yarn start
+```
+
+Make sure not to run NPM scripts directly, as it [will break](https://github.com/yarnpkg/berry/issues/5255) [Turbo's dependencies](https://github.com/vercel/turbo/issues/1497#issuecomment-1424852247) (`cd packages/xxx && yarn start` is a no-no).
+
+If you need to run NPM script in a particular package do this:
+
+```bash
+$ yarn start --filter demo-redux-toolkit
+```

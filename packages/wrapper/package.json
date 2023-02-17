@@ -6,11 +6,11 @@
   "module": "es6/index.js",
   "types": "es6/index.d.ts",
   "source": "src/index.tsx",
-  "jsnext:main": "src/index.tsx",
+  "jsnext:main": "es6/index.js",
   "main:src": "src/index.tsx",
   "scripts": {
     "test": "jest",
-    "clean": "rimraf lib es6 types coverage",
+    "clean": "rimraf lib es6 coverage",
     "build": "concurrently 'yarn:build:tsc:*'",
     "build:tsc:es5": "tsc",
     "build:tsc:es6": "tsc --project tsconfig.es6.json",

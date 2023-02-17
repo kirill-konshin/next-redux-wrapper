@@ -5,49 +5,35 @@
       "cache": false,
       "persistent": true,
       "dependsOn": [
-        "wait"
-      ]
-    },
-    "next-redux-wrapper#start": {
-      "cache": false,
-      "persistent": true,
-      "dependsOn": []
-    },
-    "wait": {
-      "cache": false,
-      "dependsOn": [
         "^wait"
       ]
+    },
+    "wait": {
+      "cache": false
     },
     "build": {
       "dependsOn": [
         "^build"
-      ]
-    },
-    "next-redux-wrapper#build": {
+      ],
       "outputs": [
         "packages/*/lib/**",
-        "packages/*/es6/**",
-        "packages/*/.next/**"
+        "packages/*/es6/**"
       ]
     },
     "test": {
       "dependsOn": [
-        "build"
+        "^build"
       ],
       "cache": false
     },
     "clean": {
-      "dependsOn": [
-        "^clean"
-      ],
       "cache": false
     },
     "publish:release": {
+      "cache": false,
       "dependsOn": [
         "build"
-      ],
-      "cache": false
+      ]
     }
   }
 }
