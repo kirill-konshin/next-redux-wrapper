@@ -523,11 +523,11 @@ await store.dispatch(someAsyncAction());
 
 ## Custom serialization and deserialization
 
-If you are storing complex types such as Immutable.JS or JSON objects in your state, a custom serialize and deserialize
-handler might be handy to serialize the actions on the server and deserialize it again on the client. To do so,
-provide `serialize` and `deserialize` as config options to `createStore`.
+If you are storing complex types such as Immutable.JS or JSON objects in your state, a custom serialize and deserialize handler might be handy to serialize the actions on the server and deserialize it again on the client. To do so, provide `serialize` and `deserialize` as config options to `createStore`.
 
-Both functions should take an array of actions and return an array of actions. `serialize` should remove all non-transferable objects and `deserialize` should return whatever your store can consume.
+:warning: Both functions should take an array of actions and return an array of actions. `serialize` should remove all non-transferable objects and `deserialize` should return whatever your store can consume.
+
+:warning: After serialization, wrapper will replace all `undefined` values with `null` in actions, because `undefined` is not transferable as JSON.
 
 The reason is that state snapshot is transferred over the network from server to client as a plain object.
 

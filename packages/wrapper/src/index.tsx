@@ -53,7 +53,27 @@ export enum Source {
 
 let sharedClientStore: any;
 
-const undefinedReplacer = (key: string, value: any) => (typeof value === 'undefined' ? null : value);
+const replaceUndefinedWithNull = (obj: any): any => {
+    if (obj === undefined) {
+        return null;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(replaceUndefinedWithNull);
+    }
+
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    const res = {} as any;
+
+    for (const [key, value] of Object.entries(obj)) {
+        res[key] = replaceUndefinedWithNull(value);
+    }
+
+    return res;
+};
 
 const createMiddleware = (config: Config<any>): {log: Action[]; reduxWrapperMiddleware: Middleware} => {
     const log: Action[] = [];
@@ -62,8 +82,6 @@ const createMiddleware = (config: Config<any>): {log: Action[]; reduxWrapperMidd
         if (!getIsServer()) {
             return next(action);
         }
-
-        action = JSON.parse(JSON.stringify(action, undefinedReplacer)); //FIXME Let serialize take care of it?
 
         log.push(action);
 
@@ -194,7 +212,7 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
             console.log(`2. initial state after dispatches`, store.getState(), 'actions', log);
         }
 
-        const reduxWrapperActions = getSerialized([...log], config);
+        const reduxWrapperActions = getSerialized([...log], config).map(replaceUndefinedWithNull); // serialize then replace undefined just in case
 
         log.splice(0, log.length); // flush all logs
 

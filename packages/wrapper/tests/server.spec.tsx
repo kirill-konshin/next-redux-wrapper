@@ -339,7 +339,7 @@ describe('custom serialization', () => {
     test('serialize on server and deserialize on client', async () => {
         const serialize = jest.fn((actions: any) => {
             console.log(actions);
-            return actions.map((a: any) => ({...a, payload: JSON.stringify(a.payload)}));
+            return actions.map((a: any) => ({...a, payload: JSON.stringify(a.payload), foo: undefined, bar: [undefined]}));
         });
         const deserialize = jest.fn((actions: any) => actions.map((a: any) => ({...a, payload: JSON.parse(a.payload)})));
 
@@ -365,6 +365,8 @@ describe('custom serialization', () => {
                 {
                     type: 'FOO',
                     payload: '"val"',
+                    foo: null,
+                    bar: [null],
                 },
             ],
         });
@@ -379,6 +381,8 @@ describe('custom serialization', () => {
                         {
                             type: 'FOO',
                             payload: '"val"',
+                            foo: null,
+                            bar: [null],
                         },
                     ],
                     wrapper: {},
