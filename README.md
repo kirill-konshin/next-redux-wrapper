@@ -379,7 +379,7 @@ Wrapper has first-class support of `@reduxjs/toolkit`.
 Full example: https://github.com/kirill-konshin/next-redux-wrapper/blob/master/packages/demo-redux-toolkit.
 
 ```ts
-import {configureStore, createSlice, ThunkAction} from '@reduxjs/toolkit';
+import {configureStore, createSlice, ThunkAction, TypedUseSelectorHook} from '@reduxjs/toolkit';
 import {Action} from 'redux';
 import {createWrapper} from 'next-redux-wrapper';
 
@@ -406,7 +406,12 @@ const makeStore = ({reduxWrapperMiddleware}) =>
 
 export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<AppStore['getState']>;
+export type AppDispatch = AppStore['dispatch'];
 export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, AppState, unknown, Action>;
+
+// Use throughout your app instead of plain `useDispatch` and `useSelector`
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;
 
 export const fetchSubject =
   (id: any): AppThunk =>
