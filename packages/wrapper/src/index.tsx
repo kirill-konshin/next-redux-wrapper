@@ -180,34 +180,60 @@ export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: 
         const {events} = useRouter();
         const shouldHydrate = useRef(true);
 
-        // We should only hydrate when the router has changed routes
-        useEffect(() => {
-            const handleStart = () => {
-                shouldHydrate.current = true;
-            };
+        /**
+         * Moving this functions outside of the useEffect hook
+         * to avoid creating new function references on each render.
+         */
+        const handleRouteChangeStart = () => {
+            shouldHydrate.current = true;
+        };
 
-            events?.on('routeChangeStart', handleStart);
+        const handleRouteChangeComplete = () => {
+            shouldHydrate.current = false;
+        };
+
+        useEffect(() => {
+            events?.on('routeChangeStart', handleRouteChangeStart);
+            /**
+             * Depending on whether the user is navigating to a new route or not.
+             * This can help avoid unnecessary hydration of components and potentially improve performance.
+             *
+             * @see https://nextjs.org/docs/api-reference/next/router#routerevents
+             */
+            events?.on('routeChangeComplete', handleRouteChangeComplete);
 
             return () => {
-                events?.off('routeChangeStart', handleStart);
+                events?.off('routeChangeStart', handleRouteChangeStart);
+                events?.off('routeChangeComplete', handleRouteChangeComplete);
             };
         }, [events]);
 
-        // useMemo so that when we navigate client side, we always synchronously hydrate the state before the new page
-        // components are mounted. This means we hydrate while the previous page components are still mounted.
-        // You might think that might cause issues because the selectors on the previous page (still mounted) will suddenly
-        // contain other data, and maybe even nested properties, causing null reference exceptions.
-        // But that's not the case.
-        // Hydrating in useMemo will not trigger a rerender of the still mounted page component. So if your selectors do have
-        // some initial state values causing them to rerun after hydration, and you're accessing deeply nested values inside your
-        // components, you still wouldn't get errors, because there's no rerender.
-        // Instead, React will render the new page components straight away, which will have selectors with the correct data.
-        useMemo(() => {
-            if (shouldHydrate.current) {
-                hydrateOrchestrator(store, giapState, gspState, gsspState, gippState);
-                shouldHydrate.current = false;
-            }
+        const memoizedHydrateOrchestrator = useMemo(() => {
+            /**
+             * we are returning a function that will be called when the component is unmounted.
+             * This function will check if the shouldHydrate.current flag is true, which means that the router has changed routes,
+             * and if it is true, it calls the hydrateOrchestrator function with the necessary states and data.
+             */
+            return () => {
+                if (shouldHydrate.current) {
+                    hydrateOrchestrator(store, giapState, gspState, gsspState, gippState);
+                }
+            };
         }, [store, giapState, gspState, gsspState, gippState]);
+
+        useEffect(() => {
+            /**
+             * This memoizedHydrateOrchestrator function is being created using the useMemo hook to ensure that the function
+             * is only created when any of the dependencies passed in the second argument to useMemo changes.
+             *
+             * This function checks if the shouldHydrate.current flag is true, which means that the router has changed routes,
+             * and if it is true, it calls the hydrateOrchestrator function with the necessary states and data.
+             *
+             * By memoizing this function, we can ensure that it is only created once and reused on subsequent renders,
+             * avoiding unnecessary function calls and potential performance issues.
+             */
+            memoizedHydrateOrchestrator();
+        }, [memoizedHydrateOrchestrator]);
     };
 
     // giapState stands for getInitialAppProps state
