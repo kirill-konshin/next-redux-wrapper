@@ -9,7 +9,7 @@ import {
     NextComponentType,
     NextPageContext,
 } from 'next';
-import {useDispatch} from 'react-redux';
+import {useDispatch,batch} from 'react-redux';
 
 /**
  * Quick note on Next.js return types:
@@ -186,14 +186,16 @@ const getStates = ({
 };
 
 const dispatchStates = (dispatch: Dispatch, states: PageProps, config: Config<any>) =>
-    getStates(states).forEach((actions, source) =>
-        getDeserialized(actions, config).forEach(action =>
-            dispatch({
-                ...action,
-                meta: {...(action as any).meta, source},
-            }),
-        ),
-    );
+    batch(() => {
+        getStates(states).forEach((actions, source) =>
+            getDeserialized(actions, config).forEach(action =>
+                dispatch({
+                    ...action,
+                    meta: {...(action as any).meta, source},
+                }),
+            ),
+        )
+    });
 
 export const createWrapper = <S extends Store>(makeStore: MakeStore<S>, config: Config<S> = {}) => {
     const makeProps = async function <P extends Object>({
